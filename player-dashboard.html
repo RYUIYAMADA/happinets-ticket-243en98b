@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>申込状況ダッシュボード</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #003087;
+    --primary-hover: #00205f;
+    --accent: #F47920;
+    --accent-hover: #d96510;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --text-sub: #4a5568;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --warning-bg: #FEF3C7;
+    --warning-text: #1A1A2E;
+    --error: #dc2626;
+    --error-bg: #fee2e2;
+    --muted: #6b7280;
+    --muted-bg: #f3f4f6;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    line-break: strict;
+  }
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  header h1 { font-size: 16px; font-weight: 700; }
+  .header-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .btn-logout {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .container { max-width: 700px; margin: 0 auto; padding: 20px 16px; }
+
+  /* サマリーカード */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 480px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+  .summary-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .summary-card .num { font-size: 26px; font-weight: 700; }
+  .summary-card .lbl { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .num-pending { color: var(--warning-text); }
+  .num-confirmed { color: var(--success); }
+  .num-rejected { color: var(--error); }
+  .num-total { color: var(--accent); }
+
+  /* フィルター */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    background: var(--card);
+    color: var(--text-sub);
+    cursor: pointer;
+    min-height: 36px;
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* 申込ボタン */
+  .fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 28px;
+    padding: 14px 22px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(244,121,32,0.4);
+    min-height: 56px;
+    transition: background 0.15s;
+    z-index: 100;
+  }
+  .fab:hover { background: var(--accent-hover); }
+
+  /* ゲームカード */
+  .game-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .game-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .game-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    gap: 12px;
+  }
+  .game-info { flex: 1; min-width: 0; }
+  .game-date { font-size: 12px; color: var(--text-sub); }
+  .game-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .game-deadline { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+  /* ステータスバッジ */
+  .badge {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-none { background: var(--muted-bg); color: var(--muted); }
+  .badge-pending { background: var(--warning-bg); color: var(--warning-text); }
+  .badge-confirmed { background: var(--success-bg); color: var(--success); }
+  .badge-rejected { background: var(--error-bg); color: var(--error); }
+  .badge-closed { background: var(--error-bg); color: var(--error); }
+
+  /* 展開エリア */
+  .game-card-detail {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px;
+    background: #fafbfc;
+  }
+  .game-card.open .game-card-detail { display: block; }
+  .detail-row {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 6px;
+    align-items: flex-start;
+  }
+  .detail-label { color: var(--text-sub); min-width: 80px; flex-shrink: 0; }
+  .detail-value { color: var(--text); font-weight: 600; }
+  .detail-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btn-edit {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    background: #fff;
+    min-height: 44px;
+  }
+  .btn-cancel {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1.5px solid var(--error);
+    color: var(--error);
+    background: #fff;
+    min-height: 44px;
+  }
+  .btn-apply {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    color: #fff;
+    background: var(--accent);
+    min-height: 44px;
+  }
+
+  .chevron {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--text-sub);
+    transition: transform 0.2s;
+  }
+  .game-card.open .chevron { transform: rotate(180deg); }
+
+  .loading-msg { text-align: center; padding: 40px; color: var(--text-sub); }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.06em;
+    margin: 20px 0 10px;
+    text-transform: uppercase;
+  }
+
+  .ticket-type-label {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #e0e7ff;
+    color: #3730a3;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div>
+      <h1>申込状況ダッシュボード</h1>
+      <div class="header-sub" id="player-name-display"></div>
+    </div>
+    <button class="btn-logout" onclick="logout()">ログアウト</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- サマリー -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="num num-total" id="cnt-total">—</div>
+      <div class="lbl">申込済み</div>
+    </div>
+    <div class="summary-card">
+      <div class="num num-pending" id="cnt-pending">—</div>
+      <div class="lbl">確認中</div>
+    </div>
+    <div class="summary-card">
+      <div class="num num-confirmed" id="cnt-confirmed">—</div>
+      <div class="lbl">確保済み</div>
+    </div>
+    <div class="summary-card">
+      <div class="num num-rejected" id="cnt-rejected">—</div>
+      <div class="lbl">対応不可</div>
+    </div>
+  </div>
+
+  <!-- フィルター -->
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+    <button class="filter-btn" onclick="setFilter('applied', this)">申込あり</button>
+    <button class="filter-btn" onclick="setFilter('none', this)">未申込</button>
+    <button class="filter-btn" onclick="setFilter('upcoming', this)">直近</button>
+  </div>
+
+  <div id="game-list">
+    <div class="loading-msg">読み込み中...</div>
+  </div>
+</div>
+
+<button class="fab" onclick="location.href='player-form.html'">＋ 新規申込</button>
+
+<script>
+const GAS_URL = localStorage.getItem('GAS_URL') || '';
+let auth = null;
+let games = [];
+let applications = [];
+let currentFilter = 'all';
+
+const TICKET_LABELS = { invite: '招待', family: '家族席', paid: '有料' };
+const PICKUP_LABELS = { pre: '事前受取', day: '当日受取' };
+const STATUS_CONFIG = {
+  pending:   { label: '確認中',   cls: 'badge-pending' },
+  confirmed: { label: '確保済み', cls: 'badge-confirmed' },
+  rejected:  { label: '対応不可', cls: 'badge-rejected' },
+  cancelled: { label: 'キャンセル', cls: 'badge-none' },
+};
+
+window.addEventListener('DOMContentLoaded', async () => {
+  auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
+  if (!auth || auth.role !== 'player') { window.location.href = 'index.html'; return; }
+  document.getElementById('player-name-display').textContent = auth.name + '（' + auth.playerId + '）';
+  await loadData();
+});
+
+async function loadData() {
+  try {
+    const [gamesRes, appsRes] = await Promise.all([
+      callGAS('GET', { action: 'getGames' }),
+      callGAS('GET', { action: 'getApplications', playerId: auth.playerId })
+    ]);
+    if (!gamesRes.ok) throw new Error(gamesRes.error);
+    if (!appsRes.ok) throw new Error(appsRes.error);
+    games = gamesRes.data;
+    applications = appsRes.data.filter(a => a.status !== 'cancelled');
+    updateSummary();
+    renderList();
+  } catch (e) {
+    document.getElementById('game-list').innerHTML = `<div class="loading-msg" style="color:#dc2626">データ読み込み失敗: ${e.message}</div>`;
+  }
+}
+
+function updateSummary() {
+  const active = applications.filter(a => a.status !== 'cancelled');
+  document.getElementById('cnt-total').textContent = active.length;
+  document.getElementById('cnt-pending').textContent = active.filter(a => a.status === 'pending').length;
+  document.getElementById('cnt-confirmed').textContent = active.filter(a => a.status === 'confirmed').length;
+  document.getElementById('cnt-rejected').textContent = active.filter(a => a.status === 'rejected').length;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+function filterGames() {
+  const today = new Date();
+  const near = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+  return games.filter(g => {
+    const app = getApp(g.gameId);
+    if (currentFilter === 'applied') return !!app;
+    if (currentFilter === 'none') return !app;
+    if (currentFilter === 'upcoming') return new Date(g.date) <= near && new Date(g.date) >= today;
+    return true;
+  });
+}
+
+function getApp(gameId) {
+  return applications.find(a => String(a.gameId) === String(gameId));
+}
+
+function renderList() {
+  const filtered = filterGames();
+  const el = document.getElementById('game-list');
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="loading-msg">該当する試合はありません</div>';
+    return;
+  }
+
+  // 月ごとにグループ化
+  const grouped = {};
+  filtered.forEach(g => {
+    const month = g.date.slice(0, 7);
+    if (!grouped[month]) grouped[month] = [];
+    grouped[month].push(g);
+  });
+
+  let html = '';
+  Object.keys(grouped).sort().forEach(month => {
+    const [y, m] = month.split('-');
+    html += `<div class="section-label">${parseInt(m)}月の試合</div>`;
+    grouped[month].forEach(g => { html += buildGameCard(g); });
+  });
+  el.innerHTML = html;
+}
+
+function buildGameCard(g) {
+  const app = getApp(g.gameId);
+  let badge, statusLabel;
+
+  if (g.isDeadlinePassed && !app) {
+    badge = `<span class="badge badge-closed">締切</span>`;
+  } else if (!app) {
+    badge = `<span class="badge badge-none">未申込</span>`;
+  } else {
+    const cfg = STATUS_CONFIG[app.status] || { label: app.status, cls: 'badge-none' };
+    badge = `<span class="badge ${cfg.cls}">${cfg.label}</span>`;
+  }
+
+  const deadlineText = g.deadline
+    ? `申込期限: ${g.deadline}${g.isDeadlinePassed ? '（終了）' : ''}`
+    : '期限未設定';
+
+  let detailHtml = '';
+  if (app) {
+    const typeLabel = TICKET_LABELS[app.ticketType] || app.ticketType;
+    const pickupLabel = PICKUP_LABELS[app.pickupMethod] || app.pickupMethod;
+    let qtyText = '';
+    if (app.ticketType === 'family') {
+      const parts = [];
+      if (app.quantityAdult > 0) parts.push(`大人${app.quantityAdult}枚`);
+      if (app.quantityChild > 0) parts.push(`子供${app.quantityChild}枚`);
+      if (app.quantityInfant > 0) parts.push(`未就学児${app.quantityInfant}枚`);
+      qtyText = parts.join('・') || '0枚';
+    } else {
+      qtyText = `${app.quantityAdult || 0}枚`;
+    }
+    const seatText = app.seatType ? ` (${app.seatType}席)` : '';
+
+    detailHtml = `
+      <div class="ticket-type-label">${typeLabel}</div>
+      <div class="detail-row"><span class="detail-label">枚数</span><span class="detail-value">${qtyText}${seatText}</span></div>
+      <div class="detail-row"><span class="detail-label">受取者</span><span class="detail-value">${app.receiverName || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">受取方法</span><span class="detail-value">${pickupLabel}</span></div>
+      ${app.note ? `<div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${app.note}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-label">申込日時</span><span class="detail-value" style="font-size:12px">${app.createdAt}</span></div>
+    `;
+
+    if (!g.isDeadlinePassed && app.status !== 'confirmed') {
+      const isPaid = app.ticketType === 'paid';
+      detailHtml += `
+        <div class="detail-actions">
+          <button class="btn-edit" onclick="editApp('${g.gameId}', '${app.ticketType}')">修正する</button>
+          ${isPaid ? '' : `<button class="btn-cancel" onclick="cancelApp('${app.applicationId}', '${g.gameId}')">キャンセル</button>`}
+        </div>
+      `;
+    }
+  } else if (!g.isDeadlinePassed) {
+    detailHtml = `
+      <div class="detail-actions">
+        <button class="btn-apply" onclick="location.href='player-form.html?gameId=${g.gameId}'">この試合に申込む</button>
+      </div>
+    `;
+  } else {
+    detailHtml = `<div style="font-size:13px; color:var(--text-sub)">申込期限が終了しています</div>`;
+  }
+
+  return `
+    <div class="game-card" id="card-${g.gameId}">
+      <div class="game-card-header" onclick="toggleCard('${g.gameId}')">
+        <div class="game-info">
+          <div class="game-date">${g.date}（${g.dayOfWeek}）</div>
+          <div class="game-title">vs ${g.opponent}</div>
+          <div class="game-deadline">${deadlineText}</div>
+        </div>
+        ${badge}
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="game-card-detail">${detailHtml}</div>
+    </div>
+  `;
+}
+
+function toggleCard(gameId) {
+  const card = document.getElementById('card-' + gameId);
+  card.classList.toggle('open');
+}
+
+function editApp(gameId, type) {
+  location.href = `player-form.html?gameId=${gameId}&type=${type}&edit=1`;
+}
+
+async function cancelApp(applicationId, gameId) {
+  if (!confirm('この申込をキャンセルしますか？')) return;
+  try {
+    const result = await callGAS('POST', { action: 'cancelApplication', applicationId, playerId: auth.playerId });
+    if (!result.ok) throw new Error(result.error);
+    await loadData();
+  } catch (e) {
+    alert('キャンセル失敗: ' + e.message);
+  }
+}
+
+function logout() {
+  sessionStorage.clear();
+  location.href = 'index.html';
+}
+
+async function callGAS(method, params) {
+  if (!GAS_URL) return demoCallGAS(method, params);
+  if (method === 'GET') {
+    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
+    return res.json();
+  }
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
+  return res.json();
+}
+
+function demoCallGAS(method, params) {
+  const raw = [
+    ['G01','2024-10-18','土','琉球'],['G02','2024-10-19','日','琉球'],
+    ['G03','2024-10-25','土','島根'],['G04','2024-10-26','日','島根'],
+    ['G05','2024-10-29','水','千葉J'],['G06','2024-11-05','水','名古屋D'],
+    ['G07','2024-11-08','土','群馬'],['G08','2024-11-09','日','群馬'],
+    ['G09','2024-11-12','水','横浜BC'],['G10','2024-12-10','水','仙台'],
+    ['G11','2024-12-13','土','三河'],['G12','2024-12-14','日','三河'],
+    ['G13','2024-12-27','土','FE名古屋'],['G14','2024-12-28','日','FE名古屋'],
+    ['G15','2025-01-24','土','川崎'],['G16','2025-01-25','日','川崎'],
+    ['G17','2025-01-28','水','A東京'],['G18','2025-01-31','土','大阪'],
+    ['G19','2025-02-01','日','大阪'],['G20','2025-02-14','土','茨城'],
+    ['G21','2025-02-15','日','茨城'],['G22','2025-03-07','土','A千葉'],
+    ['G23','2025-03-08','日','A千葉'],['G24','2025-03-28','土','京都'],
+    ['G25','2025-03-29','日','京都'],['G26','2025-04-11','土','越谷'],
+    ['G27','2025-04-12','日','越谷'],['G28','2025-04-22','水','北海道'],
+    ['G29','2025-05-02','土','佐賀'],['G30','2025-05-03','日','佐賀'],
+  ];
+  const today = new Date();
+  if (params.action === 'getGames') {
+    return { ok: true, data: raw.map(g => ({
+      gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
+      deadline: new Date(new Date(g[1]).getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
+      isDeadlinePassed: new Date(g[1]) < today
+    }))};
+  }
+  if (params.action === 'getApplications') {
+    const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
+    return { ok: true, data: apps.filter(a => String(a.playerId) === String(params.playerId)) };
+  }
+  if (params.action === 'cancelApplication') {
+    const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
+    const idx = apps.findIndex(a => a.applicationId === params.applicationId);
+    if (idx >= 0) { apps[idx].status = 'cancelled'; localStorage.setItem('demo_apps', JSON.stringify(apps)); }
+    return { ok: true, data: { cancelled: true } };
+  }
+  return { ok: false, error: 'デモ未対応' };
+}
+</script>
+</body>
+</html>

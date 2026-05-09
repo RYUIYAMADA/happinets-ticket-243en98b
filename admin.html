@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理者画面 — チケット申込管理</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #003087;
+    --primary-hover: #00205f;
+    --accent: #F47920;
+    --accent-hover: #d96510;
+    --bg: #f5f7fa;
+    --card: #fff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --text-sub: #4a5568;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --warning-bg: #FEF3C7;
+    --warning-text: #1A1A2E;
+    --error: #dc2626;
+    --error-bg: #fee2e2;
+    --muted: #6b7280;
+    --muted-bg: #f3f4f6;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    line-break: strict;
+  }
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 { font-size: 16px; font-weight: 700; }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .btn-sm {
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 36px;
+    border: none;
+  }
+  .btn-outline { background: rgba(255,255,255,0.15); color: #fff; }
+  .btn-success { background: var(--accent); color: #fff; }
+
+  /* タブ */
+  .tabs {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    padding: 0 24px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* サマリーグリッド */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 18px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .kpi-num { font-size: 32px; font-weight: 700; }
+  .kpi-lbl { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+  .kpi-num.blue { color: var(--accent); }
+  .kpi-num.yellow { color: #d97706; }
+  .kpi-num.green { color: var(--success); }
+  .kpi-num.red { color: var(--error); }
+
+  /* カード */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+
+  /* テーブル */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    padding: 10px 14px;
+    background: #f8fafc;
+    font-weight: 700;
+    color: var(--text-sub);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* バッジ */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .badge-pending  { background: var(--warning-bg); color: var(--warning-text); }
+  .badge-confirmed{ background: var(--success-bg); color: var(--success); }
+  .badge-rejected { background: var(--error-bg); color: var(--error); }
+  .badge-cancelled{ background: var(--muted-bg); color: var(--muted); }
+  .badge-invite   { background: #e0e7ff; color: #3730a3; }
+  .badge-family   { background: #fce7f3; color: #9d174d; }
+  .badge-paid     { background: #d1fae5; color: #065f46; }
+
+  /* 期限設定 */
+  .deadline-input {
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.15s;
+  }
+  .deadline-input:focus { outline: none; border-color: var(--accent); }
+  .btn-set {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 32px;
+  }
+  .btn-set:hover { background: var(--accent-hover); }
+
+  /* ステータス変更 */
+  .status-select {
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    background: #fff;
+    cursor: pointer;
+    min-width: 90px;
+  }
+
+  /* マトリクス */
+  .matrix-wrap { overflow: auto; max-height: 600px; }
+  .matrix-table { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+  .matrix-table th, .matrix-table td {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .matrix-table thead th {
+    background: #f8fafc;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .matrix-table tbody tr td:first-child {
+    background: #f8fafc;
+    font-weight: 700;
+    position: sticky;
+    left: 0;
+    z-index: 4;
+    min-width: 90px;
+  }
+  .cell-confirmed { background: var(--success-bg); color: var(--success); font-weight: 700; text-align: center; }
+  .cell-pending   { background: var(--warning-bg); color: var(--warning-text); text-align: center; }
+  .cell-rejected  { background: var(--error-bg); color: var(--error); text-align: center; }
+  .cell-none      { background: #fff; text-align: center; color: var(--muted); font-size: 11px; }
+  .cell-closed    { background: #f9fafb; color: #d1d5db; text-align: center; }
+
+  /* 検索・フィルター */
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .search-input {
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    width: 200px;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  select.filter-sel {
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: #fff;
+    cursor: pointer;
+    min-height: 36px;
+  }
+
+  .type-tab {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    background: #f8fafc;
+    border: none;
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .type-tab:last-child { border-right: none; }
+  .type-tab.active { background: var(--card); color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+  .type-tab:hover:not(.active) { background: var(--bg); }
+
+  .empty-msg { text-align: center; padding: 40px; color: var(--text-sub); font-size: 14px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(244,121,32,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a202c;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏀 チケット管理 — 管理者画面</h1>
+  <div class="header-right">
+    <span id="admin-role-badge" style="font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;color:#fff;"></span>
+<button class="btn-sm btn-success" onclick="openSheet()">スプレッドシートで確認</button>
+<button class="btn-sm btn-outline" onclick="logout()">ログアウト</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('overview')">概要</button>
+  <button class="tab" onclick="switchTab('applications')">申込一覧</button>
+  <button class="tab" onclick="switchTab('matrix')">試合×選手</button>
+  <button class="tab" onclick="switchTab('deadlines')">申込期限設定</button>
+</div>
+
+<div class="container">
+
+  <!-- 概要タブ -->
+  <div id="tab-overview" class="panel active">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-num blue" id="kpi-total">—</div><div class="kpi-lbl">総申込数</div></div>
+      <div class="kpi-card"><div class="kpi-num yellow" id="kpi-pending">—</div><div class="kpi-lbl">確認中（要対応）</div></div>
+      <div class="kpi-card"><div class="kpi-num green" id="kpi-confirmed">—</div><div class="kpi-lbl">確保済み</div></div>
+      <div class="kpi-card"><div class="kpi-num red" id="kpi-rejected">—</div><div class="kpi-lbl">対応不可</div></div>
+    </div>
+    <!-- LINE送信数 -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <span class="card-title">📨 LINE通知 — 今月の送信数</span>
+        <span id="line-note" style="font-size:12px;color:var(--text-sub);"></span>
+      </div>
+      <div style="padding:16px 20px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="font-size:28px;font-weight:700;" id="line-used">—</div>
+          <div style="flex:1;min-width:160px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:4px;">
+              <span>送信済み</span><span id="line-quota-label">上限 —</span>
+            </div>
+            <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden;">
+              <div id="line-bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width 0.4s;"></div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px;color:var(--text-sub);">残り</div>
+            <div style="font-size:20px;font-weight:700;color:var(--success);" id="line-remaining">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">要対応 — 確認中の申込</span>
+        <span class="badge badge-pending" id="pending-count-badge">0件</span>
+      </div>
+      <div class="table-wrap">
+        <table id="pending-table">
+          <thead><tr>
+            <th>申込ID</th><th>選手</th><th>試合</th><th>種別</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th>
+          </tr></thead>
+          <tbody id="pending-tbody">
+            <tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 申込一覧タブ -->
+  <div id="tab-applications" class="panel">
+    <!-- 種別サブタブ -->
+    <div style="display:flex;gap:0;background:var(--card);border-radius:var(--radius) var(--radius) 0 0;border:1px solid var(--border);border-bottom:none;overflow:hidden;margin-bottom:0;">
+      <button class="type-tab active" data-type="" onclick="switchTypeTab(this,'')">すべて</button>
+      <button class="type-tab" data-type="invite" onclick="switchTypeTab(this,'invite')">🎟 招待チケット</button>
+      <button class="type-tab" data-type="family" onclick="switchTypeTab(this,'family')">👨‍👩‍👧 家族席</button>
+      <button class="type-tab" data-type="paid" onclick="switchTypeTab(this,'paid')">💳 有料チケット</button>
+    </div>
+    <div class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;">
+      <div class="card-header">
+        <span class="card-title" id="app-type-label">全申込一覧</span>
+        <div class="toolbar">
+          <input class="search-input" type="text" id="app-search" placeholder="選手名・試合で検索" oninput="renderApplications()">
+          <select class="filter-sel" id="app-filter-status" onchange="renderApplications()">
+            <option value="">全ステータス</option>
+            <option value="pending">確認中</option>
+            <option value="confirmed">確保済み</option>
+            <option value="rejected">対応不可</option>
+            <option value="cancelled">キャンセル</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr id="app-thead-row">
+            <th>申込ID</th><th>選手</th><th>試合</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>備考</th><th>申込日時</th><th>ステータス</th>
+          </tr></thead>
+          <tbody id="app-tbody">
+            <tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- マトリクスタブ -->
+  <div id="tab-matrix" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">試合 × 選手 申込マトリクス</span>
+        <span style="font-size:12px; color:var(--text-sub)">● 確保済 ◐ 確認中 ✕ 対応不可</span>
+      </div>
+      <div class="matrix-wrap">
+        <table class="matrix-table" id="matrix-table">
+          <tr><td colspan="2" class="empty-msg"><span class="spinner"></span></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 期限設定タブ -->
+  <div id="tab-deadlines" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">試合別 申込期限設定</span>
+        <span style="font-size:12px; color:var(--text-sub)">期限を過ぎると選手からの申込が自動的に締め切られます</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>試合ID</th><th>日付</th><th>曜日</th><th>対戦相手</th><th>申込期限</th><th>状態</th><th>操作</th>
+          </tr></thead>
+          <tbody id="deadline-tbody">
+            <tr><td colspan="7" class="empty-msg"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL = localStorage.getItem('GAS_URL') || '';
+const SHEET_URL = localStorage.getItem('SHEET_URL') || '';
+let games = [], applications = [], players = [];
+const TICKET_LABELS = { invite: '招待', family: '家族席', paid: '有料' };
+const PICKUP_LABELS  = { pre: '事前', day: '当日' };
+const STATUS_LABELS  = { pending: '確認中', confirmed: '確保済み', rejected: '対応不可', cancelled: 'キャンセル' };
+
+let adminRole = 'ticket';
+
+window.addEventListener('DOMContentLoaded', async () => {
+  let auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
+  if (!auth && !GAS_URL) {
+    auth = { role: 'admin', adminRole: 'ticket' };
+    sessionStorage.setItem('auth', JSON.stringify(auth));
+  }
+  if (!auth || auth.role !== 'admin') { location.href = 'index.html'; return; }
+  adminRole = auth.adminRole || 'ticket';
+  const roleEl = document.getElementById('admin-role-badge');
+  if (roleEl) {
+    roleEl.textContent = adminRole === 'manager' ? '👁 チームマネージャー（閲覧のみ）' : '✏️ チケット担当';
+    roleEl.style.background = adminRole === 'manager' ? 'rgba(255,255,255,0.15)' : 'rgba(244,121,32,0.25)';
+  }
+  await loadAll();
+});
+
+async function loadAll() {
+  try {
+    const [gr, ar, pr, lr] = await Promise.all([
+      callGAS('GET', { action: 'getGames' }),
+      callGAS('GET', { action: 'getAllApplications' }),
+      callGAS('GET', { action: 'getPlayers' }),
+      callGAS('GET', { action: 'getLineStats' }),
+    ]);
+    games = gr.data || [];
+    applications = ar.data || [];
+    players = pr.data || [];
+    updateKPI();
+    renderPending();
+    renderApplications();
+    renderMatrix();
+    renderDeadlines();
+    renderLineStats(lr.data || {});
+  } catch (e) {
+    showToast('データ読込失敗: ' + e.message);
+  }
+}
+
+function renderLineStats(s) {
+  const used      = s.used      ?? 0;
+  const quota     = s.quota     ?? 200;
+  const remaining = s.remaining ?? quota - used;
+  const pct       = quota > 0 ? Math.min(100, Math.round(used / quota * 100)) : 0;
+  document.getElementById('line-used').textContent      = used + '通';
+  document.getElementById('line-remaining').textContent = remaining + '通';
+  document.getElementById('line-quota-label').textContent = '上限 ' + quota.toLocaleString() + '通/月';
+  document.getElementById('line-bar').style.width       = pct + '%';
+  document.getElementById('line-bar').style.background  = pct >= 90 ? 'var(--error)' : pct >= 70 ? '#d97706' : 'var(--accent)';
+  if (s.note) document.getElementById('line-note').textContent = s.note;
+}
+
+function getGameLabel(gameId) {
+  const g = games.find(g => String(g.gameId) === String(gameId));
+  return g ? `${g.date}（${g.dayOfWeek}）vs ${g.opponent}` : gameId;
+}
+function getPlayerName(playerId) {
+  const p = players.find(p => String(p.playerId) === String(playerId));
+  return p ? `${p.name}（${playerId}）` : playerId;
+}
+function getQtyText(app) {
+  if (app.ticketType === 'family') {
+    const parts = [];
+    if (app.quantityAdult > 0) parts.push(`大人${app.quantityAdult}`);
+    if (app.quantityChild > 0) parts.push(`子${app.quantityChild}`);
+    if (app.quantityInfant > 0) parts.push(`未就学${app.quantityInfant}`);
+    return parts.join('/') || '0';
+  }
+  return `${app.quantityAdult || 0}枚${app.seatType ? '('+app.seatType+')' : ''}`;
+}
+
+function updateKPI() {
+  const active = applications.filter(a => a.status !== 'cancelled');
+  document.getElementById('kpi-total').textContent = active.length;
+  document.getElementById('kpi-pending').textContent = active.filter(a => a.status === 'pending').length;
+  document.getElementById('kpi-confirmed').textContent = active.filter(a => a.status === 'confirmed').length;
+  document.getElementById('kpi-rejected').textContent = active.filter(a => a.status === 'rejected').length;
+}
+
+function renderPending() {
+  const pending = applications.filter(a => a.status === 'pending');
+  document.getElementById('pending-count-badge').textContent = pending.length + '件';
+  const tbody = document.getElementById('pending-tbody');
+  if (!pending.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">確認中の申込はありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = pending.map(a => buildAppRow(a, true)).join('');
+}
+
+let currentTypeFilter = '';
+const TYPE_LABELS_TAB = { '': '全申込一覧', invite: '招待チケット 一覧', family: '家族席 一覧', paid: '有料チケット 一覧' };
+
+function switchTypeTab(el, type) {
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTypeFilter = type;
+  document.getElementById('app-type-label').textContent = TYPE_LABELS_TAB[type] || '全申込一覧';
+  renderApplications();
+}
+
+function renderApplications() {
+  const q = (document.getElementById('app-search')?.value || '').toLowerCase();
+  const fs = document.getElementById('app-filter-status')?.value || '';
+  let list = applications;
+  if (currentTypeFilter) list = list.filter(a => a.ticketType === currentTypeFilter);
+  if (q) list = list.filter(a =>
+    getPlayerName(a.playerId).toLowerCase().includes(q) ||
+    getGameLabel(a.gameId).toLowerCase().includes(q)
+  );
+  if (fs) list = list.filter(a => a.status === fs);
+  const tbody = document.getElementById('app-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-msg">該当する申込はありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(a => buildAppRow(a, false)).join('');
+}
+
+function buildAppRow(a, compact) {
+  const typeBadge = `<span class="badge badge-${a.ticketType}">${TICKET_LABELS[a.ticketType] || a.ticketType}</span>`;
+  const pickup = PICKUP_LABELS[a.pickupMethod] || a.pickupMethod;
+  const statusSel = adminRole === 'manager'
+    ? `<span class="badge badge-${a.status}">${STATUS_LABELS[a.status] || a.status}</span>`
+    : `<select class="status-select" onchange="changeStatus('${a.applicationId}', this.value)">
+      <option value="pending"   ${a.status==='pending'   ? 'selected' : ''}>確認中</option>
+      <option value="confirmed" ${a.status==='confirmed' ? 'selected' : ''}>確保済み</option>
+      <option value="rejected"  ${a.status==='rejected'  ? 'selected' : ''}>対応不可</option>
+      <option value="cancelled" ${a.status==='cancelled' ? 'selected' : ''}>キャンセル</option>
+    </select>`;
+  if (compact) {
+    return `<tr>
+      <td style="font-size:11px">${a.applicationId}</td>
+      <td>${getPlayerName(a.playerId)}</td>
+      <td>${getGameLabel(a.gameId)}</td>
+      <td>${typeBadge}</td>
+      <td>${getQtyText(a)}</td>
+      <td>${a.receiverName || '—'}</td>
+      <td>${pickup}</td>
+      <td style="font-size:11px">${a.createdAt || '—'}</td>
+      <td>${statusSel}</td>
+    </tr>`;
+  }
+  return `<tr>
+    <td style="font-size:11px">${a.applicationId}</td>
+    <td>${getPlayerName(a.playerId)}</td>
+    <td>${getGameLabel(a.gameId)}</td>
+    <td>${typeBadge}</td>
+    <td>${getQtyText(a)}</td>
+    <td>${a.receiverName || '—'}</td>
+    <td>${pickup}</td>
+    <td style="font-size:11px; max-width:100px; word-break:break-all">${a.note || '—'}</td>
+    <td style="font-size:11px">${a.createdAt || '—'}</td>
+    <td>${statusSel}</td>
+  </tr>`;
+}
+
+async function changeStatus(applicationId, status) {
+  try {
+    const r = await callGAS('POST', { action: 'updateStatus', applicationId, status });
+    if (!r.ok) throw new Error(r.error);
+    const idx = applications.findIndex(a => a.applicationId === applicationId);
+    if (idx >= 0) applications[idx].status = status;
+    updateKPI();
+    renderPending();
+    showToast('ステータスを更新しました');
+  } catch (e) {
+    showToast('更新失敗: ' + e.message);
+    await loadAll();
+  }
+}
+
+function renderMatrix() {
+  if (!players.length || !games.length) {
+    document.getElementById('matrix-table').innerHTML = '<tr><td class="empty-msg">データなし</td></tr>';
+    return;
+  }
+  const appMap = {};
+  applications.forEach(a => {
+    const key = `${a.playerId}_${a.gameId}`;
+    if (!appMap[key] || a.status === 'confirmed') appMap[key] = a.status;
+  });
+  const today = new Date();
+
+  let html = '<thead><tr><th>選手</th>';
+  games.forEach(g => {
+    html += `<th title="${g.date} vs ${g.opponent}">${g.date.slice(5)}<br>${g.opponent}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  players.forEach(p => {
+    html += `<tr><td>${p.name}</td>`;
+    games.forEach(g => {
+      const status = appMap[`${p.playerId}_${g.gameId}`];
+      const past = new Date(g.date) < today;
+      if (!status && past) {
+        html += `<td class="cell-closed">—</td>`;
+      } else if (!status) {
+        html += `<td class="cell-none">未</td>`;
+      } else if (status === 'confirmed') {
+        html += `<td class="cell-confirmed">●</td>`;
+      } else if (status === 'pending') {
+        html += `<td class="cell-pending">◐</td>`;
+      } else if (status === 'rejected') {
+        html += `<td class="cell-rejected">✕</td>`;
+      } else {
+        html += `<td class="cell-none">－</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('matrix-table').innerHTML = html;
+}
+
+function renderDeadlines() {
+  const today = new Date();
+  const tbody = document.getElementById('deadline-tbody');
+  tbody.innerHTML = games.map(g => {
+    const past = g.isDeadlinePassed;
+    const statusBadge = past
+      ? `<span class="badge badge-rejected">締切済み</span>`
+      : g.deadline
+        ? `<span class="badge badge-confirmed">受付中</span>`
+        : `<span class="badge badge-cancelled">未設定</span>`;
+    return `<tr>
+      <td>${g.gameId}</td>
+      <td>${g.date}</td>
+      <td>${g.dayOfWeek}</td>
+      <td>${g.opponent}</td>
+      <td>
+        <input type="date" class="deadline-input" id="dl-${g.gameId}" value="${g.deadline || ''}"
+          ${past || adminRole === 'manager' ? 'disabled' : ''}>
+      </td>
+      <td>${statusBadge}</td>
+      <td>
+        ${(!past && adminRole !== 'manager') ? `<button class="btn-set" onclick="saveDeadline('${g.gameId}')">保存</button>` : '—'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveDeadline(gameId) {
+  const val = document.getElementById('dl-' + gameId).value;
+  try {
+    const r = await callGAS('POST', { action: 'updateDeadline', gameId, deadline: val });
+    if (!r.ok) throw new Error(r.error);
+    const g = games.find(g => g.gameId === gameId);
+    if (g) {
+      g.deadline = val;
+      g.isDeadlinePassed = val ? new Date(val) < new Date() : false;
+    }
+    renderDeadlines();
+    showToast('期限を保存しました');
+  } catch (e) {
+    showToast('保存失敗: ' + e.message);
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['overview','applications','matrix','deadlines'];
+    t.classList.toggle('active', names[i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+
+
+function openSheet() {
+  if (SHEET_URL) {
+    window.open(SHEET_URL, '_blank');
+  } else {
+    const url = prompt('スプレッドシートのURLを入力してください（次回から自動で開きます）');
+    if (url) { localStorage.setItem('SHEET_URL', url); window.open(url, '_blank'); }
+  }
+}
+function logout() { sessionStorage.clear(); location.href = 'index.html'; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function callGAS(method, params) {
+  if (!GAS_URL) return demoCallGAS(method, params);
+  if (method === 'GET') {
+    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
+    return res.json();
+  }
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
+  return res.json();
+}
+
+function demoCallGAS(method, params) {
+  const raw = [
+    ['G01','2026-10-10','土','琉球'],['G02','2026-10-11','日','琉球'],
+    ['G03','2026-10-17','土','島根'],['G04','2026-10-18','日','島根'],
+    ['G05','2026-10-24','土','千葉J'],['G06','2026-10-25','日','千葉J'],
+    ['G07','2026-11-07','土','群馬'],['G08','2026-11-08','日','群馬'],
+    ['G09','2026-11-14','土','横浜BC'],['G10','2026-11-15','日','横浜BC'],
+    ['G11','2026-11-28','土','名古屋D'],['G12','2026-11-29','日','名古屋D'],
+    ['G13','2026-12-05','土','仙台'],['G14','2026-12-06','日','仙台'],
+    ['G15','2026-12-19','土','三河'],['G16','2026-12-20','日','三河'],
+    ['G17','2027-01-09','土','FE名古屋'],['G18','2027-01-10','日','FE名古屋'],
+    ['G19','2027-01-23','土','川崎'],['G20','2027-01-24','日','川崎'],
+    ['G21','2027-01-30','土','A東京'],['G22','2027-01-31','日','A東京'],
+    ['G23','2027-02-13','土','大阪'],['G24','2027-02-14','日','大阪'],
+    ['G25','2027-02-27','土','茨城'],['G26','2027-02-28','日','茨城'],
+    ['G27','2027-03-13','土','A千葉'],['G28','2027-03-14','日','A千葉'],
+    ['G29','2027-04-03','土','京都'],['G30','2027-04-04','日','京都'],
+  ];
+  const today = new Date();
+  if (params.action === 'getGames') {
+    return { ok: true, data: raw.map(g => ({
+      gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
+      deadline: new Date(new Date(g[1]).getTime()-3*24*60*60*1000).toISOString().split('T')[0],
+      isDeadlinePassed: new Date(g[1]) < today
+    }))};
+  }
+  if (params.action === 'getAllApplications') {
+    const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
+    const samples = [
+      { applicationId:'APP-001', playerId:'002', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'栗原 さくら', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2025-01-08 10:12:00', status:'confirmed' },
+      { applicationId:'APP-002', playerId:'002', gameId:'G16', ticketType:'family', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'栗原 さくら', pickupMethod:'pre', parkingCount:1, note:'', createdAt:'2025-01-08 10:15:00', status:'confirmed' },
+      { applicationId:'APP-003', playerId:'005', gameId:'G15', ticketType:'invite', quantityAdult:3, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'田口 美香', pickupMethod:'day', parkingCount:0, note:'', createdAt:'2025-01-09 09:30:00', status:'pending' },
+      { applicationId:'APP-004', playerId:'005', gameId:'G16', ticketType:'invite', quantityAdult:3, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'田口 美香', pickupMethod:'day', parkingCount:0, note:'', createdAt:'2025-01-09 09:32:00', status:'pending' },
+      { applicationId:'APP-005', playerId:'006', gameId:'G15', ticketType:'paid', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'コートサイドシート', receiverName:'赤穂 由美', pickupMethod:'pre', parkingCount:0, paymentMethod:'salary', note:'前列希望', createdAt:'2025-01-10 11:00:00', status:'pending' },
+      { applicationId:'APP-006', playerId:'007', gameId:'G17', ticketType:'invite', quantityAdult:4, quantityChild:2, quantityInfant:1, seatType:'', receiverName:'堀田 奈々', pickupMethod:'pre', parkingCount:1, note:'乳児連れのため通路側希望', createdAt:'2025-01-10 14:22:00', status:'confirmed' },
+      { applicationId:'APP-007', playerId:'012', gameId:'G15', ticketType:'family', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'元田 葵', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2025-01-11 08:45:00', status:'pending' },
+      { applicationId:'APP-008', playerId:'014', gameId:'G16', ticketType:'invite', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'菅原 りな', pickupMethod:'day', parkingCount:0, note:'', createdAt:'2025-01-11 09:00:00', status:'rejected' },
+      { applicationId:'APP-009', playerId:'017', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'中山 恵', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2025-01-12 10:10:00', status:'confirmed' },
+      { applicationId:'APP-010', playerId:'018', gameId:'G17', ticketType:'family', quantityAdult:3, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'岩屋 真由', pickupMethod:'pre', parkingCount:1, note:'', createdAt:'2025-01-12 13:00:00', status:'pending' },
+      { applicationId:'APP-011', playerId:'022', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'Mezher Layla', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2025-01-13 10:00:00', status:'confirmed' },
+      { applicationId:'APP-012', playerId:'024', gameId:'G16', ticketType:'paid', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'ベンチ裏シート', receiverName:'髙比良 あかね', pickupMethod:'pre', parkingCount:0, paymentMethod:'receiver', note:'', createdAt:'2025-01-13 11:30:00', status:'pending' },
+      { applicationId:'APP-013', playerId:'077', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'土屋 麻衣', pickupMethod:'day', parkingCount:0, note:'', createdAt:'2025-01-14 09:00:00', status:'pending' },
+      { applicationId:'APP-014', playerId:'101', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'Downer Sarah', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2025-01-14 10:00:00', status:'confirmed' },
+      { applicationId:'APP-015', playerId:'110', gameId:'G16', ticketType:'family', quantityAdult:2, quantityChild:2, quantityInfant:0, seatType:'', receiverName:'緑川 千夏', pickupMethod:'pre', parkingCount:1, note:'子供は6歳と8歳', createdAt:'2025-01-14 15:00:00', status:'pending' },
+    ];
+    return { ok: true, data: [...samples, ...apps] };
+  }
+  if (params.action === 'getPlayers') {
+    return { ok: true, data: [
+      { playerId: '001', name: '#1 Jamel McLean' },
+      { playerId: '002', name: '#2 栗原 翼' },
+      { playerId: '005', name: '#5 田口 成浩' },
+      { playerId: '006', name: '#6 赤穂 雷太' },
+      { playerId: '007', name: '#7 堀田 尚秀' },
+      { playerId: '010', name: '#10 Yanni Wetzell' },
+      { playerId: '011', name: '#11 内藤 晴樹' },
+      { playerId: '012', name: '#12 元田 大陽' },
+      { playerId: '013', name: '#13 小川 瑛次郎' },
+      { playerId: '014', name: '#14 菅原 暉' },
+      { playerId: '015', name: '#15 Tanner Leissner' },
+      { playerId: '017', name: '#17 中山 拓哉' },
+      { playerId: '018', name: '#18 岩屋 頼' },
+      { playerId: '022', name: '#22 Ali Mezher' },
+      { playerId: '024', name: '#24 髙比良 寛治' },
+      { playerId: '025', name: '#25 Keanu Pinder' },
+      { playerId: '027', name: '#27 Angelo Chol' },
+      { playerId: '077', name: '#77 土屋 アリスター時生' },
+      { playerId: '091', name: '野口 侑真' },
+      { playerId: '092', name: 'イゴール・スヴェトリシック' },
+      { playerId: '093', name: 'アブドゥレイ・トラオレ' },
+      { playerId: '094', name: '前田 顕蔵' },
+      { playerId: '101', name: 'HC Mick Downer' },
+      { playerId: '102', name: 'AC 庄司 和広' },
+      { playerId: '103', name: 'AC 奈良 篤人' },
+      { playerId: '104', name: 'VC 守屋 健次郎' },
+      { playerId: '105', name: 'VC 竹田 暁' },
+      { playerId: '106', name: 'SC 大塚 健吾' },
+      { playerId: '107', name: 'AT 飯田 瑶美' },
+      { playerId: '108', name: 'AT 岡本 育' },
+      { playerId: '109', name: 'CM 小高 行雄' },
+      { playerId: '110', name: 'Mg 緑川 樹' },
+      { playerId: '111', name: 'Mg 北野 陽菜' },
+    ]};
+  }
+  if (params.action === 'updateStatus') {
+    const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
+    const idx = apps.findIndex(a => a.applicationId === params.applicationId);
+    if (idx >= 0) { apps[idx].status = params.status; localStorage.setItem('demo_apps', JSON.stringify(apps)); }
+    return { ok: true, data: { updated: true } };
+  }
+  if (params.action === 'updateDeadline') {
+    return { ok: true, data: { updated: true } };
+  }
+  if (params.action === 'getLineStats') {
+    return { ok: true, data: { quota: 200, used: 47, remaining: 153, note: 'デモデータ' } };
+  }
+  return { ok: false, error: 'デモ未対応: ' + params.action };
+}
+</script>
+</body>
+</html>

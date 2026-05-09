@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>選手家族チケット申込 — ログイン</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #003087;
+    --primary-hover: #00205f;
+    --accent: #F47920;
+    --accent-hover: #d96510;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --text-sub: #4a5568;
+    --error: #dc2626;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    line-break: strict;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 32px;
+  }
+  .logo {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .logo-badge {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .logo h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .tabs {
+    display: flex;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 28px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    color: var(--text-sub);
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+  }
+  .tab.active {
+    background: var(--card);
+    color: var(--accent);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .form-group { margin-bottom: 20px; }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    min-height: 44px;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .error-msg {
+    color: var(--error);
+    font-size: 13px;
+    margin-top: 12px;
+    text-align: center;
+    min-height: 20px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .loading { opacity: 0.6; pointer-events: none; }
+  .id-hint {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin: -12px 0 16px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-badge">秋田ノーザンハピネッツ</div>
+    <h1>選手家族<br>チケット申込システム</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('player')">選手ログイン</button>
+    <button class="tab" onclick="switchTab('admin')">管理者</button>
+  </div>
+
+  <div id="panel-player" class="panel active">
+    <div class="form-group">
+      <label for="playerId">番号（3桁）</label>
+      <input type="text" id="playerId" placeholder="例: 006（選手）　101（スタッフ）" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
+    </div>
+    <div class="id-hint">
+      選手: 背番号3桁　／　スタッフ: 101〜
+    </div>
+    <button class="btn" onclick="loginPlayer()">ログイン</button>
+    <div class="error-msg" id="player-error"></div>
+  </div>
+
+  <div id="panel-admin" class="panel">
+    <div class="form-group">
+      <label>アカウント種別</label>
+      <div style="display:flex;gap:8px;margin-bottom:4px;">
+        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;" id="role-ticket-label">
+          <input type="radio" name="adminRole" value="ticket" checked onchange="updateRoleUI()" style="accent-color:var(--accent);">
+          チケット担当
+        </label>
+        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;" id="role-manager-label">
+          <input type="radio" name="adminRole" value="manager" onchange="updateRoleUI()" style="accent-color:var(--accent);">
+          チームマネージャー
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="adminPw">パスワード</label>
+      <input type="password" id="adminPw" placeholder="パスワードを入力">
+    </div>
+    <button class="btn" onclick="loginAdmin()">管理者ログイン</button>
+    <div class="error-msg" id="admin-error"></div>
+  </div>
+</div>
+
+<script>
+// ★ デプロイ後にGAS Web AppのURLを設定 ★
+const GAS_URL = localStorage.getItem('GAS_URL') || '';
+
+function switchTab(type) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && type === 'player') || (i === 1 && type === 'admin'));
+  });
+  document.getElementById('panel-player').classList.toggle('active', type === 'player');
+  document.getElementById('panel-admin').classList.toggle('active', type === 'admin');
+}
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function callGAS(method, params) {
+  if (!GAS_URL) {
+    // デモモード: LocalStorageでオフライン動作
+    return demoMode(method, params);
+  }
+  if (method === 'GET') {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`${GAS_URL}?${qs}`, { redirect: 'follow' });
+    return res.json();
+  } else {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(params),
+      redirect: 'follow'
+    });
+    return res.json();
+  }
+}
+
+async function loginPlayer() {
+  const playerId = document.getElementById('playerId').value.trim();
+  const errEl = document.getElementById('player-error');
+  errEl.textContent = '';
+
+  if (!playerId || playerId.length !== 3) { errEl.textContent = '3桁の番号を入力してください'; return; }
+
+  document.querySelector('#panel-player .btn').disabled = true;
+  try {
+    const result = await callGAS('POST', { action: 'login', playerId });
+    if (!result.ok) throw new Error(result.error);
+    sessionStorage.setItem('auth', JSON.stringify(result.data));
+    window.location.href = 'player-dashboard.html';
+  } catch (e) {
+    errEl.textContent = e.message || '番号が見つかりません';
+  } finally {
+    document.querySelector('#panel-player .btn').disabled = false;
+  }
+}
+
+function updateRoleUI() {
+  const val = document.querySelector('input[name="adminRole"]:checked').value;
+  document.getElementById('role-ticket-label').style.borderColor = val === 'ticket' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('role-manager-label').style.borderColor = val === 'manager' ? 'var(--accent)' : 'var(--border)';
+}
+updateRoleUI();
+
+async function loginAdmin() {
+  const pw = document.getElementById('adminPw').value;
+  const errEl = document.getElementById('admin-error');
+  errEl.textContent = '';
+  if (!pw) { errEl.textContent = 'パスワードを入力してください'; return; }
+
+  document.querySelector('#panel-admin .btn').disabled = true;
+  try {
+    const hash = await sha256(pw);
+    const result = await callGAS('POST', { action: 'adminLogin', passwordHash: hash });
+    if (!result.ok) throw new Error(result.error);
+    sessionStorage.setItem('auth', JSON.stringify(result.data));
+    window.location.href = 'admin.html';
+  } catch (e) {
+    errEl.textContent = e.message || 'ログインに失敗しました';
+  } finally {
+    document.querySelector('#panel-admin .btn').disabled = false;
+  }
+}
+
+// =====================================================
+// デモモード（GAS_URL未設定時のオフライン動作）
+// =====================================================
+function demoMode(method, params) {
+  if (params.action === 'login') {
+    const p = DEMO_MEMBERS.find(p => String(p.playerId) === String(params.playerId));
+    if (p) return { ok: true, data: { playerId: p.playerId, name: p.name, role: 'player' } };
+    return { ok: false, error: '番号が見つかりません（例: 006, 101）' };
+  }
+  if (params.action === 'adminLogin') {
+    const adminRole = document.querySelector('input[name="adminRole"]:checked').value;
+    return { ok: true, data: { role: 'admin', adminRole } };
+  }
+  return { ok: false, error: 'デモモード: この操作はGAS接続後に利用可能' };
+}
+
+const DEMO_MEMBERS = [
+  // 選手
+  { playerId: '001', name: '#1 Jamel McLean' },
+  { playerId: '002', name: '#2 栗原 翼' },
+  { playerId: '005', name: '#5 田口 成浩' },
+  { playerId: '006', name: '#6 赤穂 雷太' },
+  { playerId: '007', name: '#7 堀田 尚秀' },
+  { playerId: '010', name: '#10 Yanni Wetzell' },
+  { playerId: '011', name: '#11 内藤 晴樹' },
+  { playerId: '012', name: '#12 元田 大陽' },
+  { playerId: '013', name: '#13 小川 瑛次郎' },
+  { playerId: '014', name: '#14 菅原 暉' },
+  { playerId: '015', name: '#15 Tanner Leissner' },
+  { playerId: '017', name: '#17 中山 拓哉' },
+  { playerId: '018', name: '#18 岩屋 頼' },
+  { playerId: '022', name: '#22 Ali Mezher' },
+  { playerId: '024', name: '#24 髙比良 寛治' },
+  { playerId: '025', name: '#25 Keanu Pinder' },
+  { playerId: '027', name: '#27 Angelo Chol' },
+  { playerId: '077', name: '#77 土屋 アリスター時生' },
+  { playerId: '091', name: '野口 侑真' },
+  { playerId: '092', name: 'イゴール・スヴェトリシック' },
+  { playerId: '093', name: 'アブドゥレイ・トラオレ' },
+  { playerId: '094', name: '前田 顕蔵' },
+  // スタッフ
+  { playerId: '101', name: 'HC Mick Downer' },
+  { playerId: '102', name: 'AC 庄司 和広' },
+  { playerId: '103', name: 'AC 奈良 篤人' },
+  { playerId: '104', name: 'VC 守屋 健次郎' },
+  { playerId: '105', name: 'VC 竹田 暁' },
+  { playerId: '106', name: 'SC 大塚 健吾' },
+  { playerId: '107', name: 'AT 飯田 瑶美' },
+  { playerId: '108', name: 'AT 岡本 育' },
+  { playerId: '109', name: 'CM 小高 行雄' },
+  { playerId: '110', name: 'Mg 緑川 樹' },
+  { playerId: '111', name: 'Mg 北野 陽菜' },
+];
+
+// Enter キー対応
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const activePanel = document.querySelector('.panel.active');
+    if (activePanel.id === 'panel-player') loginPlayer();
+    else loginAdmin();
+  }
+});
+
+// GAS URL設定チェック
+if (!GAS_URL) {
+  console.info('デモモード: GAS_URLが未設定です。LocalStorage に GAS_URL を設定するか、index.html の GAS_URL 定数を更新してください。');
+}
+</script>
+</body>
+</html>

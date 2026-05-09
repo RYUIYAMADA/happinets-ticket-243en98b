@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チケット申込フォーム</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #003087;
+    --primary-hover: #00205f;
+    --accent: #F47920;
+    --accent-hover: #d96510;
+    --bg: #f5f7fa;
+    --card: #fff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --text-sub: #4a5568;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --error: #dc2626;
+    --error-bg: #fee2e2;
+    --warning-bg: #FEF3C7;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    line-break: strict;
+  }
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header .back {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  header h1 { font-size: 16px; font-weight: 700; }
+  .container { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px 20px;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .form-group { margin-bottom: 18px; }
+  label.field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .req { color: var(--error); margin-left: 3px; }
+  select, input[type="text"], input[type="number"], input[type="email"], textarea {
+    width: 100%;
+    padding: 11px 13px;
+    font-size: 15px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: #fff;
+    -webkit-appearance: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  select { min-height: 48px; }
+  textarea { resize: vertical; min-height: 72px; }
+  @media (max-width: 480px) {
+    .card { padding: 16px 14px; }
+    .game-card-controls { gap: 6px; }
+    .game-card-sel { font-size: 13px; min-height: 44px; }
+    .stepper-btn { width: 44px; height: 44px; }
+    .stepper-val { min-width: 40px; }
+    .stepper { height: 44px; }
+  }
+
+  /* ラジオカード */
+  .radio-group { display: flex; flex-direction: column; gap: 8px; }
+  .radio-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 44px;
+  }
+  .radio-card:has(input:checked) { border-color: var(--accent); background: #fff5ec; }
+  .radio-card input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .radio-card .rc-text { font-size: 14px; font-weight: 600; color: var(--text); }
+  .radio-card .rc-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+  /* ゲームカードリスト */
+  .game-card-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+  .game-card-row {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color 0.15s;
+  }
+  .game-card-row.row-disabled { opacity: 0.4; pointer-events: none; }
+  .game-card-row.has-entry { border-color: var(--accent); background: #fff8f3; }
+  .game-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .game-card-info .game-date { font-size: 11px; color: var(--text-sub); }
+  .game-card-info .game-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .deadline-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .deadline-ok { background: #dcfce7; color: var(--success); }
+  .deadline-ng { background: var(--error-bg); color: var(--error); }
+  .game-card-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  /* ステッパー */
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 40px;
+  }
+  .stepper-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    font-weight: 700;
+    background: #f8fafc;
+    border: none;
+    cursor: pointer;
+    color: var(--text);
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
+    flex-shrink: 0;
+  }
+  .stepper-btn:active { background: var(--border); }
+  .stepper-val {
+    min-width: 44px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+  }
+  .game-card-sel {
+    height: 40px;
+    padding: 0 10px;
+    font-size: 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: #fff;
+    cursor: pointer;
+    flex: 1;
+    min-width: 90px;
+  }
+  .inv-day-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    height: 40px;
+    padding: 0 4px;
+  }
+  .inv-day-label input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+  /* 種別ごとセクション */
+  .ticket-section { display: none; }
+  .ticket-section.active { display: block; }
+
+  /* 注意書き */
+  .notice {
+    background: var(--warning-bg);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #1a1a2e;
+    margin-bottom: 14px;
+  }
+  .notice ul { padding-left: 16px; }
+  .notice li { margin-bottom: 4px; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .alert { padding: 13px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
+  .alert-error { background: var(--error-bg); color: var(--error); }
+  .alert-success { background: var(--success-bg); color: var(--success); }
+
+  .rc-avail-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+  .rc-avail-badge.open { background: #dcfce7; color: #16a34a; }
+  .rc-avail-badge.none { background: #f3f4f6; color: #6b7280; }
+
+  .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <button class="back" onclick="history.back()">← 戻る</button>
+  <div style="flex:1">
+    <h1>チケット申込フォーム</h1>
+    <div id="header-name" style="font-size:11px; opacity:0.8; margin-top:2px;"></div>
+  </div>
+</header>
+
+<div class="container">
+  <div id="alert-area"></div>
+
+  <!-- チケット種別選択 -->
+  <div class="card">
+    <div class="section-title">チケット種別</div>
+    <div class="radio-group">
+      <label class="radio-card">
+        <input type="radio" name="ticketType" value="invite" onchange="onTypeChange()">
+        <div style="flex:1">
+          <div class="rc-text">招待チケット</div>
+          <div class="rc-sub">無料・2F自由席・1試合最大10枚</div>
+          <div class="rc-avail" id="avail-invite" style="margin-top:5px"></div>
+        </div>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="ticketType" value="family" onchange="onTypeChange()">
+        <div style="flex:1">
+          <div class="rc-text">家族席チケット</div>
+          <div class="rc-sub">二親等内の親族限定・駐車場申請可</div>
+          <div class="rc-avail" id="avail-family" style="margin-top:5px"></div>
+        </div>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="ticketType" value="paid" onchange="onTypeChange()">
+        <div style="flex:1">
+          <div class="rc-text">有料チケット</div>
+          <div class="rc-sub">各座席カテゴリー・7日前までに申込</div>
+          <div class="rc-avail" id="avail-paid" style="margin-top:5px"></div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- ===== 招待チケット ===== -->
+  <div class="ticket-section" id="section-invite">
+    <div class="notice">
+      <ul>
+        <li>毎ホームゲーム最大<strong>10枚</strong>まで無料申込可能</li>
+        <li>家族以外のゲストも招待可能・座席は2F自由席</li>
+        <li>11枚以上や座席アップグレードは料金発生 → 特記事項に記入</li>
+        <li>申告内容と異なる場合はチケットをお渡しできません</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="section-title">試合ごとの枚数・受取方法</div>
+      <div class="game-card-list" id="invite-list"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">共通情報</div>
+      <div class="form-group">
+        <label class="field-label">受取者名 <span class="req">*</span></label>
+        <input type="text" id="inv-receiver" placeholder="受取者の氏名">
+      </div>
+      <div class="form-group">
+        <label class="field-label">特記事項</label>
+        <textarea id="inv-note" placeholder="例）11枚目以上希望、座席アップグレード希望など"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" id="inv-submit" onclick="submitInvite()">申込を送信する</button>
+  </div>
+
+  <!-- ===== 家族席チケット ===== -->
+  <div class="ticket-section" id="section-family">
+    <div class="notice">
+      <ul>
+        <li>「家族」= 二親等内の親族限定</li>
+        <li>実券をお渡しして一般入場口からご入場（関係者受付からは入場不可）</li>
+        <li>未就学児が座席を使用する場合は枚数に含めて申請</li>
+        <li>申告内容と異なる場合はチケットをお渡しできません</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="section-title">試合ごとの枚数・受取方法</div>
+      <div class="game-card-list" id="family-list"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">共通情報</div>
+      <div class="form-group">
+        <label class="field-label">受取者名 <span class="req">*</span></label>
+        <input type="text" id="fam-receiver" placeholder="受取者の氏名">
+      </div>
+      <div class="form-group">
+        <label class="field-label">特記事項</label>
+        <textarea id="fam-note" placeholder="その他ご要望があれば記入"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" id="fam-submit" onclick="submitFamily()">申込を送信する</button>
+  </div>
+
+  <!-- ===== 有料チケット ===== -->
+  <div class="ticket-section" id="section-paid">
+    <div class="notice">
+      <ul>
+        <li>試合開催の<strong>7日前まで</strong>に申込</li>
+        <li>申込時期・売れ行きにより希望座席を準備できない場合あり</li>
+        <li>フレックス価格・ダイナミックプライシング適用（公式サイト参照）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="section-title">申込内容</div>
+      <div class="form-group">
+        <label class="field-label">試合選択 <span class="req">*</span></label>
+        <select id="paid-game">
+          <option value="">--- 試合を選んでください ---</option>
+        </select>
+        <div id="paid-deadline-info" style="font-size:12px; color:var(--text-sub); margin-top:6px;"></div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">座席カテゴリー <span class="req">*</span></label>
+        <select id="paid-seat">
+          <option value="">選択してください</option>
+          <option value="①ロイヤルシート">①ロイヤルシート</option>
+          <option value="②プレミアムシート">②プレミアムシート</option>
+          <option value="③エキサイトシート">③エキサイトシート</option>
+          <option value="④アリーナ指定席センター">④アリーナ指定席センター</option>
+          <option value="⑤アリーナ指定席センターベンチ">⑤アリーナ指定席センターベンチ</option>
+          <option value="⑥アリーナ指定席（メイン／ベンチ）">⑥アリーナ指定席（メイン／ベンチ）</option>
+          <option value="⑥アリーナ指定席（リングH/V）">⑥アリーナ指定席（リングH/V）</option>
+          <option value="⑦パノラマシートセンター">⑦パノラマシートセンター</option>
+          <option value="⑧パノラマシート（2F指定）">⑧パノラマシート（2F指定）</option>
+          <option value="⑨エリア指定席（1F自由）">⑨エリア指定席（1F自由）</option>
+          <option value="⑩2F指定席">⑩2F指定席</option>
+          <option value="⑫車いす席">⑫車いす席</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label">枚数 <span class="req">*</span></label>
+        <select id="paid-qty">
+          <option value="1">1枚</option><option value="2">2枚</option><option value="3">3枚</option>
+          <option value="4">4枚</option><option value="5">5枚</option><option value="6">6枚</option>
+          <option value="7">7枚</option><option value="8">8枚</option><option value="9">9枚</option>
+          <option value="10">10枚</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label">座席に関するリクエスト</label>
+        <textarea id="paid-seat-req" placeholder="例）並びの席、ホームベンチ側、端の席、なるべく前の席など"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="field-label">お支払い方法 <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio-card">
+            <input type="radio" name="paid-payment" value="salary">
+            <div class="rc-text">給料天引き</div>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="paid-payment" value="receiver">
+            <div class="rc-text">受取者支払い（試合当日）</div>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">チケット受取方法 <span class="req">*</span></label>
+        <div class="radio-group">
+          <label class="radio-card">
+            <input type="radio" name="paid-pickup" value="pre">
+            <div class="rc-text">事前受取</div>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="paid-pickup" value="day">
+            <div class="rc-text">当日受取</div>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">受取者名（当日受取の場合）</label>
+        <input type="text" id="paid-receiver" placeholder="受取者の氏名">
+      </div>
+      <div class="form-group">
+        <label class="field-label">その他リクエスト</label>
+        <textarea id="paid-note" placeholder="その他ご要望があれば記入"></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" id="paid-submit" onclick="submitPaid()">申込を送信する</button>
+  </div>
+</div>
+
+<script>
+const GAS_URL = localStorage.getItem('GAS_URL') || '';
+let games = [];
+let auth = null;
+
+window.addEventListener('DOMContentLoaded', async () => {
+  auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
+  if (!auth || auth.role !== 'player') { location.href = 'index.html'; return; }
+  document.getElementById('header-name').textContent = auth.name + '（' + auth.playerId + '）';
+
+  const params = new URLSearchParams(location.search);
+  const preType = params.get('type');
+  if (preType) {
+    const r = document.querySelector(`input[name="ticketType"][value="${preType}"]`);
+    if (r) { r.checked = true; }
+  }
+
+  await loadGames();
+
+  if (preType) onTypeChange();
+
+  const preGame = params.get('gameId');
+  if (preGame && preType === 'paid') {
+    document.getElementById('paid-game').value = preGame;
+    onPaidGameChange();
+  }
+});
+
+async function loadGames() {
+  const result = await callGAS('GET', { action: 'getGames' });
+  if (!result.ok) { showAlert('試合データ読込失敗: ' + result.error, 'error'); return; }
+  games = result.data;
+
+  // 有料チケット試合選択
+  const sel = document.getElementById('paid-game');
+  games.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.gameId;
+    opt.textContent = `${g.date}（${g.dayOfWeek}）vs ${g.opponent}`;
+    if (g.isDeadlinePassed) { opt.textContent += ' ✕ 締切'; opt.disabled = true; }
+    sel.appendChild(opt);
+  });
+
+  buildInviteGrid();
+  buildFamilyGrid();
+  updateAvailBadges();
+}
+
+function updateAvailBadges() {
+  const open = games.filter(g => !g.isDeadlinePassed);
+  const count = open.length;
+  const next = open[0];
+  const label = count > 0
+    ? `✓ ${count}試合 受付中（次: ${next.date} vs ${next.opponent}）`
+    : '現在受付中の試合はありません';
+  const cls = count > 0 ? 'open' : 'none';
+  ['invite','family','paid'].forEach(type => {
+    document.getElementById('avail-' + type).innerHTML =
+      `<span class="rc-avail-badge ${cls}">${label}</span>`;
+  });
+}
+
+function stepperHtml(id, max) {
+  return `<div class="stepper">
+    <button type="button" class="stepper-btn" onclick="stepQty('${id}',-1,${max})">−</button>
+    <div class="stepper-val" id="val-${id}">0</div>
+    <button type="button" class="stepper-btn" onclick="stepQty('${id}',1,${max})">＋</button>
+  </div>`;
+}
+function stepQty(id, delta, max) {
+  const el = document.getElementById('val-' + id);
+  const cur = parseInt(el.textContent) || 0;
+  const next = Math.max(0, Math.min(max, cur + delta));
+  el.textContent = next;
+  const card = el.closest('.game-card-row');
+  if (card) card.classList.toggle('has-entry', next > 0);
+}
+
+function buildInviteGrid() {
+  const list = document.getElementById('invite-list');
+  const active = games.filter(g => !g.isDeadlinePassed);
+  if (!active.length) { list.innerHTML = '<p style="color:var(--text-sub);padding:16px 0;text-align:center;">現在申込受付中の試合はありません</p>'; return; }
+  list.innerHTML = active.map(g => {
+    const past = false;
+    const dl = g.deadline
+      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? '締切済み' : '期限 ' + g.deadline}</span>`
+      : '';
+    const sid = 'inv-' + g.gameId;
+    return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${g.gameId}">
+      <div class="game-card-top">
+        <div class="game-card-info">
+          <div class="game-date">${g.date}（${g.dayOfWeek}）</div>
+          <div class="game-name">vs ${g.opponent}</div>
+        </div>
+        ${dl}
+      </div>
+      <div class="game-card-controls">
+        ${stepperHtml(sid, 10)}
+        <label class="inv-day-label">
+          <input type="checkbox" class="inv-day" data-game="${g.gameId}">当日受取
+        </label>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildFamilyGrid() {
+  const list = document.getElementById('family-list');
+  const active = games.filter(g => !g.isDeadlinePassed);
+  if (!active.length) { list.innerHTML = '<p style="color:var(--text-sub);padding:16px 0;text-align:center;">現在申込受付中の試合はありません</p>'; return; }
+  list.innerHTML = active.map(g => {
+    const past = false;
+    const dl = g.deadline
+      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? '締切済み' : '期限 ' + g.deadline}</span>`
+      : '';
+    const sid = 'fam-' + g.gameId;
+    return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${g.gameId}">
+      <div class="game-card-top">
+        <div class="game-card-info">
+          <div class="game-date">${g.date}（${g.dayOfWeek}）</div>
+          <div class="game-name">vs ${g.opponent}</div>
+        </div>
+        ${dl}
+      </div>
+      <div class="game-card-controls">
+        ${stepperHtml(sid, 8)}
+        <select class="game-card-sel fam-pickup" data-game="${g.gameId}">
+          <option value="none">申込なし</option>
+          <option value="pre">事前受取</option>
+          <option value="day">当日受取</option>
+        </select>
+        <select class="game-card-sel fam-parking" data-game="${g.gameId}" style="max-width:90px">
+          <option value="0">駐車場0台</option>
+          <option value="1">1台</option>
+          <option value="2">2台</option>
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onTypeChange() {
+  const type = document.querySelector('input[name="ticketType"]:checked')?.value;
+  document.querySelectorAll('.ticket-section').forEach(s => s.classList.remove('active'));
+  if (type) document.getElementById(`section-${type === 'paid' ? 'paid' : type === 'family' ? 'family' : 'invite'}`).classList.add('active');
+}
+
+function onPaidGameChange() {
+  const gameId = document.getElementById('paid-game').value;
+  const g = games.find(g => g.gameId === gameId);
+  const info = document.getElementById('paid-deadline-info');
+  if (!g) { info.textContent = ''; return; }
+  info.textContent = g.deadline ? `申込期限: ${g.deadline}${g.isDeadlinePassed ? '（締切済み）' : ''}` : '期限未設定';
+}
+document.addEventListener('change', e => { if (e.target.id === 'paid-game') onPaidGameChange(); });
+
+// ===== 招待チケット送信 =====
+async function submitInvite() {
+  clearAlert();
+  const receiver = document.getElementById('inv-receiver').value.trim();
+  if (!receiver) { showAlert('受取者名を入力してください', 'error'); return; }
+
+  const entries = [];
+  document.querySelectorAll('#invite-list .game-card-row:not(.row-disabled)').forEach(row => {
+    const gameId = row.dataset.game;
+    const qty = parseInt(document.getElementById('val-inv-' + gameId)?.textContent) || 0;
+    if (qty === 0) return;
+    const isDay = row.querySelector('.inv-day').checked;
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre' });
+  });
+
+  if (entries.length === 0) { showAlert('1試合以上、1枚以上を選択してください', 'error'); return; }
+
+  const btn = document.getElementById('inv-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>送信中...';
+
+  let success = 0, errors = [];
+  for (const e of entries) {
+    try {
+      const r = await callGAS('POST', {
+        action: 'submitApplication',
+        gameId: e.gameId,
+        playerId: auth.playerId,
+        ticketType: 'invite',
+        quantityAdult: e.quantityAdult,
+        receiverName: receiver,
+        pickupMethod: e.pickupMethod,
+        note: document.getElementById('inv-note').value
+      });
+      if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
+      else success++;
+    } catch (err) {
+      errors.push(getGameLabel(e.gameId) + ': ' + err.message);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '申込を送信する';
+
+  if (success > 0) {
+    showAlert(`${success}試合分の申込が完了しました。${errors.length ? '\n失敗: ' + errors.join(', ') : ''}`, success > 0 && errors.length === 0 ? 'success' : 'error');
+    if (errors.length === 0) setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
+  } else {
+    showAlert('申込に失敗しました: ' + errors.join(', '), 'error');
+  }
+}
+
+// ===== 家族席送信 =====
+async function submitFamily() {
+  clearAlert();
+  const receiver = document.getElementById('fam-receiver').value.trim();
+  if (!receiver) { showAlert('受取者名を入力してください', 'error'); return; }
+
+  const entries = [];
+  document.querySelectorAll('#family-list .game-card-row:not(.row-disabled)').forEach(row => {
+    const gameId = row.dataset.game;
+    const qty = parseInt(document.getElementById('val-fam-' + gameId)?.textContent) || 0;
+    const pickup = row.querySelector('.fam-pickup').value;
+    if (pickup === 'none') return;
+    if (qty === 0) return;
+    const parking = parseInt(row.querySelector('.fam-parking').value);
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking });
+  });
+
+  if (entries.length === 0) { showAlert('申込する試合を選択し、枚数と受取方法を設定してください', 'error'); return; }
+
+  const btn = document.getElementById('fam-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>送信中...';
+
+  let success = 0, errors = [];
+  for (const e of entries) {
+    try {
+      const r = await callGAS('POST', {
+        action: 'submitApplication',
+        gameId: e.gameId,
+        playerId: auth.playerId,
+        ticketType: 'family',
+        quantityAdult: e.quantityAdult,
+        receiverName: receiver,
+        pickupMethod: e.pickupMethod,
+        parkingCount: e.parkingCount,
+        note: document.getElementById('fam-note').value
+      });
+      if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
+      else success++;
+    } catch (err) {
+      errors.push(getGameLabel(e.gameId) + ': ' + err.message);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = '申込を送信する';
+
+  if (success > 0) {
+    showAlert(`${success}試合分の申込が完了しました。${errors.length ? ' 失敗: ' + errors.join(', ') : ''}`, errors.length === 0 ? 'success' : 'error');
+    if (errors.length === 0) setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
+  } else {
+    showAlert('申込に失敗しました: ' + errors.join(', '), 'error');
+  }
+}
+
+// ===== 有料チケット送信 =====
+async function submitPaid() {
+  clearAlert();
+  const gameId = document.getElementById('paid-game').value;
+  const seat = document.getElementById('paid-seat').value;
+  const qty = document.getElementById('paid-qty').value;
+  const payment = document.querySelector('input[name="paid-payment"]:checked')?.value;
+  const pickup = document.querySelector('input[name="paid-pickup"]:checked')?.value;
+
+  if (!gameId) { showAlert('試合を選択してください', 'error'); return; }
+  if (!seat) { showAlert('座席カテゴリーを選択してください', 'error'); return; }
+  if (!payment) { showAlert('お支払い方法を選択してください', 'error'); return; }
+  if (!pickup) { showAlert('受取方法を選択してください', 'error'); return; }
+
+  const g = games.find(g => g.gameId === gameId);
+  if (g?.isDeadlinePassed) { showAlert('この試合の申込期限は終了しています', 'error'); return; }
+
+  const btn = document.getElementById('paid-submit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>送信中...';
+
+  try {
+    const r = await callGAS('POST', {
+      action: 'submitApplication',
+      gameId,
+      playerId: auth.playerId,
+      ticketType: 'paid',
+      quantityAdult: parseInt(qty),
+      seatType: seat,
+      seatRequest: document.getElementById('paid-seat-req').value,
+      paymentMethod: payment,
+      pickupMethod: pickup,
+      receiverName: document.getElementById('paid-receiver').value.trim(),
+      note: document.getElementById('paid-note').value
+    });
+    if (!r.ok) throw new Error(r.error);
+    showAlert('申込が完了しました！', 'success');
+    btn.textContent = '申込済み ✓';
+    setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
+  } catch (e) {
+    showAlert('申込失敗: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '申込を送信する';
+  }
+}
+
+function getGameLabel(gameId) {
+  const g = games.find(g => g.gameId === gameId);
+  return g ? `${g.date} vs ${g.opponent}` : gameId;
+}
+
+async function callGAS(method, params) {
+  if (!GAS_URL) return demoCallGAS(method, params);
+  if (method === 'GET') {
+    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
+    return res.json();
+  }
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
+  return res.json();
+}
+
+function demoCallGAS(method, params) {
+  const raw = [
+    ['G01','2026-10-10','土','琉球'],['G02','2026-10-11','日','琉球'],
+    ['G03','2026-10-17','土','島根'],['G04','2026-10-18','日','島根'],
+    ['G05','2026-10-24','土','千葉J'],['G06','2026-10-25','日','千葉J'],
+    ['G07','2026-11-07','土','群馬'],['G08','2026-11-08','日','群馬'],
+    ['G09','2026-11-14','土','横浜BC'],['G10','2026-11-15','日','横浜BC'],
+    ['G11','2026-11-28','土','名古屋D'],['G12','2026-11-29','日','名古屋D'],
+    ['G13','2026-12-05','土','仙台'],['G14','2026-12-06','日','仙台'],
+    ['G15','2026-12-19','土','三河'],['G16','2026-12-20','日','三河'],
+    ['G17','2027-01-09','土','FE名古屋'],['G18','2027-01-10','日','FE名古屋'],
+    ['G19','2027-01-23','土','川崎'],['G20','2027-01-24','日','川崎'],
+    ['G21','2027-01-30','土','A東京'],['G22','2027-01-31','日','A東京'],
+    ['G23','2027-02-13','土','大阪'],['G24','2027-02-14','日','大阪'],
+    ['G25','2027-02-27','土','茨城'],['G26','2027-02-28','日','茨城'],
+    ['G27','2027-03-13','土','A千葉'],['G28','2027-03-14','日','A千葉'],
+    ['G29','2027-04-03','土','京都'],['G30','2027-04-04','日','京都'],
+  ];
+  const today = new Date();
+  if (params.action === 'getGames') {
+    return { ok: true, data: raw.map(g => ({
+      gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
+      deadline: new Date(new Date(g[1]).getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
+      isDeadlinePassed: new Date(g[1]) < today
+    }))};
+  }
+  if (params.action === 'submitApplication') {
+    const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
+    const appId = 'APP-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+    apps.push({ ...params, applicationId: appId, status: 'pending', createdAt: new Date().toISOString() });
+    localStorage.setItem('demo_apps', JSON.stringify(apps));
+    return { ok: true, data: { applicationId: appId } };
+  }
+  return { ok: false, error: 'デモ未対応' };
+}
+
+function showAlert(msg, type) {
+  document.getElementById('alert-area').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function clearAlert() { document.getElementById('alert-area').innerHTML = ''; }
+</script>
+</body>
+</html>
