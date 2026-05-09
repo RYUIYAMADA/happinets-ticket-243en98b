@@ -33,28 +33,52 @@
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
     min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
     line-break: strict;
   }
+  button, label, input, select, textarea, a { touch-action: manipulation; }
   header {
     background: var(--primary);
     color: #fff;
-    padding: 14px 24px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
     position: sticky;
     top: 0;
     z-index: 100;
   }
-  header h1 { font-size: 16px; font-weight: 700; }
-  .header-right { display: flex; gap: 10px; align-items: center; }
+  header h1 {
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .header-right::-webkit-scrollbar { display: none; }
+  #admin-role-badge {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
   .btn-sm {
-    padding: 7px 14px;
+    padding: 8px 12px;
     font-size: 13px;
     font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
-    min-height: 36px;
+    min-height: 44px;
+    min-width: 44px;
     border: none;
   }
   .btn-outline { background: rgba(255,255,255,0.15); color: #fff; }
@@ -66,9 +90,11 @@
     border-bottom: 1px solid var(--border);
     display: flex;
     gap: 0;
-    padding: 0 24px;
+    padding: 0 16px;
     overflow-x: auto;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tab {
     padding: 14px 20px;
     font-size: 14px;
@@ -81,6 +107,8 @@
     border-left: none;
     border-right: none;
     border-top: none;
+    min-height: 44px;
+    min-width: 44px;
   }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
@@ -91,11 +119,10 @@
   /* サマリーグリッド */
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
     margin-bottom: 24px;
   }
-  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
   .kpi-card {
     background: var(--card);
     border-radius: 10px;
@@ -129,8 +156,8 @@
   .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
 
   /* テーブル */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
   th {
     padding: 10px 14px;
     background: #f8fafc;
@@ -168,12 +195,14 @@
   /* 期限設定 */
   .deadline-input {
     padding: 6px 10px;
-    font-size: 13px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 6px;
     color: var(--text);
     background: #fff;
     transition: border-color 0.15s;
+    min-height: 44px;
+    min-width: 44px;
   }
   .deadline-input:focus { outline: none; border-color: var(--accent); }
   .btn-set {
@@ -185,24 +214,26 @@
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    min-height: 32px;
+    min-height: 44px;
+    min-width: 44px;
   }
   .btn-set:hover { background: var(--accent-hover); }
 
   /* ステータス変更 */
   .status-select {
     padding: 5px 8px;
-    font-size: 12px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 6px;
     color: var(--text);
     background: #fff;
     cursor: pointer;
     min-width: 90px;
+    min-height: 44px;
   }
 
   /* マトリクス */
-  .matrix-wrap { overflow: auto; max-height: 600px; }
+  .matrix-wrap { overflow: auto; max-height: 600px; -webkit-overflow-scrolling: touch; }
   .matrix-table { border-collapse: collapse; font-size: 12px; min-width: 100%; }
   .matrix-table th, .matrix-table td {
     padding: 8px 10px;
@@ -234,23 +265,39 @@
   .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .search-input {
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
-    width: 200px;
+    width: 100%;
+    min-height: 44px;
+    min-width: 44px;
   }
   .search-input:focus { outline: none; border-color: var(--accent); }
   select.filter-sel {
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
     background: #fff;
     cursor: pointer;
-    min-height: 36px;
+    min-height: 44px;
+    min-width: 44px;
   }
+  .type-tabs-wrap {
+    display: flex;
+    gap: 0;
+    background: var(--card);
+    border-radius: var(--radius) var(--radius) 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    overflow-x: auto;
+    margin-bottom: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .type-tabs-wrap::-webkit-scrollbar { display: none; }
 
   .type-tab {
     flex: 1;
@@ -264,6 +311,9 @@
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
+    min-height: 44px;
+    min-width: 44px;
+    flex: 0 0 auto;
   }
   .type-tab:last-child { border-right: none; }
   .type-tab.active { background: var(--card); color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
@@ -290,12 +340,25 @@
     pointer-events: none;
   }
   .toast.show { opacity: 1; }
+  @media (min-width: 481px) {
+    header { padding: 14px 20px; }
+    header h1 { font-size: 16px; }
+    .search-input { width: 200px; }
+  }
+  @media (min-width: 769px) {
+    header { padding: 14px 24px; }
+    .tabs { padding: 0 24px; }
+    .kpi-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🏀 チケット管理 — 管理者画面</h1>
+  <h1>チケット管理 — 管理者画面</h1>
   <div class="header-right">
     <span id="admin-role-badge" style="font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;color:#fff;"></span>
 <button class="btn-sm btn-success" onclick="openSheet()">スプレッドシートで確認</button>
@@ -323,7 +386,7 @@
     <!-- LINE送信数 -->
     <div class="card" style="margin-bottom:20px;">
       <div class="card-header">
-        <span class="card-title">📨 LINE通知 — 今月の送信数</span>
+        <span class="card-title">LINE通知 — 今月の送信数</span>
         <span id="line-note" style="font-size:12px;color:var(--text-sub);"></span>
       </div>
       <div style="padding:16px 20px;">
@@ -366,11 +429,11 @@
   <!-- 申込一覧タブ -->
   <div id="tab-applications" class="panel">
     <!-- 種別サブタブ -->
-    <div style="display:flex;gap:0;background:var(--card);border-radius:var(--radius) var(--radius) 0 0;border:1px solid var(--border);border-bottom:none;overflow:hidden;margin-bottom:0;">
+    <div class="type-tabs-wrap">
       <button class="type-tab active" data-type="" onclick="switchTypeTab(this,'')">全試合</button>
-      <button class="type-tab" data-type="invite" onclick="switchTypeTab(this,'invite')">🎟 招待チケット</button>
-      <button class="type-tab" data-type="family" onclick="switchTypeTab(this,'family')">👨‍👩‍👧 家族席</button>
-      <button class="type-tab" data-type="paid" onclick="switchTypeTab(this,'paid')">💳 有料チケット</button>
+      <button class="type-tab" data-type="invite" onclick="switchTypeTab(this,'invite')">招待チケット</button>
+      <button class="type-tab" data-type="family" onclick="switchTypeTab(this,'family')">家族席</button>
+      <button class="type-tab" data-type="paid" onclick="switchTypeTab(this,'paid')">有料チケット</button>
     </div>
     <div class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;">
       <div class="card-header">

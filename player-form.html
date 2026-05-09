@@ -31,8 +31,11 @@
     background: var(--bg);
     min-height: 100vh;
     padding-bottom: 80px;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
     line-break: strict;
   }
+  button, label, input, select, textarea { touch-action: manipulation; }
   header {
     background: var(--primary);
     color: #fff;
@@ -53,6 +56,7 @@
     border-radius: 6px;
     cursor: pointer;
     min-height: 44px;
+    min-width: 44px;
   }
   header h1 { font-size: 16px; font-weight: 700; }
   .container { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
@@ -60,7 +64,7 @@
     background: var(--card);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    padding: 22px 20px;
+    padding: 16px 14px;
     margin-bottom: 14px;
   }
   .section-title {
@@ -83,7 +87,7 @@
   select, input[type="text"], input[type="number"], input[type="email"], textarea {
     width: 100%;
     padding: 11px 13px;
-    font-size: 15px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -95,14 +99,7 @@
   select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
   select { min-height: 48px; }
   textarea { resize: vertical; min-height: 72px; }
-  @media (max-width: 480px) {
-    .card { padding: 16px 14px; }
-    .game-card-controls { gap: 6px; }
-    .game-card-sel { font-size: 13px; min-height: 44px; }
-    .stepper-btn { width: 44px; height: 44px; }
-    .stepper-val { min-width: 40px; }
-    .stepper { height: 44px; }
-  }
+  .game-card-controls { gap: 6px; }
 
   /* ラジオカード */
   .radio-group { display: flex; flex-direction: column; gap: 8px; }
@@ -166,11 +163,12 @@
     border: 1.5px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
-    height: 40px;
+    height: 44px;
+    min-width: 132px;
   }
   .stepper-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     font-size: 20px;
     font-weight: 700;
     background: #f8fafc;
@@ -200,9 +198,9 @@
     background: #fff;
   }
   .game-card-sel {
-    height: 40px;
+    height: 44px;
     padding: 0 10px;
-    font-size: 14px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -218,7 +216,8 @@
     font-size: 13px;
     color: var(--text);
     cursor: pointer;
-    height: 40px;
+    min-height: 44px;
+    min-width: 44px;
     padding: 0 4px;
   }
   .inv-day-label input { width: 18px; height: 18px; accent-color: var(--accent); }
@@ -242,14 +241,15 @@
   .btn-primary {
     width: 100%;
     padding: 15px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: #fff;
     background: var(--accent);
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    min-height: 44px;
+    min-height: 48px;
+    min-width: 44px;
     transition: background 0.15s;
   }
   .btn-primary:hover { background: var(--accent-hover); }
@@ -267,6 +267,13 @@
     font-weight: 700;
     padding: 3px 8px;
     border-radius: 10px;
+  }
+  @media (min-width: 481px) {
+    .card { padding: 22px 20px; }
+    .game-card-controls { gap: 8px; }
+  }
+  @media (min-width: 769px) {
+    .container { padding: 24px 16px; }
   }
   .rc-avail-badge.open { background: #dcfce7; color: #16a34a; }
   .rc-avail-badge.none { background: #f3f4f6; color: #6b7280; }

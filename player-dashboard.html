@@ -34,8 +34,11 @@
     background: var(--bg);
     min-height: 100vh;
     padding-bottom: 80px;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
     line-break: strict;
   }
+  button, label, input, select, textarea { touch-action: manipulation; }
   header {
     background: var(--primary);
     color: #fff;
@@ -69,20 +72,19 @@
   /* サマリーカード */
   .summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
     margin-bottom: 20px;
   }
-  @media (max-width: 480px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
   .summary-card {
     background: var(--card);
     border-radius: 10px;
-    padding: 14px 12px;
+    padding: 12px 10px;
     text-align: center;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
-  .summary-card .num { font-size: 26px; font-weight: 700; }
-  .summary-card .lbl { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .summary-card .num { font-size: 24px; font-weight: 700; line-height: 1.1; }
+  .summary-card .lbl { font-size: 12px; color: var(--text-sub); margin-top: 4px; line-height: 1.3; }
   .num-pending { color: var(--warning-text); }
   .num-confirmed { color: var(--success); }
   .num-rejected { color: var(--error); }
@@ -104,7 +106,8 @@
     background: var(--card);
     color: var(--text-sub);
     cursor: pointer;
-    min-height: 36px;
+    min-height: 44px;
+    min-width: 44px;
     transition: all 0.15s;
   }
   .filter-btn.active {
@@ -116,8 +119,8 @@
   /* 申込ボタン */
   .fab {
     position: fixed;
-    bottom: 24px;
-    right: 20px;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    right: calc(20px + env(safe-area-inset-right));
     background: var(--accent);
     color: #fff;
     border: none;
@@ -128,6 +131,7 @@
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(244,121,32,0.4);
     min-height: 56px;
+    min-width: 44px;
     transition: background 0.15s;
     z-index: 100;
   }
@@ -150,6 +154,7 @@
     padding: 14px 16px;
     cursor: pointer;
     gap: 12px;
+    min-height: 44px;
   }
   .game-info { flex: 1; min-width: 0; }
   .game-date { font-size: 12px; color: var(--text-sub); }
@@ -208,6 +213,7 @@
     color: var(--accent);
     background: #fff;
     min-height: 44px;
+    min-width: 44px;
   }
   .btn-cancel {
     flex: 1;
@@ -221,6 +227,7 @@
     color: var(--error);
     background: #fff;
     min-height: 44px;
+    min-width: 44px;
   }
   .btn-apply {
     flex: 1;
@@ -233,6 +240,7 @@
     color: #fff;
     background: var(--accent);
     min-height: 44px;
+    min-width: 44px;
   }
 
   /* 3種別ステータス行 */
@@ -251,6 +259,7 @@
     padding: 3px 8px;
     border-radius: 12px;
     white-space: nowrap;
+    min-height: 24px;
   }
   .pill-done   { background: #e8f5e9; color: #2e7d32; }
   .pill-pending { background: var(--warning-bg); color: var(--warning-text); }
@@ -305,6 +314,19 @@
     color: #3730a3;
     display: inline-block;
     margin-bottom: 8px;
+  }
+  @media (min-width: 481px) {
+    .summary-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .summary-card {
+      padding: 14px 12px;
+    }
+    .summary-card .num { font-size: 26px; }
+  }
+  @media (min-width: 769px) {
+    .container { padding: 24px 16px; }
   }
 </style>
 </head>

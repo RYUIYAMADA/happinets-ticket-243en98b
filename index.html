@@ -30,15 +30,18 @@
     align-items: center;
     justify-content: center;
     padding: 24px 16px;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
     line-break: strict;
   }
+  button, label, input { touch-action: manipulation; }
   .card {
     background: var(--card);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     width: 100%;
     max-width: 420px;
-    padding: 40px 32px;
+    padding: 32px 20px;
   }
   .logo {
     text-align: center;
@@ -80,6 +83,8 @@
     transition: all 0.15s;
     border: none;
     background: transparent;
+    min-height: 44px;
+    min-width: 44px;
   }
   .tab.active {
     background: var(--card);
@@ -97,7 +102,7 @@
   input {
     width: 100%;
     padding: 12px 14px;
-    font-size: 15px;
+    font-size: 16px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -118,6 +123,7 @@
     cursor: pointer;
     transition: background 0.15s;
     min-height: 44px;
+    min-width: 44px;
   }
   .btn:hover { background: var(--accent-hover); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -138,6 +144,38 @@
     padding: 8px 10px;
     background: var(--bg);
     border-radius: 6px;
+  }
+  .role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .role-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .role-option input[type="radio"] {
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+  }
+  @media (min-width: 481px) {
+    .role-options { flex-direction: row; }
+    .role-option { flex: 1; white-space: nowrap; }
+  }
+  @media (min-width: 769px) {
+    .card { padding: 40px 32px; }
   }
 </style>
 </head>
@@ -168,13 +206,13 @@
   <div id="panel-admin" class="panel">
     <div class="form-group">
       <label>アカウント種別</label>
-      <div style="display:flex;gap:8px;margin-bottom:4px;">
-        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 8px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;" id="role-ticket-label">
-          <input type="radio" name="adminRole" value="ticket" checked onchange="updateRoleUI()" style="accent-color:var(--accent);flex-shrink:0;">
+      <div class="role-options">
+        <label class="role-option" id="role-ticket-label">
+          <input type="radio" name="adminRole" value="ticket" checked onchange="updateRoleUI()">
           チケット担当
         </label>
-        <label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px 8px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;" id="role-manager-label">
-          <input type="radio" name="adminRole" value="manager" onchange="updateRoleUI()" style="accent-color:var(--accent);flex-shrink:0;">
+        <label class="role-option" id="role-manager-label">
+          <input type="radio" name="adminRole" value="manager" onchange="updateRoleUI()">
           チームマネージャー
         </label>
       </div>
