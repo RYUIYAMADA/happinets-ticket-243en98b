@@ -32,6 +32,7 @@
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
+    font-size: 14px;
     min-height: 100vh;
     padding-bottom: 80px;
     overflow-x: hidden;
@@ -119,13 +120,13 @@
   /* 申込ボタン */
   .fab {
     position: fixed;
-    bottom: calc(24px + env(safe-area-inset-bottom));
-    right: calc(20px + env(safe-area-inset-right));
+    bottom: 24px;
+    right: 20px;
     background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 28px;
-    padding: 14px 22px;
+    padding: 14px calc(22px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(22px + env(safe-area-inset-left));
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -166,7 +167,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .game-deadline { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .game-deadline { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
 
   /* ステータスバッジ */
   .badge {
@@ -254,7 +255,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     padding: 3px 8px;
     border-radius: 12px;
@@ -330,7 +331,7 @@
   }
 
   .ticket-type-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 10px;
@@ -573,16 +574,6 @@ function buildTicketSection(app, type, gameId, isPassed) {
   const seatText = app.seatType ? `（${app.seatType}席）` : '';
   const cfg = STATUS_CONFIG[app.status] || { label: app.status, cls: 'badge-none' };
 
-  let actionsHtml = '';
-  if (!isPassed && app.status !== 'confirmed') {
-    const isPaid = type === 'paid';
-    actionsHtml = `
-      <div class="detail-actions">
-        <button class="btn-edit" onclick="editApp('${gameId}', '${type}')">修正する</button>
-        ${isPaid ? '' : `<button class="btn-cancel" onclick="cancelApp('${app.applicationId}', '${gameId}')">キャンセル</button>`}
-      </div>`;
-  }
-
   return `
     <div class="ticket-section">
       <div class="ticket-section-header">
@@ -594,7 +585,6 @@ function buildTicketSection(app, type, gameId, isPassed) {
       <div class="detail-row"><span class="detail-label">受取方法</span><span class="detail-value">${pickupLabel}</span></div>
       ${app.note ? `<div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${esc(app.note)}</span></div>` : ''}
       <div class="detail-row"><span class="detail-label">申込日時</span><span class="detail-value" style="font-size:12px">${app.createdAt}</span></div>
-      ${actionsHtml}
     </div>`;
 }
 
