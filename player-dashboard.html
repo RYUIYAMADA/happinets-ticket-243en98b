@@ -300,7 +300,7 @@
 
   <!-- フィルター -->
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+    <button class="filter-btn active" onclick="setFilter('all', this)">全試合</button>
     <button class="filter-btn" onclick="setFilter('applied', this)">申込あり</button>
     <button class="filter-btn" onclick="setFilter('none', this)">未申込</button>
     <button class="filter-btn" onclick="setFilter('upcoming', this)">直近</button>
@@ -314,6 +314,10 @@
 <button class="fab" onclick="location.href='player-form.html'">＋ 新規申込</button>
 
 <script>
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s ?? '';
@@ -480,7 +484,7 @@ function buildGameCard(g) {
     <div class="game-card" id="card-${g.gameId}">
       <div class="game-card-header" onclick="toggleCard('${g.gameId}')">
         <div class="game-info">
-          <div class="game-date">${g.date}（${g.dayOfWeek}）</div>
+          <div class="game-date">${formatDate(g.date)}（${g.dayOfWeek}）</div>
           <div class="game-title">vs ${g.opponent}</div>
           <div class="game-deadline">${deadlineText}</div>
         </div>

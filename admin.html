@@ -367,7 +367,7 @@
   <div id="tab-applications" class="panel">
     <!-- 種別サブタブ -->
     <div style="display:flex;gap:0;background:var(--card);border-radius:var(--radius) var(--radius) 0 0;border:1px solid var(--border);border-bottom:none;overflow:hidden;margin-bottom:0;">
-      <button class="type-tab active" data-type="" onclick="switchTypeTab(this,'')">すべて</button>
+      <button class="type-tab active" data-type="" onclick="switchTypeTab(this,'')">全試合</button>
       <button class="type-tab" data-type="invite" onclick="switchTypeTab(this,'invite')">🎟 招待チケット</button>
       <button class="type-tab" data-type="family" onclick="switchTypeTab(this,'family')">👨‍👩‍👧 家族席</button>
       <button class="type-tab" data-type="paid" onclick="switchTypeTab(this,'paid')">💳 有料チケット</button>
@@ -438,6 +438,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s ?? '';
@@ -502,7 +506,7 @@ function renderLineStats(s) {
 
 function getGameLabel(gameId) {
   const g = games.find(g => String(g.gameId) === String(gameId));
-  return g ? `${g.date}（${g.dayOfWeek}）vs ${g.opponent}` : gameId;
+  return g ? `${formatDate(g.date)}（${g.dayOfWeek}）vs ${g.opponent}` : gameId;
 }
 function getPlayerName(playerId) {
   const p = players.find(p => String(p.playerId) === String(playerId));
@@ -634,7 +638,7 @@ function renderMatrix() {
 
   let html = '<thead><tr><th>選手</th>';
   games.forEach(g => {
-    html += `<th title="${g.date} vs ${g.opponent}">${g.date.slice(5)}<br>${g.opponent}</th>`;
+    html += `<th title="${formatDate(g.date)} vs ${g.opponent}">${formatDate(g.date)}<br>${g.opponent}</th>`;
   });
   html += '</tr></thead><tbody>';
 
@@ -675,7 +679,7 @@ function renderDeadlines() {
         : `<span class="badge badge-cancelled">未設定</span>`;
     return `<tr>
       <td>${g.gameId}</td>
-      <td>${g.date}</td>
+      <td>${formatDate(g.date)}</td>
       <td>${g.dayOfWeek}</td>
       <td>${g.opponent}</td>
       <td>
