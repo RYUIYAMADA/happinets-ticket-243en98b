@@ -312,6 +312,12 @@
 <button class="fab" onclick="location.href='player-form.html'">＋ 新規申込</button>
 
 <script>
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s ?? '';
+  return d.innerHTML;
+}
+
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 let auth = null;
 let games = [];
@@ -443,9 +449,9 @@ function buildGameCard(g) {
     detailHtml = `
       <div class="ticket-type-label">${typeLabel}</div>
       <div class="detail-row"><span class="detail-label">枚数</span><span class="detail-value">${qtyText}${seatText}</span></div>
-      <div class="detail-row"><span class="detail-label">受取者</span><span class="detail-value">${app.receiverName || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">受取者</span><span class="detail-value">${esc(app.receiverName) || '—'}</span></div>
       <div class="detail-row"><span class="detail-label">受取方法</span><span class="detail-value">${pickupLabel}</span></div>
-      ${app.note ? `<div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${app.note}</span></div>` : ''}
+      ${app.note ? `<div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${esc(app.note)}</span></div>` : ''}
       <div class="detail-row"><span class="detail-label">申込日時</span><span class="detail-value" style="font-size:12px">${app.createdAt}</span></div>
     `;
 

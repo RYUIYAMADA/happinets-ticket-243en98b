@@ -222,9 +222,12 @@ function updateApplication(body) {
       sheet.getRange(i + 1, 6).setValue(body.quantityChild || 0);
       sheet.getRange(i + 1, 7).setValue(body.quantityInfant || 0);
       sheet.getRange(i + 1, 8).setValue(body.seatType || '');
-      sheet.getRange(i + 1, 9).setValue(body.receiverName || '');
-      sheet.getRange(i + 1, 10).setValue(body.pickupMethod || '');
-      sheet.getRange(i + 1, 11).setValue(body.note || '');
+      sheet.getRange(i + 1, 9).setValue(body.seatRequest || '');
+      sheet.getRange(i + 1, 10).setValue(body.receiverName || '');
+      sheet.getRange(i + 1, 11).setValue(body.pickupMethod || '');
+      sheet.getRange(i + 1, 12).setValue(body.paymentMethod || '');
+      sheet.getRange(i + 1, 13).setValue(body.parkingCount || 0);
+      sheet.getRange(i + 1, 14).setValue(body.note || '');
       return { updated: true };
     }
   }
@@ -239,7 +242,7 @@ function cancelApplication(applicationId, playerId) {
       const games = getGames();
       const game = games.find(g => String(g.gameId) === String(data[i][2]));
       if (game && game.isDeadlinePassed) throw new Error('申込期限を過ぎています');
-      sheet.getRange(i + 1, 13).setValue('cancelled');
+      sheet.getRange(i + 1, 16).setValue('cancelled');
       return { cancelled: true };
     }
   }
@@ -254,7 +257,7 @@ function updateStatus(applicationId, status) {
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === applicationId) {
-      sheet.getRange(i + 1, 13).setValue(status);
+      sheet.getRange(i + 1, 16).setValue(status);
       return { updated: true };
     }
   }

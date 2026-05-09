@@ -436,6 +436,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s ?? '';
+  return d.innerHTML;
+}
+
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/18b-W0vAu9fIZDb9mvEDcTUw-zPTxnVTa78T5vJI1qY8/edit';
 let games = [], applications = [], players = [];
@@ -447,10 +453,6 @@ let adminRole = 'ticket';
 
 window.addEventListener('DOMContentLoaded', async () => {
   let auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
-  if (!auth && !GAS_URL) {
-    auth = { role: 'admin', adminRole: 'ticket' };
-    sessionStorage.setItem('auth', JSON.stringify(auth));
-  }
   if (!auth || auth.role !== 'admin') { location.href = 'index.html'; return; }
   adminRole = auth.adminRole || 'ticket';
   const roleEl = document.getElementById('admin-role-badge');
@@ -581,7 +583,7 @@ function buildAppRow(a, compact) {
       <td>${getGameLabel(a.gameId)}</td>
       <td>${typeBadge}</td>
       <td>${getQtyText(a)}</td>
-      <td>${a.receiverName || '—'}</td>
+      <td>${esc(a.receiverName) || '—'}</td>
       <td>${pickup}</td>
       <td style="font-size:11px">${a.createdAt || '—'}</td>
       <td>${statusSel}</td>
@@ -593,9 +595,9 @@ function buildAppRow(a, compact) {
     <td>${getGameLabel(a.gameId)}</td>
     <td>${typeBadge}</td>
     <td>${getQtyText(a)}</td>
-    <td>${a.receiverName || '—'}</td>
+    <td>${esc(a.receiverName) || '—'}</td>
     <td>${pickup}</td>
-    <td style="font-size:11px; max-width:100px; word-break:break-all">${a.note || '—'}</td>
+    <td style="font-size:11px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
     <td style="font-size:11px">${a.createdAt || '—'}</td>
     <td>${statusSel}</td>
   </tr>`;
