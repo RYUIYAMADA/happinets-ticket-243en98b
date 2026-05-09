@@ -235,6 +235,48 @@
     min-height: 44px;
   }
 
+  /* 3種別ステータス行 */
+  .ticket-status-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .ticket-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+  .pill-done   { background: #e8f5e9; color: #2e7d32; }
+  .pill-pending { background: var(--warning-bg); color: var(--warning-text); }
+  .pill-none   { background: var(--muted-bg); color: var(--muted); }
+  .pill-confirmed { background: #e8f5e9; color: #2e7d32; }
+  .pill-rejected  { background: var(--error-bg); color: var(--error); }
+
+  /* 詳細内のチケット種別セクション */
+  .ticket-section {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ticket-section:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .ticket-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .ticket-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
   .chevron {
     flex-shrink: 0;
     width: 20px;
@@ -383,8 +425,9 @@ function filterGames() {
   const near = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
   return games.filter(g => {
     const app = getApp(g.gameId);
-    if (currentFilter === 'applied') return !!app;
-    if (currentFilter === 'none') return !app;
+    const appList = getApps(g.gameId);
+    if (currentFilter === 'applied') return appList.length > 0;
+    if (currentFilter === 'none') return appList.length === 0;
     if (currentFilter === 'upcoming') return new Date(g.date) <= near && new Date(g.date) >= today;
     return true;
   });
@@ -392,6 +435,9 @@ function filterGames() {
 
 function getApp(gameId) {
   return applications.find(a => String(a.gameId) === String(gameId));
+}
+function getApps(gameId) {
+  return applications.filter(a => String(a.gameId) === String(gameId));
 }
 
 function renderList() {
@@ -419,65 +465,94 @@ function renderList() {
   el.innerHTML = html;
 }
 
-function buildGameCard(g) {
-  const app = getApp(g.gameId);
-  let badge, statusLabel;
+function buildTicketPill(app, type, isPassed) {
+  const label = TICKET_LABELS[type] || type;
+  if (!app) {
+    if (isPassed) return `<span class="ticket-pill pill-none">${label} —</span>`;
+    return `<span class="ticket-pill pill-none">${label} 未申込</span>`;
+  }
+  const cfg = STATUS_CONFIG[app.status] || { label: app.status };
+  const pillCls = app.status === 'confirmed' ? 'pill-confirmed'
+    : app.status === 'pending' ? 'pill-pending'
+    : app.status === 'rejected' ? 'pill-rejected'
+    : 'pill-done';
+  return `<span class="ticket-pill ${pillCls}">${label} ${cfg.label}</span>`;
+}
 
-  if (g.isDeadlinePassed && !app) {
-    badge = `<span class="badge badge-closed">締切</span>`;
-  } else if (!app) {
-    badge = `<span class="badge badge-none">未申込</span>`;
+function buildTicketSection(app, type, gameId, isPassed) {
+  const label = TICKET_LABELS[type] || type;
+  const pickupLabel = PICKUP_LABELS[app.pickupMethod] || app.pickupMethod;
+  let qtyText = '';
+  if (type === 'family') {
+    const parts = [];
+    if (app.quantityAdult > 0) parts.push(`大人${app.quantityAdult}枚`);
+    if (app.quantityChild > 0) parts.push(`子供${app.quantityChild}枚`);
+    if (app.quantityInfant > 0) parts.push(`未就学児${app.quantityInfant}枚`);
+    qtyText = parts.join('・') || '0枚';
   } else {
-    const cfg = STATUS_CONFIG[app.status] || { label: app.status, cls: 'badge-none' };
-    badge = `<span class="badge ${cfg.cls}">${cfg.label}</span>`;
+    qtyText = `${app.quantityAdult || 0}枚`;
+  }
+  const seatText = app.seatType ? `（${app.seatType}席）` : '';
+  const cfg = STATUS_CONFIG[app.status] || { label: app.status, cls: 'badge-none' };
+
+  let actionsHtml = '';
+  if (!isPassed && app.status !== 'confirmed') {
+    const isPaid = type === 'paid';
+    actionsHtml = `
+      <div class="detail-actions">
+        <button class="btn-edit" onclick="editApp('${gameId}', '${type}')">修正する</button>
+        ${isPaid ? '' : `<button class="btn-cancel" onclick="cancelApp('${app.applicationId}', '${gameId}')">キャンセル</button>`}
+      </div>`;
   }
 
-  const deadlineText = g.deadline
-    ? `申込期限: ${g.deadline}${g.isDeadlinePassed ? '（終了）' : ''}`
-    : '期限未設定';
-
-  let detailHtml = '';
-  if (app) {
-    const typeLabel = TICKET_LABELS[app.ticketType] || app.ticketType;
-    const pickupLabel = PICKUP_LABELS[app.pickupMethod] || app.pickupMethod;
-    let qtyText = '';
-    if (app.ticketType === 'family') {
-      const parts = [];
-      if (app.quantityAdult > 0) parts.push(`大人${app.quantityAdult}枚`);
-      if (app.quantityChild > 0) parts.push(`子供${app.quantityChild}枚`);
-      if (app.quantityInfant > 0) parts.push(`未就学児${app.quantityInfant}枚`);
-      qtyText = parts.join('・') || '0枚';
-    } else {
-      qtyText = `${app.quantityAdult || 0}枚`;
-    }
-    const seatText = app.seatType ? ` (${app.seatType}席)` : '';
-
-    detailHtml = `
-      <div class="ticket-type-label">${typeLabel}</div>
+  return `
+    <div class="ticket-section">
+      <div class="ticket-section-header">
+        <span class="ticket-section-title">${label}</span>
+        <span class="badge ${cfg.cls}">${cfg.label}</span>
+      </div>
       <div class="detail-row"><span class="detail-label">枚数</span><span class="detail-value">${qtyText}${seatText}</span></div>
       <div class="detail-row"><span class="detail-label">受取者</span><span class="detail-value">${esc(app.receiverName) || '—'}</span></div>
       <div class="detail-row"><span class="detail-label">受取方法</span><span class="detail-value">${pickupLabel}</span></div>
       ${app.note ? `<div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${esc(app.note)}</span></div>` : ''}
       <div class="detail-row"><span class="detail-label">申込日時</span><span class="detail-value" style="font-size:12px">${app.createdAt}</span></div>
-    `;
+      ${actionsHtml}
+    </div>`;
+}
 
-    if (!g.isDeadlinePassed && app.status !== 'confirmed') {
-      const isPaid = app.ticketType === 'paid';
-      detailHtml += `
-        <div class="detail-actions">
-          <button class="btn-edit" onclick="editApp('${g.gameId}', '${app.ticketType}')">修正する</button>
-          ${isPaid ? '' : `<button class="btn-cancel" onclick="cancelApp('${app.applicationId}', '${g.gameId}')">キャンセル</button>`}
-        </div>
-      `;
+function buildGameCard(g) {
+  const appList = getApps(g.gameId);
+  const appByType = {};
+  appList.forEach(a => { appByType[a.ticketType] = a; });
+  const types = ['invite', 'family', 'paid'];
+  const hasAny = appList.length > 0;
+
+  const deadlineText = g.deadline
+    ? `申込期限: ${g.deadline}${g.isDeadlinePassed ? '（終了）' : ''}`
+    : '期限未設定';
+
+  // ヘッダーの3種別ピル
+  const pillsHtml = `
+    <div class="ticket-status-row">
+      ${types.map(t => buildTicketPill(appByType[t], t, g.isDeadlinePassed)).join('')}
+    </div>`;
+
+  // 詳細エリア: 申込済みの種別 + 未申込なら申込ボタン
+  let detailHtml = '';
+  types.forEach(t => {
+    if (appByType[t]) {
+      detailHtml += buildTicketSection(appByType[t], t, g.gameId, g.isDeadlinePassed);
     }
-  } else if (!g.isDeadlinePassed) {
-    detailHtml = `
-      <div class="detail-actions">
-        <button class="btn-apply" onclick="location.href='player-form.html?gameId=${g.gameId}'">この試合に申込む</button>
-      </div>
-    `;
-  } else {
-    detailHtml = `<div style="font-size:13px; color:var(--text-sub)">申込期限が終了しています</div>`;
+  });
+  if (!g.isDeadlinePassed) {
+    detailHtml += `
+      <div class="detail-actions" style="margin-top:${hasAny ? '12px' : '0'};">
+        <button class="btn-apply" onclick="location.href='player-form.html?gameId=${g.gameId}'">
+          ${hasAny ? '追加で申込む' : 'この試合に申込む'}
+        </button>
+      </div>`;
+  } else if (!hasAny) {
+    detailHtml = `<div style="font-size:13px;color:var(--text-sub)">申込期限が終了しています</div>`;
   }
 
   return `
@@ -487,8 +562,8 @@ function buildGameCard(g) {
           <div class="game-date">${formatDate(g.date)}（${g.dayOfWeek}）</div>
           <div class="game-title">vs ${g.opponent}</div>
           <div class="game-deadline">${deadlineText}</div>
+          ${pillsHtml}
         </div>
-        ${badge}
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
