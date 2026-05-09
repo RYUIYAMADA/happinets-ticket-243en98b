@@ -4,5 +4,5 @@
 # macOS
 .DS_Store
 
-# GASはGoogle Apps Scriptで管理
-gas/
+# GAS clasp設定（スクリプトIDを含むため）
+gas/.clasp.json
