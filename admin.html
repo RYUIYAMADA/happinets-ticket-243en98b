@@ -32,6 +32,7 @@
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
+    font-size: 14px;
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
@@ -73,7 +74,7 @@
   }
   .btn-sm {
     padding: 8px 12px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     border-radius: 6px;
     cursor: pointer;
@@ -130,7 +131,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
   .kpi-num { font-size: 32px; font-weight: 700; }
-  .kpi-lbl { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+  .kpi-lbl { font-size: 14px; color: var(--text-sub); margin-top: 4px; }
   .kpi-num.blue { color: var(--accent); }
   .kpi-num.yellow { color: #d97706; }
   .kpi-num.green { color: var(--success); }
@@ -157,7 +158,7 @@
 
   /* テーブル */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; }
+  table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; }
   th {
     padding: 10px 14px;
     background: #f8fafc;
@@ -178,7 +179,7 @@
   /* バッジ */
   .badge {
     display: inline-block;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     padding: 3px 8px;
     border-radius: 10px;
@@ -207,7 +208,7 @@
   .deadline-input:focus { outline: none; border-color: var(--accent); }
   .btn-set {
     padding: 6px 12px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     background: var(--accent);
     color: #fff;
@@ -234,7 +235,7 @@
 
   /* マトリクス */
   .matrix-wrap { overflow: auto; max-height: 600px; -webkit-overflow-scrolling: touch; }
-  .matrix-table { border-collapse: collapse; font-size: 12px; min-width: 100%; }
+  .matrix-table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
   .matrix-table th, .matrix-table td {
     padding: 8px 10px;
     border: 1px solid var(--border);
@@ -258,7 +259,7 @@
   .cell-confirmed { background: var(--success-bg); color: var(--success); font-weight: 700; text-align: center; }
   .cell-pending   { background: var(--warning-bg); color: var(--warning-text); text-align: center; }
   .cell-rejected  { background: var(--error-bg); color: var(--error); text-align: center; }
-  .cell-none      { background: #fff; text-align: center; color: var(--muted); font-size: 11px; }
+  .cell-none      { background: #fff; text-align: center; color: var(--muted); font-size: 12px; }
   .cell-closed    { background: #f9fafb; color: #d1d5db; text-align: center; }
 
   /* 検索・フィルター */
@@ -302,7 +303,7 @@
   .type-tab {
     flex: 1;
     padding: 12px 8px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-sub);
     background: #f8fafc;
@@ -526,7 +527,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   adminRole = auth.adminRole || 'ticket';
   const roleEl = document.getElementById('admin-role-badge');
   if (roleEl) {
-    roleEl.textContent = adminRole === 'manager' ? '👁 チームマネージャー（閲覧のみ）' : '✏️ チケット担当';
+    roleEl.textContent = adminRole === 'manager' ? 'チームマネージャー（閲覧のみ）' : 'チケット担当';
     roleEl.style.background = adminRole === 'manager' ? 'rgba(255,255,255,0.15)' : 'rgba(244,121,32,0.25)';
   }
   await loadAll();
@@ -647,27 +648,27 @@ function buildAppRow(a, compact) {
     </select>`;
   if (compact) {
     return `<tr>
-      <td style="font-size:11px">${a.applicationId}</td>
+      <td style="font-size:12px">${a.applicationId}</td>
       <td>${getPlayerName(a.playerId)}</td>
       <td>${getGameLabel(a.gameId)}</td>
       <td>${typeBadge}</td>
       <td>${getQtyText(a)}</td>
       <td>${esc(a.receiverName) || '—'}</td>
       <td>${pickup}</td>
-      <td style="font-size:11px">${a.createdAt || '—'}</td>
+      <td style="font-size:12px">${a.createdAt || '—'}</td>
       <td>${statusSel}</td>
     </tr>`;
   }
   return `<tr>
-    <td style="font-size:11px">${a.applicationId}</td>
+    <td style="font-size:12px">${a.applicationId}</td>
     <td>${getPlayerName(a.playerId)}</td>
     <td>${getGameLabel(a.gameId)}</td>
     <td>${typeBadge}</td>
     <td>${getQtyText(a)}</td>
     <td>${esc(a.receiverName) || '—'}</td>
     <td>${pickup}</td>
-    <td style="font-size:11px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
-    <td style="font-size:11px">${a.createdAt || '—'}</td>
+    <td style="font-size:12px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
+    <td style="font-size:12px">${a.createdAt || '—'}</td>
     <td>${statusSel}</td>
   </tr>`;
 }
@@ -856,6 +857,14 @@ function demoCallGAS(method, params) {
       { applicationId:'APP-013', playerId:'077', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'土屋 麻衣', pickupMethod:'day', parkingCount:0, note:'', createdAt:'2025-01-14 09:00:00', status:'pending' },
       { applicationId:'APP-014', playerId:'101', gameId:'G15', ticketType:'invite', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'Downer Sarah', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2025-01-14 10:00:00', status:'confirmed' },
       { applicationId:'APP-015', playerId:'110', gameId:'G16', ticketType:'family', quantityAdult:2, quantityChild:2, quantityInfant:0, seatType:'', receiverName:'緑川 千夏', pickupMethod:'pre', parkingCount:1, note:'子供は6歳と8歳', createdAt:'2025-01-14 15:00:00', status:'pending' },
+      // ★ テスト用: HC Mick Downer (101) × G01/G02
+      { applicationId:'APP-T01', playerId:'101', gameId:'G01', ticketType:'invite', quantityAdult:3, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'Downer Sarah', pickupMethod:'pre', parkingCount:0, note:'妻と両親', createdAt:'2026-10-01 09:00:00', status:'confirmed' },
+      { applicationId:'APP-T02', playerId:'101', gameId:'G01', ticketType:'family', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'Downer Sarah', pickupMethod:'pre', parkingCount:1, note:'', createdAt:'2026-10-01 09:05:00', status:'pending' },
+      { applicationId:'APP-T03', playerId:'101', gameId:'G02', ticketType:'invite', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'', receiverName:'Downer Sarah', pickupMethod:'day', parkingCount:0, note:'', createdAt:'2026-10-01 09:10:00', status:'pending' },
+      // ★ テスト用: #6 赤穂 雷太 (006) × G01/G02
+      { applicationId:'APP-T04', playerId:'006', gameId:'G01', ticketType:'invite', quantityAdult:2, quantityChild:1, quantityInfant:0, seatType:'', receiverName:'赤穂 由美', pickupMethod:'pre', parkingCount:0, note:'', createdAt:'2026-10-02 10:30:00', status:'confirmed' },
+      { applicationId:'APP-T05', playerId:'006', gameId:'G01', ticketType:'paid', quantityAdult:2, quantityChild:0, quantityInfant:0, seatType:'コートサイドシート', receiverName:'赤穂 由美', pickupMethod:'pre', parkingCount:0, paymentMethod:'salary', note:'前列希望', createdAt:'2026-10-02 10:35:00', status:'pending' },
+      { applicationId:'APP-T06', playerId:'006', gameId:'G02', ticketType:'family', quantityAdult:2, quantityChild:2, quantityInfant:1, seatType:'', receiverName:'赤穂 由美', pickupMethod:'pre', parkingCount:1, note:'乳児連れ・通路側希望', createdAt:'2026-10-02 10:40:00', status:'confirmed' },
     ];
     return { ok: true, data: [...samples, ...apps] };
   }

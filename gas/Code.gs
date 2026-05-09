@@ -460,3 +460,35 @@ function createSheet(name) {
   }
   return sheet;
 }
+
+// =====================================================
+// テストデータ初期化（GASエディタから手動実行）
+// =====================================================
+function initTestData() {
+  const sheet = getSheet(SHEET_APPLICATIONS);
+  const now = '2026-10-01 09:00:00';
+
+  const testRows = [
+    // HC Mick Downer (101) × G01 招待チケット
+    ['APP-T01','101','G01','invite',3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'confirmed'],
+    // HC Mick Downer (101) × G01 家族席
+    ['APP-T02','101','G01','family',2,1,0,'','','Downer Sarah','pre','',1,'',now,'pending'],
+    // HC Mick Downer (101) × G02 招待チケット
+    ['APP-T03','101','G02','invite',2,0,0,'','','Downer Sarah','day','',0,'',now,'pending'],
+    // #6 赤穂 雷太 (006) × G01 招待チケット
+    ['APP-T04','006','G01','invite',2,1,0,'','','赤穂 由美','pre','',0,'',now,'confirmed'],
+    // #6 赤穂 雷太 (006) × G01 有料チケット
+    ['APP-T05','006','G01','paid',2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'pending'],
+    // #6 赤穂 雷太 (006) × G02 家族席
+    ['APP-T06','006','G02','family',2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'confirmed'],
+  ];
+
+  // 既存のテストデータ（APP-T*）を削除してから挿入
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]).startsWith('APP-T')) sheet.deleteRow(i + 1);
+  }
+
+  testRows.forEach(row => sheet.appendRow(row));
+  Logger.log('テストデータ挿入完了: ' + testRows.length + '件');
+}
