@@ -253,22 +253,28 @@ function submitApplication(body) {
     body.parkingCount    || 0,
     body.note            || '',
     now,
-    'pending',
+    '確認中',
     gameId
   ]);
+  applyStatusDropdown(sheet, sheet.getLastRow());
   return { applicationId: appId };
 }
+
+// 日本語→英語マッピング（スプレッドシートは日本語、APIは英語キーで通信）
+const STATUS_JP_TO_EN = { '確認中': 'pending', '確保済み': 'confirmed', '対応不可': 'rejected', 'キャンセル': 'cancelled' };
+const STATUS_EN_TO_JP = { pending: '確認中', confirmed: '確保済み', rejected: '対応不可', cancelled: 'キャンセル' };
 
 function updateStatus(applicationId, status) {
   if (!['pending', 'confirmed', 'rejected', 'cancelled'].includes(status)) {
     throw new Error('不正なステータス: ' + status);
   }
+  const jpStatus = STATUS_EN_TO_JP[status] || status;
   for (const sheetName of [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID]) {
     const sheet = getSheet(sheetName);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === applicationId) {
-        sheet.getRange(i + 1, 16).setValue(status); // col16 = ステータス
+        sheet.getRange(i + 1, 16).setValue(jpStatus); // col16 = ステータス（日本語）
         return { updated: true };
       }
     }
@@ -319,7 +325,7 @@ function rowToApplication(row, ticketType) {
     parkingCount:  row[12],
     note:          row[13],
     createdAt:     row[14],
-    status:        row[15]
+    status:        STATUS_JP_TO_EN[row[15]] || row[15] || 'pending'
   };
 }
 
@@ -492,16 +498,16 @@ function initTestData() {
   }
 
   // 招待チケット  申込ID, 選手番号, 選手名, 試合, 大人, 子, 乳幼児, 席種, 座席希望, 受取者, 受取方法, 支払方法, 駐車場, 備考, 申込日時, ステータス, 試合ID＊
-  inviteSheet.appendRow(['APP-T01','101','HC Mick Downer','10月10日（土）vs 琉球', 3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'confirmed','G01']);
-  inviteSheet.appendRow(['APP-T03','101','HC Mick Downer','10月11日（日）vs 琉球', 2,0,0,'','','Downer Sarah','day','',0,'',now,'pending','G02']);
-  inviteSheet.appendRow(['APP-T04','006','#6 赤穂雷太','10月10日（土）vs 琉球',   2,1,0,'','','赤穂 由美','pre','',0,'',now,'confirmed','G01']);
+  inviteSheet.appendRow(['APP-T01','101','HC Mick Downer','10月10日（土）vs 琉球', 3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'確保済み','G01']);
+  inviteSheet.appendRow(['APP-T03','101','HC Mick Downer','10月11日（日）vs 琉球', 2,0,0,'','','Downer Sarah','day','',0,'',now,'確認中','G02']);
+  inviteSheet.appendRow(['APP-T04','006','#6 赤穂雷太','10月10日（土）vs 琉球',   2,1,0,'','','赤穂 由美','pre','',0,'',now,'確保済み','G01']);
 
   // 家族席
-  familySheet.appendRow(['APP-T02','101','HC Mick Downer','10月10日（土）vs 琉球', 2,1,0,'','','Downer Sarah','pre','',1,'',now,'pending','G01']);
-  familySheet.appendRow(['APP-T06','006','#6 赤穂雷太','10月11日（日）vs 琉球',   2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'confirmed','G02']);
+  familySheet.appendRow(['APP-T02','101','HC Mick Downer','10月10日（土）vs 琉球', 2,1,0,'','','Downer Sarah','pre','',1,'',now,'確認中','G01']);
+  familySheet.appendRow(['APP-T06','006','#6 赤穂雷太','10月11日（日）vs 琉球',   2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'確保済み','G02']);
 
   // 有料チケット
-  paidSheet.appendRow(['APP-T05','006','#6 赤穂雷太','10月10日（土）vs 琉球', 2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'pending','G01']);
+  paidSheet.appendRow(['APP-T05','006','#6 赤穂雷太','10月10日（土）vs 琉球', 2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'確認中','G01']);
 
   Logger.log('テストデータ挿入完了');
 }
@@ -513,17 +519,27 @@ function initTestData() {
 function setupAfterMigration() {
   const ss = getSpreadsheet();
 
-  // 古い英語シートを削除
+  // 古い英語シートを削除（不要シート全削除）
   const oldSheets = ['applications', 'games', 'settings', 'players'];
   oldSheets.forEach(name => {
     const s = ss.getSheetByName(name);
     if (s) { ss.deleteSheet(s); Logger.log('削除: ' + name); }
   });
 
-  // 申込3シートのヘッダーを最新17列に強制更新
+  // 申込3シートのヘッダーを最新17列に強制更新 + ステータスドロップダウン設定
+  const statusRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['確認中', '確保済み', '対応不可', 'キャンセル'], true)
+    .setAllowInvalid(false)
+    .build();
+
   [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID].forEach(name => {
     const s = ss.getSheetByName(name);
-    if (s) s.getRange(1, 1, 1, APP_HEADERS.length).setValues([APP_HEADERS]);
+    if (!s) return;
+    // ヘッダー更新
+    s.getRange(1, 1, 1, APP_HEADERS.length).setValues([APP_HEADERS]);
+    // ステータス列（16列目）に全行ドロップダウン適用
+    s.getRange(2, 16, s.getMaxRows() - 1, 1).setDataValidation(statusRule);
+    Logger.log('ヘッダー・ドロップダウン設定: ' + name);
   });
 
   // パスワードハッシュを正しい値に更新（PW: 1234 / salt: hnts2026_）
@@ -539,4 +555,13 @@ function setupAfterMigration() {
   }
 
   Logger.log('setupAfterMigration 完了');
+}
+
+// 新規申込行にもステータスドロップダウンを適用するヘルパー
+function applyStatusDropdown(sheet, rowNum) {
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['確認中', '確保済み', '対応不可', 'キャンセル'], true)
+    .setAllowInvalid(false)
+    .build();
+  sheet.getRange(rowNum, 16).setDataValidation(rule);
 }
