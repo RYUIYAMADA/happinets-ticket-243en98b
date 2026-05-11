@@ -184,15 +184,33 @@ function updateDeadline(gameId, deadline) {
 // =====================================================
 
 // 3申込シート共通ヘッダー
-// 列: 申込ID(1) 選手番号(2) 試合ID(3) 枚数大人(4) 枚数子ども(5) 枚数乳幼児(6)
+// 列: 申込ID(0) 選手番号(1) 選手名(2) 試合(3) 枚数大人(4) 枚数子ども(5) 枚数乳幼児(6)
 //     席種(7) 座席希望(8) 受取者氏名(9) 受取方法(10) 支払方法(11) 駐車場台数(12)
-//     備考(13) 申込日時(14) ステータス(15)
+//     備考(13) 申込日時(14) ステータス(15) 試合ID＊(16)←システム用・最終列
 const APP_HEADERS = [
-  '申込ID', '選手番号', '試合ID',
+  '申込ID', '選手番号', '選手名', '試合',
   '枚数（大人）', '枚数（子ども）', '枚数（乳幼児）',
   '席種', '座席希望', '受取者氏名', '受取方法', '支払方法',
-  '駐車場台数', '備考', '申込日時', 'ステータス'
+  '駐車場台数', '備考', '申込日時', 'ステータス', '試合ID＊'
 ];
+
+// 試合ラベル生成: "10月10日（土）vs 琉球"
+function buildGameLabel(game) {
+  const d = new Date(game.date);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return m + '月' + day + '日（' + game.dayOfWeek + '）vs ' + game.opponent;
+}
+
+// 選手名取得
+function getPlayerNameById(playerId) {
+  const sheet = getSheet(SHEET_PLAYERS);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(playerId)) return data[i][1];
+  }
+  return String(playerId);
+}
 
 function submitApplication(body) {
   const gameId     = body.gameId;
@@ -216,11 +234,14 @@ function submitApplication(body) {
   const sheet = getSheet(TICKET_SHEET[ticketType]);
   const appId = 'APP-' + new Date().getTime();
   const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+  const playerName = getPlayerNameById(playerId);
+  const gameLabel  = buildGameLabel(game);
 
   sheet.appendRow([
     appId,
     playerId,
-    gameId,
+    playerName,
+    gameLabel,
     body.quantityAdult   || 0,
     body.quantityChild   || 0,
     body.quantityInfant  || 0,
@@ -232,7 +253,8 @@ function submitApplication(body) {
     body.parkingCount    || 0,
     body.note            || '',
     now,
-    'pending'
+    'pending',
+    gameId
   ]);
   return { applicationId: appId };
 }
@@ -246,7 +268,7 @@ function updateStatus(applicationId, status) {
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === applicationId) {
-        sheet.getRange(i + 1, 15).setValue(status);
+        sheet.getRange(i + 1, 16).setValue(status); // col16 = ステータス
         return { updated: true };
       }
     }
@@ -284,20 +306,20 @@ function rowToApplication(row, ticketType) {
   return {
     applicationId: row[0],
     playerId:      row[1],
-    gameId:        row[2],
+    gameId:        row[16], // 最終列（システム用）
     ticketType:    ticketType,
-    quantityAdult: row[3],
-    quantityChild: row[4],
-    quantityInfant:row[5],
-    seatType:      row[6],
-    seatRequest:   row[7],
-    receiverName:  row[8],
-    pickupMethod:  row[9],
-    paymentMethod: row[10],
-    parkingCount:  row[11],
-    note:          row[12],
-    createdAt:     row[13],
-    status:        row[14]
+    quantityAdult: row[4],
+    quantityChild: row[5],
+    quantityInfant:row[6],
+    seatType:      row[7],
+    seatRequest:   row[8],
+    receiverName:  row[9],
+    pickupMethod:  row[10],
+    paymentMethod: row[11],
+    parkingCount:  row[12],
+    note:          row[13],
+    createdAt:     row[14],
+    status:        row[15]
   };
 }
 
@@ -469,17 +491,17 @@ function initTestData() {
     }
   }
 
-  // 招待チケット
-  inviteSheet.appendRow(['APP-T01','101','G01', 3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'confirmed']);
-  inviteSheet.appendRow(['APP-T03','101','G02', 2,0,0,'','','Downer Sarah','day','',0,'',now,'pending']);
-  inviteSheet.appendRow(['APP-T04','006','G01', 2,1,0,'','','赤穂 由美','pre','',0,'',now,'confirmed']);
+  // 招待チケット  申込ID, 選手番号, 選手名, 試合, 大人, 子, 乳幼児, 席種, 座席希望, 受取者, 受取方法, 支払方法, 駐車場, 備考, 申込日時, ステータス, 試合ID＊
+  inviteSheet.appendRow(['APP-T01','101','HC Mick Downer','10月10日（土）vs 琉球', 3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'confirmed','G01']);
+  inviteSheet.appendRow(['APP-T03','101','HC Mick Downer','10月11日（日）vs 琉球', 2,0,0,'','','Downer Sarah','day','',0,'',now,'pending','G02']);
+  inviteSheet.appendRow(['APP-T04','006','#6 赤穂雷太','10月10日（土）vs 琉球',   2,1,0,'','','赤穂 由美','pre','',0,'',now,'confirmed','G01']);
 
   // 家族席
-  familySheet.appendRow(['APP-T02','101','G01', 2,1,0,'','','Downer Sarah','pre','',1,'',now,'pending']);
-  familySheet.appendRow(['APP-T06','006','G02', 2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'confirmed']);
+  familySheet.appendRow(['APP-T02','101','HC Mick Downer','10月10日（土）vs 琉球', 2,1,0,'','','Downer Sarah','pre','',1,'',now,'pending','G01']);
+  familySheet.appendRow(['APP-T06','006','#6 赤穂雷太','10月11日（日）vs 琉球',   2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'confirmed','G02']);
 
   // 有料チケット
-  paidSheet.appendRow(['APP-T05','006','G01', 2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'pending']);
+  paidSheet.appendRow(['APP-T05','006','#6 赤穂雷太','10月10日（土）vs 琉球', 2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'pending','G01']);
 
   Logger.log('テストデータ挿入完了');
 }
