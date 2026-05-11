@@ -517,10 +517,13 @@ function setupAfterMigration() {
   const oldSheets = ['applications', 'games', 'settings', 'players'];
   oldSheets.forEach(name => {
     const s = ss.getSheetByName(name);
-    if (s) {
-      ss.deleteSheet(s);
-      Logger.log('削除: ' + name);
-    }
+    if (s) { ss.deleteSheet(s); Logger.log('削除: ' + name); }
+  });
+
+  // 申込3シートのヘッダーを最新17列に強制更新
+  [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID].forEach(name => {
+    const s = ss.getSheetByName(name);
+    if (s) s.getRange(1, 1, 1, APP_HEADERS.length).setValues([APP_HEADERS]);
   });
 
   // パスワードハッシュを正しい値に更新（PW: 1234 / salt: hnts2026_）
