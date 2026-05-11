@@ -4,10 +4,21 @@
 
 const SS_ID = ''; // デプロイ後にSpreadsheetIDを設定（空白=アクティブSSを使用）
 const LINE_CHANNEL_ACCESS_TOKEN = ''; // LINE Messaging API チャンネルアクセストークン
-const SHEET_PLAYERS = 'players';
-const SHEET_GAMES = 'games';
-const SHEET_APPLICATIONS = 'applications';
-const SHEET_SETTINGS = 'settings';
+
+// シート名（日本語）
+const SHEET_PLAYERS  = '選手・スタッフ';
+const SHEET_GAMES    = '試合日程';
+const SHEET_SETTINGS = '設定';
+const SHEET_INVITE   = '招待チケット';
+const SHEET_FAMILY   = '家族席';
+const SHEET_PAID     = '有料チケット';
+
+// チケット種別 → シート名マッピング
+const TICKET_SHEET = {
+  invite: SHEET_INVITE,
+  family: SHEET_FAMILY,
+  paid:   SHEET_PAID
+};
 
 function getSpreadsheet() {
   return SS_ID ? SpreadsheetApp.openById(SS_ID) : SpreadsheetApp.getActiveSpreadsheet();
@@ -73,12 +84,6 @@ function doPost(e) {
         break;
       case 'submitApplication':
         result = { ok: true, data: submitApplication(body) };
-        break;
-      case 'updateApplication':
-        result = { ok: true, data: updateApplication(body) };
-        break;
-      case 'cancelApplication':
-        result = { ok: true, data: cancelApplication(body.applicationId, body.playerId) };
         break;
       case 'updateDeadline':
         verifyAdmin(body.pwHash);
@@ -175,11 +180,26 @@ function updateDeadline(gameId, deadline) {
 }
 
 // =====================================================
-// 申込
+// 申込（招待チケット・家族席・有料チケット 3シート分散）
 // =====================================================
+
+// 3申込シート共通ヘッダー
+// 列: 申込ID(1) 選手番号(2) 試合ID(3) 枚数大人(4) 枚数子ども(5) 枚数乳幼児(6)
+//     席種(7) 座席希望(8) 受取者氏名(9) 受取方法(10) 支払方法(11) 駐車場台数(12)
+//     備考(13) 申込日時(14) ステータス(15)
+const APP_HEADERS = [
+  '申込ID', '選手番号', '試合ID',
+  '枚数（大人）', '枚数（子ども）', '枚数（乳幼児）',
+  '席種', '座席希望', '受取者氏名', '受取方法', '支払方法',
+  '駐車場台数', '備考', '申込日時', 'ステータス'
+];
+
 function submitApplication(body) {
-  const gameId = body.gameId;
-  const playerId = body.playerId;
+  const gameId     = body.gameId;
+  const playerId   = body.playerId;
+  const ticketType = body.ticketType;
+
+  if (!TICKET_SHEET[ticketType]) throw new Error('不正なチケット種別: ' + ticketType);
 
   // 期限チェック
   const games = getGames();
@@ -187,13 +207,13 @@ function submitApplication(body) {
   if (!game) throw new Error('試合が見つかりません');
   if (game.isDeadlinePassed) throw new Error('申込期限を過ぎています');
 
-  // 重複チェック
+  // 重複チェック（同種別シート内）
   const existing = getApplicationsByPlayer(playerId).find(
-    a => String(a.gameId) === String(gameId) && a.ticketType === body.ticketType && a.status !== 'cancelled'
+    a => String(a.gameId) === String(gameId) && a.ticketType === ticketType && a.status !== 'cancelled'
   );
   if (existing) throw new Error('この試合・種別は既に申込済みです');
 
-  const sheet = getSheet(SHEET_APPLICATIONS);
+  const sheet = getSheet(TICKET_SHEET[ticketType]);
   const appId = 'APP-' + new Date().getTime();
   const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
 
@@ -201,119 +221,83 @@ function submitApplication(body) {
     appId,
     playerId,
     gameId,
-    body.ticketType,
-    body.quantityAdult || 0,
-    body.quantityChild || 0,
-    body.quantityInfant || 0,
-    body.seatType || '',
-    body.seatRequest || '',
-    body.receiverName || '',
-    body.pickupMethod || '',
-    body.paymentMethod || '',
-    body.parkingCount || 0,
-    body.note || '',
+    body.quantityAdult   || 0,
+    body.quantityChild   || 0,
+    body.quantityInfant  || 0,
+    body.seatType        || '',
+    body.seatRequest     || '',
+    body.receiverName    || '',
+    body.pickupMethod    || '',
+    body.paymentMethod   || '',
+    body.parkingCount    || 0,
+    body.note            || '',
     now,
     'pending'
   ]);
   return { applicationId: appId };
 }
 
-function updateApplication(body) {
-  const sheet = getSheet(SHEET_APPLICATIONS);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === body.applicationId && String(data[i][1]) === String(body.playerId)) {
-      // 期限チェック
-      const games = getGames();
-      const game = games.find(g => String(g.gameId) === String(data[i][2]));
-      if (game && game.isDeadlinePassed) throw new Error('申込期限を過ぎています');
-
-      sheet.getRange(i + 1, 5).setValue(body.quantityAdult || 0);
-      sheet.getRange(i + 1, 6).setValue(body.quantityChild || 0);
-      sheet.getRange(i + 1, 7).setValue(body.quantityInfant || 0);
-      sheet.getRange(i + 1, 8).setValue(body.seatType || '');
-      sheet.getRange(i + 1, 9).setValue(body.seatRequest || '');
-      sheet.getRange(i + 1, 10).setValue(body.receiverName || '');
-      sheet.getRange(i + 1, 11).setValue(body.pickupMethod || '');
-      sheet.getRange(i + 1, 12).setValue(body.paymentMethod || '');
-      sheet.getRange(i + 1, 13).setValue(body.parkingCount || 0);
-      sheet.getRange(i + 1, 14).setValue(body.note || '');
-      return { updated: true };
-    }
-  }
-  throw new Error('申込が見つかりません');
-}
-
-function cancelApplication(applicationId, playerId) {
-  const sheet = getSheet(SHEET_APPLICATIONS);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === applicationId && String(data[i][1]) === String(playerId)) {
-      const games = getGames();
-      const game = games.find(g => String(g.gameId) === String(data[i][2]));
-      if (game && game.isDeadlinePassed) throw new Error('申込期限を過ぎています');
-      sheet.getRange(i + 1, 16).setValue('cancelled');
-      return { cancelled: true };
-    }
-  }
-  throw new Error('申込が見つかりません');
-}
-
 function updateStatus(applicationId, status) {
   if (!['pending', 'confirmed', 'rejected', 'cancelled'].includes(status)) {
     throw new Error('不正なステータス: ' + status);
   }
-  const sheet = getSheet(SHEET_APPLICATIONS);
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === applicationId) {
-      sheet.getRange(i + 1, 16).setValue(status);
-      return { updated: true };
+  for (const sheetName of [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID]) {
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === applicationId) {
+        sheet.getRange(i + 1, 15).setValue(status);
+        return { updated: true };
+      }
     }
   }
   throw new Error('申込が見つかりません');
 }
 
 function getApplicationsByPlayer(playerId) {
-  const sheet = getSheet(SHEET_APPLICATIONS);
-  const data = sheet.getDataRange().getValues();
   const apps = [];
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][1]) !== String(playerId)) continue;
-    apps.push(rowToApplication(data[i]));
+  for (const [type, sheetName] of Object.entries(TICKET_SHEET)) {
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]) !== String(playerId)) continue;
+      apps.push(rowToApplication(data[i], type));
+    }
   }
   return apps;
 }
 
 function getAllApplications() {
-  const sheet = getSheet(SHEET_APPLICATIONS);
-  const data = sheet.getDataRange().getValues();
   const apps = [];
-  for (let i = 1; i < data.length; i++) {
-    if (!data[i][0]) continue;
-    apps.push(rowToApplication(data[i]));
+  for (const [type, sheetName] of Object.entries(TICKET_SHEET)) {
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      apps.push(rowToApplication(data[i], type));
+    }
   }
   return apps;
 }
 
-function rowToApplication(row) {
+function rowToApplication(row, ticketType) {
   return {
     applicationId: row[0],
-    playerId: row[1],
-    gameId: row[2],
-    ticketType: row[3],
-    quantityAdult: row[4],
-    quantityChild: row[5],
-    quantityInfant: row[6],
-    seatType: row[7],
-    seatRequest: row[8],
-    receiverName: row[9],
-    pickupMethod: row[10],
-    paymentMethod: row[11],
-    parkingCount: row[12],
-    note: row[13],
-    createdAt: row[14],
-    status: row[15]
+    playerId:      row[1],
+    gameId:        row[2],
+    ticketType:    ticketType,
+    quantityAdult: row[3],
+    quantityChild: row[4],
+    quantityInfant:row[5],
+    seatType:      row[6],
+    seatRequest:   row[7],
+    receiverName:  row[8],
+    pickupMethod:  row[9],
+    paymentMethod: row[10],
+    parkingCount:  row[11],
+    note:          row[12],
+    createdAt:     row[13],
+    status:        row[14]
   };
 }
 
@@ -356,8 +340,7 @@ function initData() {
 function initGames() {
   const sheet = getSheet(SHEET_GAMES);
   sheet.clearContents();
-  const headers = ['gameId', 'date', 'dayOfWeek', 'opponent', 'deadline'];
-  sheet.appendRow(headers);
+  sheet.appendRow(['試合ID', '日付', '曜日', '対戦相手', '申込期限']);
 
   const games = [
     ['G01', '2026-10-10', '土', '琉球'],
@@ -397,8 +380,7 @@ function initGames() {
 function initSettings() {
   const sheet = getSheet(SHEET_SETTINGS);
   sheet.clearContents();
-  sheet.appendRow(['key', 'value']);
-  // デフォルト管理者パスワード: "admin1234" のSHA-256
+  sheet.appendRow(['キー', '値']);
   sheet.appendRow(['admin_password_hash', 'sha256_of_admin1234_set_manually']);
   sheet.appendRow(['manager_password_hash', 'sha256_of_manager1234_set_manually']);
 }
@@ -406,8 +388,7 @@ function initSettings() {
 function initSamplePlayers() {
   const sheet = getSheet(SHEET_PLAYERS);
   sheet.clearContents();
-  sheet.appendRow(['playerId', 'name', 'passwordHash']);
-  // 実際のメンバーリスト（パスワードは管理者が別途設定）
+  sheet.appendRow(['選手番号', '氏名']);
   const members = [
     ['001', '#1 Jamel McLean'],
     ['002', '#2 栗原翼'],
@@ -447,25 +428,25 @@ function initSamplePlayers() {
 }
 
 // =====================================================
-// シート自動作成
+// シート自動作成（日本語ヘッダー）
 // =====================================================
 function createSheet(name) {
   const ss = getSpreadsheet();
   const sheet = ss.insertSheet(name);
   switch (name) {
     case SHEET_PLAYERS:
-      sheet.appendRow(['playerId', 'name', 'passwordHash']);
+      sheet.appendRow(['選手番号', '氏名']);
       break;
     case SHEET_GAMES:
-      sheet.appendRow(['gameId', 'date', 'dayOfWeek', 'opponent', 'deadline']);
+      sheet.appendRow(['試合ID', '日付', '曜日', '対戦相手', '申込期限']);
       break;
-    case SHEET_APPLICATIONS:
-      sheet.appendRow(['applicationId', 'playerId', 'gameId', 'ticketType',
-        'quantityAdult', 'quantityChild', 'quantityInfant', 'seatType', 'seatRequest',
-        'receiverName', 'pickupMethod', 'paymentMethod', 'parkingCount', 'note', 'createdAt', 'status']);
+    case SHEET_INVITE:
+    case SHEET_FAMILY:
+    case SHEET_PAID:
+      sheet.appendRow(APP_HEADERS);
       break;
     case SHEET_SETTINGS:
-      sheet.appendRow(['key', 'value']);
+      sheet.appendRow(['キー', '値']);
       break;
   }
   return sheet;
@@ -475,30 +456,30 @@ function createSheet(name) {
 // テストデータ初期化（GASエディタから手動実行）
 // =====================================================
 function initTestData() {
-  const sheet = getSheet(SHEET_APPLICATIONS);
   const now = '2026-10-01 09:00:00';
+  const inviteSheet = getSheet(SHEET_INVITE);
+  const familySheet = getSheet(SHEET_FAMILY);
+  const paidSheet   = getSheet(SHEET_PAID);
 
-  const testRows = [
-    // HC Mick Downer (101) × G01 招待チケット
-    ['APP-T01','101','G01','invite',3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'confirmed'],
-    // HC Mick Downer (101) × G01 家族席
-    ['APP-T02','101','G01','family',2,1,0,'','','Downer Sarah','pre','',1,'',now,'pending'],
-    // HC Mick Downer (101) × G02 招待チケット
-    ['APP-T03','101','G02','invite',2,0,0,'','','Downer Sarah','day','',0,'',now,'pending'],
-    // #6 赤穂 雷太 (006) × G01 招待チケット
-    ['APP-T04','006','G01','invite',2,1,0,'','','赤穂 由美','pre','',0,'',now,'confirmed'],
-    // #6 赤穂 雷太 (006) × G01 有料チケット
-    ['APP-T05','006','G01','paid',2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'pending'],
-    // #6 赤穂 雷太 (006) × G02 家族席
-    ['APP-T06','006','G02','family',2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'confirmed'],
-  ];
-
-  // 既存のテストデータ（APP-T*）を削除してから挿入
-  const data = sheet.getDataRange().getValues();
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][0]).startsWith('APP-T')) sheet.deleteRow(i + 1);
+  // 既存テストデータ（APP-T*）削除
+  for (const sheet of [inviteSheet, familySheet, paidSheet]) {
+    const data = sheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (String(data[i][0]).startsWith('APP-T')) sheet.deleteRow(i + 1);
+    }
   }
 
-  testRows.forEach(row => sheet.appendRow(row));
-  Logger.log('テストデータ挿入完了: ' + testRows.length + '件');
+  // 招待チケット
+  inviteSheet.appendRow(['APP-T01','101','G01', 3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'confirmed']);
+  inviteSheet.appendRow(['APP-T03','101','G02', 2,0,0,'','','Downer Sarah','day','',0,'',now,'pending']);
+  inviteSheet.appendRow(['APP-T04','006','G01', 2,1,0,'','','赤穂 由美','pre','',0,'',now,'confirmed']);
+
+  // 家族席
+  familySheet.appendRow(['APP-T02','101','G01', 2,1,0,'','','Downer Sarah','pre','',1,'',now,'pending']);
+  familySheet.appendRow(['APP-T06','006','G02', 2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'confirmed']);
+
+  // 有料チケット
+  paidSheet.appendRow(['APP-T05','006','G01', 2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'pending']);
+
+  Logger.log('テストデータ挿入完了');
 }
