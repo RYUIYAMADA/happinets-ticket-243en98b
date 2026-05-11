@@ -26,6 +26,7 @@
     --radius: 12px;
     --shadow: 0 4px 24px rgba(0,0,0,0.08);
   }
+  .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
@@ -358,24 +359,24 @@
       <label class="radio-card">
         <input type="radio" name="ticketType" value="invite" onchange="onTypeChange()">
         <div style="flex:1">
-          <div class="rc-text">招待チケット</div>
-          <div class="rc-sub">無料・2F自由席・1試合最大10枚</div>
+          <div class="rc-text">招待チケット<span class="en-sub">Complimentary Tickets</span></div>
+          <div class="rc-sub">無料・2F自由席・1試合最大10枚<span class="en-sub">Free, 2F unreserved, up to 10 per game</span></div>
           <div class="rc-avail" id="avail-invite" style="margin-top:5px"></div>
         </div>
       </label>
       <label class="radio-card">
         <input type="radio" name="ticketType" value="family" onchange="onTypeChange()">
         <div style="flex:1">
-          <div class="rc-text">家族席チケット</div>
-          <div class="rc-sub">二親等内の親族限定・駐車場申請可</div>
+          <div class="rc-text">家族席チケット<span class="en-sub">Family Seats</span></div>
+          <div class="rc-sub">二親等内の親族限定・駐車場申請可<span class="en-sub">Relatives within second degree, parking available</span></div>
           <div class="rc-avail" id="avail-family" style="margin-top:5px"></div>
         </div>
       </label>
       <label class="radio-card">
         <input type="radio" name="ticketType" value="paid" onchange="onTypeChange()">
         <div style="flex:1">
-          <div class="rc-text">有料チケット</div>
-          <div class="rc-sub">各座席カテゴリー・7日前までに申込</div>
+          <div class="rc-text">有料チケット<span class="en-sub">Paid Tickets</span></div>
+          <div class="rc-sub">各座席カテゴリー・7日前までに申込<span class="en-sub">Seat categories, request 7 days before</span></div>
           <div class="rc-avail" id="avail-paid" style="margin-top:5px"></div>
         </div>
       </label>
@@ -384,13 +385,18 @@
 
   <!-- ===== 招待チケット ===== -->
   <div class="ticket-section" id="section-invite">
-    <div class="notice">
+    <div class="notice" style="background:var(--success-bg);border-left:4px solid var(--success);">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">🎟 2F自由席チケット（無償提供）</div>
       <ul>
         <li>毎ホームゲーム最大<strong>10枚</strong>まで無料申込可能</li>
-        <li>家族以外のゲストも招待可能・座席は2F自由席</li>
+        <li>家族以外のゲストも招待可能</li>
         <li>11枚以上や座席アップグレードは料金発生 → 特記事項に記入</li>
         <li>申告内容と異なる場合はチケットをお渡しできません</li>
       </ul>
+    </div>
+    <div class="notice" style="background:#fff8e1;border-left:4px solid #f59e0b;margin-top:-6px;">
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px;">⚠️ 2F自由席 ご注意</div>
+      <p style="font-size:13px;line-height:1.7;margin:0;">自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
     </div>
     <div class="card">
       <div class="section-title">試合ごとの枚数・受取方法</div>
@@ -399,15 +405,15 @@
     <div class="card">
       <div class="section-title">共通情報</div>
       <div class="form-group">
-        <label class="field-label">受取者名 <span class="req">*</span></label>
+        <label class="field-label">受取者名 <span class="req">*</span><span class="en-sub">Receiver Name</span></label>
         <input type="text" id="inv-receiver" placeholder="受取者の氏名">
       </div>
       <div class="form-group">
-        <label class="field-label">特記事項</label>
+        <label class="field-label">特記事項<span class="en-sub">Notes</span></label>
         <textarea id="inv-note" placeholder="例）11枚目以上希望、座席アップグレード希望など"></textarea>
       </div>
     </div>
-    <button class="btn-primary" id="inv-submit" onclick="submitInvite()">申込を送信する</button>
+    <button class="btn-primary" id="inv-submit" onclick="submitInvite()">申込を送信する<span class="en-sub">Submit Request</span></button>
   </div>
 
   <!-- ===== 家族席チケット ===== -->
@@ -427,15 +433,15 @@
     <div class="card">
       <div class="section-title">共通情報</div>
       <div class="form-group">
-        <label class="field-label">受取者名 <span class="req">*</span></label>
+        <label class="field-label">受取者名 <span class="req">*</span><span class="en-sub">Receiver Name</span></label>
         <input type="text" id="fam-receiver" placeholder="受取者の氏名">
       </div>
       <div class="form-group">
-        <label class="field-label">特記事項</label>
+        <label class="field-label">特記事項<span class="en-sub">Notes</span></label>
         <textarea id="fam-note" placeholder="その他ご要望があれば記入"></textarea>
       </div>
     </div>
-    <button class="btn-primary" id="fam-submit" onclick="submitFamily()">申込を送信する</button>
+    <button class="btn-primary" id="fam-submit" onclick="submitFamily()">申込を送信する<span class="en-sub">Submit Request</span></button>
   </div>
 
   <!-- ===== 有料チケット ===== -->
@@ -450,7 +456,7 @@
     <div class="card">
       <div class="section-title">申込内容</div>
       <div class="form-group">
-        <label class="field-label">試合選択 <span class="req">*</span></label>
+        <label class="field-label">試合選択 <span class="req">*</span><span class="en-sub">Select Game</span></label>
         <select id="paid-game">
           <option value="">--- 試合を選んでください ---</option>
         </select>
@@ -476,7 +482,7 @@
       </div>
 
       <div class="form-group">
-        <label class="field-label">座席カテゴリー <span class="req">*</span></label>
+        <label class="field-label">座席カテゴリー <span class="req">*</span><span class="en-sub">Seat Category</span></label>
         <select id="paid-seat">
           <option value="">選択してください</option>
           <option value="①ロイヤルシート">①ロイヤルシート</option>
@@ -494,7 +500,7 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="field-label">枚数 <span class="req">*</span></label>
+        <label class="field-label">枚数 <span class="req">*</span><span class="en-sub">Quantity</span></label>
         <select id="paid-qty">
           <option value="1">1枚</option><option value="2">2枚</option><option value="3">3枚</option>
           <option value="4">4枚</option><option value="5">5枚</option><option value="6">6枚</option>
@@ -503,45 +509,45 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="field-label">座席に関するリクエスト</label>
+        <label class="field-label">座席に関するリクエスト<span class="en-sub">Seat Request</span></label>
         <textarea id="paid-seat-req" placeholder="例）並びの席、ホームベンチ側、端の席、なるべく前の席など"></textarea>
       </div>
       <div class="form-group">
-        <label class="field-label">お支払い方法 <span class="req">*</span></label>
+        <label class="field-label">お支払い方法 <span class="req">*</span><span class="en-sub">Payment Method</span></label>
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="paid-payment" value="salary">
-            <div class="rc-text">給料天引き</div>
+            <div class="rc-text">給料天引き<span class="en-sub">Salary Deduction</span></div>
           </label>
           <label class="radio-card">
             <input type="radio" name="paid-payment" value="receiver">
-            <div class="rc-text">受取者支払い（試合当日）</div>
+            <div class="rc-text">受取者支払い（試合当日）<span class="en-sub">Receiver Pays on Game Day</span></div>
           </label>
         </div>
       </div>
       <div class="form-group">
-        <label class="field-label">チケット受取方法 <span class="req">*</span></label>
+        <label class="field-label">チケット受取方法 <span class="req">*</span><span class="en-sub">Ticket Pickup</span></label>
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="paid-pickup" value="pre">
-            <div class="rc-text">事前受取</div>
+            <div class="rc-text">事前受取<span class="en-sub">Pick Up Before Game Day</span></div>
           </label>
           <label class="radio-card">
             <input type="radio" name="paid-pickup" value="day">
-            <div class="rc-text">当日受取</div>
+            <div class="rc-text">当日受取<span class="en-sub">Pick Up on Game Day</span></div>
           </label>
         </div>
       </div>
       <div class="form-group">
-        <label class="field-label">受取者名（当日受取の場合）</label>
+        <label class="field-label">受取者名（当日受取の場合）<span class="en-sub">Receiver Name (Game Day Pickup)</span></label>
         <input type="text" id="paid-receiver" placeholder="受取者の氏名">
       </div>
       <div class="form-group">
-        <label class="field-label">その他リクエスト</label>
+        <label class="field-label">その他リクエスト<span class="en-sub">Other Requests</span></label>
         <textarea id="paid-note" placeholder="その他ご要望があれば記入"></textarea>
       </div>
     </div>
-    <button class="btn-primary" id="paid-submit" onclick="submitPaid()">申込を送信する</button>
+    <button class="btn-primary" id="paid-submit" onclick="submitPaid()">申込を送信する<span class="en-sub">Submit Request</span></button>
   </div>
 </div>
 
@@ -563,6 +569,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   await loadGames();
+  await loadApplications();
 
   if (preType) onTypeChange();
 
@@ -572,6 +579,24 @@ window.addEventListener('DOMContentLoaded', async () => {
     onPaidGameChange();
   }
 });
+
+async function loadApplications() {
+  const result = await callGAS('GET', { action: 'getApplications', playerId: auth.playerId });
+  if (result.ok) sessionStorage.setItem('myApplications', JSON.stringify(result.data || []));
+}
+
+function hasExistingApplication(gameId, ticketType) {
+  const existingApps = JSON.parse(sessionStorage.getItem('myApplications') || '[]');
+  return existingApps.find(a =>
+    String(a.gameId) === String(gameId) &&
+    a.ticketType === ticketType &&
+    a.status !== 'cancelled'
+  );
+}
+
+function findDuplicateEntry(entries, ticketType) {
+  return entries.find(e => hasExistingApplication(e.gameId, ticketType));
+}
 
 async function loadGames() {
   const result = await callGAS('GET', { action: 'getGames' });
@@ -727,10 +752,12 @@ async function submitInvite() {
   });
 
   if (entries.length === 0) { showAlert('1試合以上、1枚以上を選択してください', 'error'); return; }
+  const duplicate = findDuplicateEntry(entries, 'invite');
+  if (duplicate) { showAlert(`${getGameLabel(duplicate.gameId)} の招待チケットは既に申込済みです`, 'error'); return; }
 
   const btn = document.getElementById('inv-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>送信中...';
+  btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub">Sending...</span>';
 
   let success = 0, errors = [];
   for (const e of entries) {
@@ -753,7 +780,7 @@ async function submitInvite() {
   }
 
   btn.disabled = false;
-  btn.textContent = '申込を送信する';
+  btn.innerHTML = '申込を送信する<span class="en-sub">Submit Request</span>';
 
   if (success > 0) {
     showAlert(`${success}試合分の申込が完了しました。${errors.length ? '\n失敗: ' + errors.join(', ') : ''}`, success > 0 && errors.length === 0 ? 'success' : 'error');
@@ -781,10 +808,12 @@ async function submitFamily() {
   });
 
   if (entries.length === 0) { showAlert('申込する試合を選択し、枚数と受取方法を設定してください', 'error'); return; }
+  const duplicate = findDuplicateEntry(entries, 'family');
+  if (duplicate) { showAlert(`${getGameLabel(duplicate.gameId)} の家族席は既に申込済みです`, 'error'); return; }
 
   const btn = document.getElementById('fam-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>送信中...';
+  btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub">Sending...</span>';
 
   let success = 0, errors = [];
   for (const e of entries) {
@@ -808,7 +837,7 @@ async function submitFamily() {
   }
 
   btn.disabled = false;
-  btn.textContent = '申込を送信する';
+  btn.innerHTML = '申込を送信する<span class="en-sub">Submit Request</span>';
 
   if (success > 0) {
     showAlert(`${success}試合分の申込が完了しました。${errors.length ? ' 失敗: ' + errors.join(', ') : ''}`, errors.length === 0 ? 'success' : 'error');
@@ -834,10 +863,11 @@ async function submitPaid() {
 
   const g = games.find(g => g.gameId === gameId);
   if (g?.isDeadlinePassed) { showAlert('この試合の申込期限は終了しています', 'error'); return; }
+  if (hasExistingApplication(gameId, 'paid')) { showAlert(`${getGameLabel(gameId)} の有料チケットは既に申込済みです`, 'error'); return; }
 
   const btn = document.getElementById('paid-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>送信中...';
+  btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub">Sending...</span>';
 
   try {
     const r = await callGAS('POST', {
@@ -855,12 +885,12 @@ async function submitPaid() {
     });
     if (!r.ok) throw new Error(r.error);
     showAlert('申込が完了しました！', 'success');
-    btn.textContent = '申込済み ✓';
+    btn.innerHTML = '申込済み ✓<span class="en-sub">Submitted</span>';
     setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
   } catch (e) {
     showAlert('申込失敗: ' + e.message, 'error');
     btn.disabled = false;
-    btn.textContent = '申込を送信する';
+    btn.innerHTML = '申込を送信する<span class="en-sub">Submit Request</span>';
   }
 }
 
@@ -904,6 +934,10 @@ function demoCallGAS(method, params) {
       deadline: new Date(new Date(g[1]).getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
       isDeadlinePassed: new Date(g[1]) < today
     }))};
+  }
+  if (params.action === 'getApplications') {
+    const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
+    return { ok: true, data: apps.filter(a => String(a.playerId) === String(params.playerId)) };
   }
   if (params.action === 'submitApplication') {
     const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
