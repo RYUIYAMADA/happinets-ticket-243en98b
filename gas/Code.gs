@@ -483,3 +483,35 @@ function initTestData() {
 
   Logger.log('テストデータ挿入完了');
 }
+
+// =====================================================
+// 移行後クリーンアップ（一回だけ手動実行）
+// 古い英語シートを削除 + パスワードハッシュを正しい値に更新
+// =====================================================
+function setupAfterMigration() {
+  const ss = getSpreadsheet();
+
+  // 古い英語シートを削除
+  const oldSheets = ['applications', 'games', 'settings', 'players'];
+  oldSheets.forEach(name => {
+    const s = ss.getSheetByName(name);
+    if (s) {
+      ss.deleteSheet(s);
+      Logger.log('削除: ' + name);
+    }
+  });
+
+  // パスワードハッシュを正しい値に更新（PW: 1234 / salt: hnts2026_）
+  const settingsSheet = getSheet(SHEET_SETTINGS);
+  const data = settingsSheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === 'admin_password_hash') {
+      settingsSheet.getRange(i + 1, 2).setValue('245bcf738697fd2a395f6ccd445eaff32b08b340098510bad9da528dea7201ae');
+    }
+    if (data[i][0] === 'manager_password_hash') {
+      settingsSheet.getRange(i + 1, 2).setValue('245bcf738697fd2a395f6ccd445eaff32b08b340098510bad9da528dea7201ae');
+    }
+  }
+
+  Logger.log('setupAfterMigration 完了');
+}
