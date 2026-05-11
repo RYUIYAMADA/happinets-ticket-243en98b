@@ -29,6 +29,7 @@
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
+    font-size: 14px;
     min-height: 100vh;
     padding-bottom: 80px;
     overflow-x: hidden;
@@ -51,7 +52,7 @@
     background: rgba(255,255,255,0.15);
     border: none;
     color: #fff;
-    font-size: 13px;
+    font-size: 14px;
     padding: 8px 12px;
     border-radius: 6px;
     cursor: pointer;
@@ -117,7 +118,7 @@
   .radio-card:has(input:checked) { border-color: var(--accent); background: #fff5ec; }
   .radio-card input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
   .radio-card .rc-text { font-size: 14px; font-weight: 600; color: var(--text); }
-  .radio-card .rc-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .radio-card .rc-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
 
   /* ゲームカードリスト */
   .game-card-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
@@ -137,10 +138,10 @@
     margin-bottom: 10px;
     gap: 8px;
   }
-  .game-card-info .game-date { font-size: 11px; color: var(--text-sub); }
+  .game-card-info .game-date { font-size: 12px; color: var(--text-sub); }
   .game-card-info .game-name { font-size: 15px; font-weight: 700; color: var(--text); }
   .deadline-badge {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     padding: 3px 8px;
     border-radius: 8px;
@@ -186,7 +187,7 @@
   .stepper-val {
     min-width: 44px;
     text-align: center;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--text);
     border-left: 1px solid var(--border);
@@ -213,7 +214,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text);
     cursor: pointer;
     min-height: 44px;
@@ -227,11 +228,67 @@
   .ticket-section.active { display: block; }
 
   /* 注意書き */
+  /* 座席図 */
+  .seat-map-wrap {
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1.5px solid var(--border);
+    position: relative;
+    background: #f8f9fa;
+  }
+  .seat-map-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 240px;
+    object-fit: contain;
+    transition: opacity 0.15s;
+  }
+  .seat-map-wrap:hover .seat-map-img { opacity: 0.9; }
+  .seat-map-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-sub);
+    padding: 6px;
+    background: rgba(0,0,0,0.04);
+  }
+  .seat-map-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .seat-map-modal {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .seat-map-close {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    min-height: 44px;
+  }
+
   .notice {
     background: var(--warning-bg);
     border-radius: 8px;
     padding: 12px 14px;
-    font-size: 13px;
+    font-size: 14px;
     color: #1a1a2e;
     margin-bottom: 14px;
   }
@@ -263,7 +320,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     padding: 3px 8px;
     border-radius: 10px;
@@ -287,7 +344,7 @@
   <button class="back" onclick="history.back()">← 戻る</button>
   <div style="flex:1">
     <h1>チケット申込フォーム</h1>
-    <div id="header-name" style="font-size:11px; opacity:0.8; margin-top:2px;"></div>
+    <div id="header-name" style="font-size:12px; opacity:0.8; margin-top:2px;"></div>
   </div>
 </header>
 
@@ -399,6 +456,25 @@
         </select>
         <div id="paid-deadline-info" style="font-size:12px; color:var(--text-sub); margin-top:6px;"></div>
       </div>
+      <!-- 座席図 -->
+      <div class="form-group">
+        <label class="field-label">座席図 / Seat Map</label>
+        <div class="seat-map-wrap" onclick="toggleSeatMap(this)">
+          <img src="https://northern-happinets.bl.kuroco-img.app/v=1662023116/files/user/202209011805_4-800x859.png"
+               alt="座席図 Seat Map"
+               class="seat-map-img"
+               loading="lazy">
+          <div class="seat-map-hint">タップで拡大 / Tap to enlarge</div>
+        </div>
+        <div class="seat-map-overlay" id="seat-map-overlay" onclick="closeSeatMap()" style="display:none;">
+          <div class="seat-map-modal">
+            <button class="seat-map-close" onclick="closeSeatMap(event)">✕ 閉じる</button>
+            <img src="https://northern-happinets.bl.kuroco-img.app/v=1662023116/files/user/202209011805_4-800x859.png"
+                 alt="座席図 Seat Map" style="width:100%;height:auto;display:block;">
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label class="field-label">座席カテゴリー <span class="req">*</span></label>
         <select id="paid-seat">
@@ -608,6 +684,16 @@ function buildFamilyGrid() {
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleSeatMap(wrap) {
+  document.getElementById('seat-map-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeSeatMap(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('seat-map-overlay').style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 function onTypeChange() {
