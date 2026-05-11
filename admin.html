@@ -409,20 +409,50 @@
       </div>
     </div>
 
-    <div class="card">
+    <!-- 確認中の申込 3タブ -->
+    <div class="card" style="overflow:visible;">
       <div class="card-header">
         <span class="card-title">要対応 — 確認中の申込</span>
-        <span class="badge badge-pending" id="pending-count-badge">0件</span>
       </div>
-      <div class="table-wrap">
-        <table id="pending-table">
-          <thead><tr>
-            <th>申込ID</th><th>選手</th><th>試合</th><th>種別</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th>
-          </tr></thead>
-          <tbody id="pending-tbody">
-            <tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr>
-          </tbody>
-        </table>
+      <!-- サブタブ -->
+      <div style="display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;">
+        <button class="pending-tab active" data-ptype="invite" onclick="switchPendingTab(this,'invite')"
+          style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
+          🎟 招待チケット <span class="pending-cnt" id="pcnt-invite" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+        </button>
+        <button class="pending-tab" data-ptype="family" onclick="switchPendingTab(this,'family')"
+          style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
+          👨‍👩‍👧 家族席 <span class="pending-cnt" id="pcnt-family" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+        </button>
+        <button class="pending-tab" data-ptype="paid" onclick="switchPendingTab(this,'paid')"
+          style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
+          💳 有料チケット <span class="pending-cnt" id="pcnt-paid" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+        </button>
+      </div>
+      <!-- 各種別テーブル -->
+      <div id="pending-panel-invite" class="pending-panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>申込ID</th><th>選手</th><th>試合</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th></tr></thead>
+            <tbody id="pending-tbody-invite"><tr><td colspan="8" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="pending-panel-family" class="pending-panel" style="display:none;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>申込ID</th><th>選手</th><th>試合</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th></tr></thead>
+            <tbody id="pending-tbody-family"><tr><td colspan="8" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="pending-panel-paid" class="pending-panel" style="display:none;">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>申込ID</th><th>選手</th><th>試合</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th></tr></thead>
+            <tbody id="pending-tbody-paid"><tr><td colspan="8" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -558,6 +588,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (bulk) bulk.style.display = '';
   }
   await loadAll();
+  // 招待タブを初期アクティブに
+  const firstPendingTab = document.querySelector('.pending-tab[data-ptype="invite"]');
+  if (firstPendingTab) switchPendingTab(firstPendingTab, 'invite');
 });
 
 async function loadAll() {
@@ -624,13 +657,33 @@ function updateKPI() {
 
 function renderPending() {
   const pending = applications.filter(a => a.status === 'pending');
-  document.getElementById('pending-count-badge').textContent = pending.length + '件';
-  const tbody = document.getElementById('pending-tbody');
-  if (!pending.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-msg">確認中の申込はありません</td></tr>';
-    return;
-  }
-  tbody.innerHTML = pending.map(a => buildAppRow(a, true)).join('');
+  const types = ['invite', 'family', 'paid'];
+  types.forEach(type => {
+    const list = pending.filter(a => a.ticketType === type);
+    const cnt = document.getElementById('pcnt-' + type);
+    if (cnt) cnt.textContent = list.length;
+    const tbody = document.getElementById('pending-tbody-' + type);
+    if (!tbody) return;
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">確認中の申込はありません</td></tr>`;
+    } else {
+      tbody.innerHTML = list.map(a => buildAppRow(a, true)).join('');
+    }
+  });
+}
+
+function switchPendingTab(el, type) {
+  document.querySelectorAll('.pending-tab').forEach(t => {
+    t.classList.remove('active');
+    t.style.color = 'var(--text-sub)';
+    t.style.borderBottomColor = 'transparent';
+  });
+  el.classList.add('active');
+  el.style.color = 'var(--accent)';
+  el.style.borderBottomColor = 'var(--accent)';
+  document.querySelectorAll('.pending-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('pending-panel-' + type);
+  if (panel) panel.style.display = '';
 }
 
 let currentTypeFilter = '';
