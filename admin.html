@@ -480,6 +480,29 @@
 
   <!-- 期限設定タブ -->
   <div id="tab-deadlines" class="panel">
+
+    <!-- 一括設定バナー（チケット担当のみ） -->
+    <div class="card" id="bulk-deadline-card" style="margin-bottom:16px;display:none;">
+      <div class="card-header" style="flex-wrap:wrap;gap:12px;">
+        <span class="card-title">一括設定</span>
+        <span style="font-size:12px;color:var(--text-sub)">試合日の N 日前を期限として未設定の試合にまとめて適用</span>
+      </div>
+      <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:14px;font-weight:600;white-space:nowrap;">試合日の</span>
+        <input type="number" id="bulk-days" value="3" min="1" max="30"
+          style="width:72px;padding:8px 10px;font-size:16px;border:1.5px solid var(--border);border-radius:8px;text-align:center;min-height:44px;">
+        <span style="font-size:14px;font-weight:600;white-space:nowrap;">日前を期限に設定</span>
+        <button class="btn-success btn-sm" onclick="bulkSetDeadlines()"
+          style="padding:10px 20px;font-size:14px;min-height:44px;border-radius:8px;">
+          未設定の試合に一括適用
+        </button>
+        <button class="btn-sm" onclick="bulkSetDeadlines(true)"
+          style="padding:10px 20px;font-size:14px;min-height:44px;border-radius:8px;background:var(--muted-bg);color:var(--text);">
+          全試合に上書き適用
+        </button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header">
         <span class="card-title">試合別 申込期限設定</span>
@@ -529,6 +552,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (roleEl) {
     roleEl.textContent = adminRole === 'manager' ? 'チームマネージャー（閲覧のみ）' : 'チケット担当';
     roleEl.style.background = adminRole === 'manager' ? 'rgba(255,255,255,0.15)' : 'rgba(244,121,32,0.25)';
+  }
+  if (adminRole === 'ticket') {
+    const bulk = document.getElementById('bulk-deadline-card');
+    if (bulk) bulk.style.display = '';
   }
   await loadAll();
 });
@@ -756,6 +783,32 @@ function renderDeadlines() {
       </td>
     </tr>`;
   }).join('');
+}
+
+async function bulkSetDeadlines(overwrite = false) {
+  if (adminRole === 'manager') { showToast('権限がありません'); return; }
+  const days = parseInt(document.getElementById('bulk-days').value) || 3;
+  const targets = games.filter(g => !g.isDeadlinePassed && (overwrite || !g.deadline));
+  if (targets.length === 0) { showToast('対象の試合がありません'); return; }
+
+  const label = overwrite ? `全${targets.length}試合に上書き` : `未設定${targets.length}試合に`;
+  if (!confirm(`${label}「試合日の${days}日前」を期限として設定します。よろしいですか？`)) return;
+
+  let ok = 0, fail = 0;
+  for (const g of targets) {
+    const d = new Date(g.date);
+    d.setDate(d.getDate() - days);
+    const deadline = d.toISOString().split('T')[0];
+    try {
+      const r = await callGAS('POST', { action: 'updateDeadline', gameId: g.gameId, deadline });
+      if (!r.ok) throw new Error(r.error);
+      g.deadline = deadline;
+      g.isDeadlinePassed = new Date(deadline) < new Date();
+      ok++;
+    } catch { fail++; }
+  }
+  renderDeadlines();
+  showToast(`${ok}件設定完了${fail ? `（${fail}件失敗）` : ''}`);
 }
 
 async function saveDeadline(gameId) {
