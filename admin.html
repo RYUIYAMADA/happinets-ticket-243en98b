@@ -261,6 +261,8 @@
   .cell-rejected  { background: var(--error-bg); color: var(--error); text-align: center; }
   .cell-none      { background: #fff; text-align: center; color: var(--muted); font-size: 12px; }
   .cell-closed    { background: #f9fafb; color: #d1d5db; text-align: center; }
+  .matrix-cell-list { display: flex; flex-direction: column; gap: 3px; align-items: center; line-height: 1.2; }
+  .matrix-entry { display: block; font-size: 12px; font-weight: 700; }
 
   /* 検索・フィルター */
   .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -498,7 +500,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">試合 × 選手 申込マトリクス</span>
-        <span style="font-size:12px; color:var(--text-sub)">● 確保済 ◐ 確認中 ✕ 対応不可</span>
+        <span style="font-size:12px; color:var(--text-sub)">🎟✓ = 招待確保、👨‍👩‍👧✓ = 家族確保、💳✓ = 有料確保 / ◐ 確認中 ✕ 対応不可</span>
       </div>
       <div class="matrix-wrap">
         <table class="matrix-table" id="matrix-table">
@@ -573,11 +575,13 @@ const PICKUP_LABELS  = { pre: '事前', day: '当日' };
 const STATUS_LABELS  = { pending: '確認中', confirmed: '確保済み', rejected: '対応不可', cancelled: 'キャンセル' };
 
 let adminRole = 'ticket';
+let adminPwHash = '';
 
 window.addEventListener('DOMContentLoaded', async () => {
   let auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
   if (!auth || auth.role !== 'admin') { location.href = 'index.html'; return; }
   adminRole = auth.adminRole || 'ticket';
+  adminPwHash = sessionStorage.getItem('adminPasswordHash') || '';
   const roleEl = document.getElementById('admin-role-badge');
   if (roleEl) {
     roleEl.textContent = adminRole === 'manager' ? 'チームマネージャー（閲覧のみ）' : 'チケット担当';
@@ -776,9 +780,21 @@ function renderMatrix() {
   const appMap = {};
   applications.forEach(a => {
     const key = `${a.playerId}_${a.gameId}`;
-    if (!appMap[key] || a.status === 'confirmed') appMap[key] = a.status;
+    if (!appMap[key]) appMap[key] = {};
+    const type = a.ticketType || 'unknown';
+    if (!appMap[key][type] || a.status === 'confirmed') appMap[key][type] = a.status;
   });
   const today = new Date();
+  const typeOrder = ['invite', 'family', 'paid'];
+  const typeIcons = { invite: '🎟', family: '👨‍👩‍👧', paid: '💳' };
+  const statusMarks = { confirmed: '✓', pending: '◐', rejected: '✕' };
+  const matrixCellClass = apps => {
+    const statuses = Object.values(apps);
+    if (statuses.includes('confirmed')) return 'cell-confirmed';
+    if (statuses.includes('pending')) return 'cell-pending';
+    if (statuses.includes('rejected')) return 'cell-rejected';
+    return 'cell-none';
+  };
 
   let html = '<thead><tr><th>選手</th>';
   games.forEach(g => {
@@ -789,20 +805,18 @@ function renderMatrix() {
   players.forEach(p => {
     html += `<tr><td>${p.name}</td>`;
     games.forEach(g => {
-      const status = appMap[`${p.playerId}_${g.gameId}`];
+      const apps = appMap[`${p.playerId}_${g.gameId}`];
       const past = new Date(g.date) < today;
-      if (!status && past) {
+      if (!apps && past) {
         html += `<td class="cell-closed">—</td>`;
-      } else if (!status) {
+      } else if (!apps) {
         html += `<td class="cell-none">未</td>`;
-      } else if (status === 'confirmed') {
-        html += `<td class="cell-confirmed">●</td>`;
-      } else if (status === 'pending') {
-        html += `<td class="cell-pending">◐</td>`;
-      } else if (status === 'rejected') {
-        html += `<td class="cell-rejected">✕</td>`;
       } else {
-        html += `<td class="cell-none">－</td>`;
+        const entries = typeOrder
+          .filter(type => apps[type])
+          .map(type => `<span class="matrix-entry">${typeIcons[type] || ''}${statusMarks[apps[type]] || '－'}</span>`)
+          .join('');
+        html += `<td class="${matrixCellClass(apps)}"><div class="matrix-cell-list">${entries}</div></td>`;
       }
     });
     html += '</tr>';
@@ -915,7 +929,7 @@ async function callGAS(method, params) {
     const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
     return res.json();
   }
-  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({...params, pwHash: adminPwHash}), redirect: 'follow' });
   return res.json();
 }
 

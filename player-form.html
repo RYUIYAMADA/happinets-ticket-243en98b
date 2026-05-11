@@ -598,6 +598,12 @@ function findDuplicateEntry(entries, ticketType) {
   return entries.find(e => hasExistingApplication(e.gameId, ticketType));
 }
 
+function rememberSubmittedApplication(gameId, ticketType) {
+  const existingApps = JSON.parse(sessionStorage.getItem('myApplications') || '[]');
+  existingApps.push({ gameId, ticketType, status: 'pending' });
+  sessionStorage.setItem('myApplications', JSON.stringify(existingApps));
+}
+
 async function loadGames() {
   const result = await callGAS('GET', { action: 'getGames' });
   if (!result.ok) { showAlert('試合データ読込失敗: ' + result.error, 'error'); return; }
@@ -773,7 +779,10 @@ async function submitInvite() {
         note: document.getElementById('inv-note').value
       });
       if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
-      else success++;
+      else {
+        rememberSubmittedApplication(e.gameId, 'invite');
+        success++;
+      }
     } catch (err) {
       errors.push(getGameLabel(e.gameId) + ': ' + err.message);
     }
@@ -830,7 +839,10 @@ async function submitFamily() {
         note: document.getElementById('fam-note').value
       });
       if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
-      else success++;
+      else {
+        rememberSubmittedApplication(e.gameId, 'family');
+        success++;
+      }
     } catch (err) {
       errors.push(getGameLabel(e.gameId) + ': ' + err.message);
     }
@@ -884,6 +896,7 @@ async function submitPaid() {
       note: document.getElementById('paid-note').value
     });
     if (!r.ok) throw new Error(r.error);
+    rememberSubmittedApplication(gameId, 'paid');
     showAlert('申込が完了しました！', 'success');
     btn.innerHTML = '申込済み ✓<span class="en-sub">Submitted</span>';
     setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);

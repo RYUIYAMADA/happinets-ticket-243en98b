@@ -45,9 +45,6 @@ function doGet(e) {
       case 'getLineStats':
         result = { ok: true, data: getLineStats() };
         break;
-      case 'initData':
-        result = { ok: true, data: initData() };
-        break;
       default:
         result = { ok: false, error: 'unknown action: ' + action };
     }
@@ -84,9 +81,11 @@ function doPost(e) {
         result = { ok: true, data: cancelApplication(body.applicationId, body.playerId) };
         break;
       case 'updateDeadline':
+        verifyAdmin(body.pwHash);
         result = { ok: true, data: updateDeadline(body.gameId, body.deadline) };
         break;
       case 'updateStatus':
+        verifyAdmin(body.pwHash);
         result = { ok: true, data: updateStatus(body.applicationId, body.status) };
         break;
       case 'initData':
@@ -114,6 +113,17 @@ function login(playerId) {
     }
   }
   throw new Error('番号が見つかりません');
+}
+
+function verifyAdmin(pwHash) {
+  if (!pwHash) throw new Error('認証情報がありません');
+  const sheet = getSheet(SHEET_SETTINGS);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if ((data[i][0] === 'admin_password_hash' || data[i][0] === 'manager_password_hash')
+        && data[i][1] === pwHash) return true;
+  }
+  throw new Error('認証に失敗しました');
 }
 
 function adminLogin(passwordHash) {
