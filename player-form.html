@@ -241,17 +241,50 @@
     font-weight: 700;
     color: var(--text-sub);
   }
+  .sel-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 100px;
+  }
+  .sel-wrap .sel-label {
+    position: absolute;
+    top: 4px;
+    left: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .sel-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--text-sub);
+    pointer-events: none;
+  }
   .game-card-sel {
-    height: 44px;
-    padding: 0 10px;
-    font-size: 16px;
+    width: 100%;
+    height: 52px;
+    padding: 18px 28px 4px 10px;
+    font-size: 14px;
+    font-weight: 600;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
     background: #fff;
     cursor: pointer;
-    flex: 1;
-    min-width: 90px;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .game-card-sel:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(236,0,140,.1);
   }
   .inv-day-label {
     display: flex;
@@ -434,12 +467,9 @@
       font-size: 17px;
       flex: 1;
     }
-    .game-card-sel {
-      width: 100%;
-      min-width: 0;
-      height: 46px;
-    }
-    .fam-parking { max-width: none !important; }
+    .sel-wrap { min-width: 0; }
+    .game-card-sel { height: 52px; }
+    .sel-wrap[style*="max-width"] { max-width: none !important; }
     .inv-day-label {
       padding: 0 2px;
       align-self: stretch;
@@ -867,15 +897,21 @@ function buildFamilyGrid() {
       </div>
       <div class="game-card-controls">
         ${stepperHtml(famSid, 10)}
-        <select class="game-card-sel fam-pickup" data-game="${g.gameId}">
-          <option value="pre" selected>事前受取</option>
-          <option value="day">当日受取</option>
-        </select>
-        <select class="game-card-sel fam-parking" data-game="${g.gameId}" style="max-width:90px">
-          <option value="0">駐車場0台</option>
-          <option value="1">1台</option>
-          <option value="2">2台</option>
-        </select>
+        <div class="sel-wrap">
+          <span class="sel-label">受取方法</span>
+          <select class="game-card-sel fam-pickup" data-game="${g.gameId}">
+            <option value="pre" selected>事前受取</option>
+            <option value="day">当日受取</option>
+          </select>
+        </div>
+        <div class="sel-wrap" style="max-width:110px">
+          <span class="sel-label">駐車場</span>
+          <select class="game-card-sel fam-parking" data-game="${g.gameId}">
+            <option value="0">0台</option>
+            <option value="1">1台</option>
+            <option value="2">2台</option>
+          </select>
+        </div>
       </div>
       <div class="qty-summary" data-existing="${famExisting}">
         <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
