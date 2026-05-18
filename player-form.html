@@ -90,6 +90,7 @@
     width: 100%;
     padding: 11px 13px;
     font-size: 16px;
+    min-height: 44px;
     border: 1.5px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -167,6 +168,7 @@
     overflow: hidden;
     height: 44px;
     min-width: 132px;
+    flex: 0 0 auto;
   }
   .stepper-btn {
     width: 44px;
@@ -340,6 +342,87 @@
     .card { padding: 22px 20px; }
     .game-card-controls { gap: 8px; }
   }
+  @media (max-width: 480px) {
+    body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+    header {
+      padding: 12px 16px;
+      gap: 10px;
+    }
+    header h1 { font-size: 15px; line-height: 1.35; }
+    .container { padding: 16px; }
+    .card {
+      padding: 14px 12px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+    }
+    .section-title { margin-bottom: 12px; }
+    .form-group { margin-bottom: 16px; }
+    .radio-card {
+      padding: 12px;
+      gap: 8px;
+    }
+    .game-card-row {
+      padding: 12px;
+      border-radius: 9px;
+    }
+    .game-card-top {
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .game-card-info { min-width: 0; }
+    .game-card-info .game-name {
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .deadline-badge {
+      max-width: 112px;
+      line-height: 1.35;
+      text-align: center;
+      white-space: normal;
+    }
+    .game-card-controls {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .stepper-field {
+      width: 100%;
+      gap: 6px;
+    }
+    .stepper {
+      width: 100%;
+      height: 46px;
+    }
+    .stepper-btn {
+      width: 46px;
+      height: 46px;
+      min-width: 46px;
+      min-height: 46px;
+    }
+    .stepper-val {
+      min-width: 46px;
+      font-size: 17px;
+      flex: 1;
+    }
+    .game-card-sel {
+      width: 100%;
+      min-width: 0;
+      height: 46px;
+    }
+    .fam-parking { max-width: none !important; }
+    .inv-day-label {
+      padding: 0 2px;
+      align-self: stretch;
+    }
+    .notice {
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .seat-map-modal { max-height: 86vh; }
+    .alert { padding: 12px; line-height: 1.6; }
+    .btn-primary { min-height: 50px; }
+  }
   @media (min-width: 769px) {
     .container { padding: 24px 16px; }
   }
@@ -396,7 +479,7 @@
   <!-- ===== 招待チケット ===== -->
   <div class="ticket-section" id="section-invite">
     <div class="notice" style="background:var(--success-bg);border-left:4px solid var(--success);">
-      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">🎟 2F自由席チケット（無償提供）</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">2F自由席チケット（無償提供）</div>
       <ul>
         <li>毎ホームゲーム最大<strong>10枚</strong>まで無料申込可能</li>
         <li>家族以外のゲストも招待可能</li>
@@ -405,7 +488,7 @@
       </ul>
     </div>
     <div class="notice" style="background:#fff8e1;border-left:4px solid #f59e0b;margin-top:-6px;">
-      <div style="font-weight:700;font-size:13px;margin-bottom:4px;">⚠️ 2F自由席 ご注意</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px;">2F自由席 ご注意</div>
       <p style="font-size:13px;line-height:1.7;margin:0;">自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
     </div>
     <div class="card">

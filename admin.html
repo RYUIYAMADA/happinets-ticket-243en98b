@@ -232,6 +232,42 @@
     min-width: 90px;
     min-height: 44px;
   }
+  .mobile-detail-toggle {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--muted-bg);
+    color: var(--text);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .mobile-details-row { display: none; }
+  .mobile-details {
+    display: grid;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .mobile-details div {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  .mobile-details dt {
+    color: var(--text-sub);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .mobile-details dd {
+    color: var(--text);
+    text-align: right;
+    word-break: break-word;
+  }
 
   /* マトリクス */
   .matrix-wrap { overflow: auto; max-height: 600px; -webkit-overflow-scrolling: touch; }
@@ -348,6 +384,174 @@
     header h1 { font-size: 16px; }
     .search-input { width: 200px; }
   }
+  @media (max-width: 480px) {
+    header {
+      padding: 10px 16px;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    header h1 {
+      width: 100%;
+      white-space: normal;
+      line-height: 1.35;
+    }
+    .header-right {
+      width: 100%;
+      gap: 6px;
+    }
+    .header-right .btn-sm {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
+    }
+    .tabs {
+      padding: 0 8px;
+    }
+    .tab {
+      padding: 12px 10px;
+      font-size: 13px;
+    }
+    .container {
+      padding: 16px;
+    }
+    .kpi-grid {
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .kpi-card {
+      padding: 14px 12px;
+    }
+    .kpi-num { font-size: 26px; }
+    .kpi-lbl { font-size: 12px; line-height: 1.35; }
+    .card { margin-bottom: 16px; border-radius: 10px; }
+    .card-header {
+      padding: 14px 16px;
+      align-items: stretch;
+    }
+    .toolbar {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .search-input,
+    select.filter-sel {
+      width: 100%;
+    }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      font-size: 12px;
+      min-width: 520px;
+    }
+    th,
+    td {
+      padding: 8px 6px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .badge { font-size: 11px; padding: 3px 6px; }
+    .status-select {
+      width: 100%;
+      min-width: 80px;
+      font-size: 16px;
+      padding: 5px 6px;
+    }
+    #pending-panel-invite table,
+    #pending-panel-family table,
+    #pending-panel-paid table,
+    #tab-applications .table-wrap table {
+      min-width: 430px;
+    }
+    #pending-panel-invite th:nth-child(1),
+    #pending-panel-invite th:nth-child(4),
+    #pending-panel-invite th:nth-child(6),
+    #pending-panel-invite th:nth-child(7),
+    #pending-panel-invite th:nth-child(8),
+    #pending-panel-invite td:nth-child(1),
+    #pending-panel-invite td:nth-child(4),
+    #pending-panel-invite td:nth-child(6),
+    #pending-panel-invite td:nth-child(7),
+    #pending-panel-invite td:nth-child(8),
+    #pending-panel-family th:nth-child(1),
+    #pending-panel-family th:nth-child(4),
+    #pending-panel-family th:nth-child(6),
+    #pending-panel-family th:nth-child(7),
+    #pending-panel-family th:nth-child(8),
+    #pending-panel-family td:nth-child(1),
+    #pending-panel-family td:nth-child(4),
+    #pending-panel-family td:nth-child(6),
+    #pending-panel-family td:nth-child(7),
+    #pending-panel-family td:nth-child(8),
+    #pending-panel-paid th:nth-child(1),
+    #pending-panel-paid th:nth-child(4),
+    #pending-panel-paid th:nth-child(6),
+    #pending-panel-paid th:nth-child(7),
+    #pending-panel-paid th:nth-child(8),
+    #pending-panel-paid td:nth-child(1),
+    #pending-panel-paid td:nth-child(4),
+    #pending-panel-paid td:nth-child(6),
+    #pending-panel-paid td:nth-child(7),
+    #pending-panel-paid td:nth-child(8),
+    #tab-applications .table-wrap th:nth-child(1),
+    #tab-applications .table-wrap th:nth-child(4),
+    #tab-applications .table-wrap th:nth-child(6),
+    #tab-applications .table-wrap th:nth-child(7),
+    #tab-applications .table-wrap th:nth-child(8),
+    #tab-applications .table-wrap th:nth-child(9),
+    #tab-applications .table-wrap td:nth-child(1),
+    #tab-applications .table-wrap td:nth-child(4),
+    #tab-applications .table-wrap td:nth-child(6),
+    #tab-applications .table-wrap td:nth-child(7),
+    #tab-applications .table-wrap td:nth-child(8),
+    #tab-applications .table-wrap td:nth-child(9) {
+      display: none;
+    }
+    .table-wrap td.empty-msg {
+      display: table-cell !important;
+    }
+    .mobile-detail-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .mobile-details-row.open {
+      display: table-row;
+    }
+    .mobile-details-row td {
+      display: table-cell !important;
+      padding: 10px 8px;
+      background: #f8fafc;
+    }
+    .matrix-wrap { max-height: 70vh; }
+    .matrix-table {
+      min-width: 620px;
+      font-size: 12px;
+    }
+    .matrix-table th,
+    .matrix-table td {
+      padding: 8px 6px;
+      font-size: 12px;
+    }
+    #bulk-deadline-card > div:last-child {
+      padding: 14px 16px !important;
+      flex-direction: column;
+      align-items: stretch !important;
+    }
+    #bulk-deadline-card button,
+    #bulk-days {
+      width: 100% !important;
+    }
+    .empty-msg { padding: 28px 16px; }
+    .toast {
+      width: calc(100vw - 32px);
+      bottom: 16px;
+      text-align: center;
+    }
+  }
   @media (min-width: 769px) {
     header { padding: 14px 24px; }
     .tabs { padding: 0 24px; }
@@ -420,15 +624,15 @@
       <div style="display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;">
         <button class="pending-tab active" data-ptype="invite" onclick="switchPendingTab(this,'invite')"
           style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
-          🎟 招待チケット <span class="pending-cnt" id="pcnt-invite" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+          招待チケット <span class="pending-cnt" id="pcnt-invite" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
         </button>
         <button class="pending-tab" data-ptype="family" onclick="switchPendingTab(this,'family')"
           style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
-          👨‍👩‍👧 家族席 <span class="pending-cnt" id="pcnt-family" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+          家族席 <span class="pending-cnt" id="pcnt-family" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
         </button>
         <button class="pending-tab" data-ptype="paid" onclick="switchPendingTab(this,'paid')"
           style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
-          💳 有料チケット <span class="pending-cnt" id="pcnt-paid" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+          有料チケット <span class="pending-cnt" id="pcnt-paid" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
         </button>
       </div>
       <!-- 各種別テーブル -->
@@ -500,7 +704,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">試合 × 選手 申込マトリクス</span>
-        <span style="font-size:12px; color:var(--text-sub)">🎟✓ = 招待確保、👨‍👩‍👧✓ = 家族確保、💳✓ = 有料確保 / ◐ 確認中 ✕ 対応不可</span>
+        <span style="font-size:12px; color:var(--text-sub)">招✓ = 招待確保、家✓ = 家族確保、有✓ = 有料確保 / ◐ 確認中 ✕ 対応不可</span>
       </div>
       <div class="matrix-wrap">
         <table class="matrix-table" id="matrix-table">
@@ -669,7 +873,7 @@ function renderPending() {
     const tbody = document.getElementById('pending-tbody-' + type);
     if (!tbody) return;
     if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">確認中の申込はありません</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-msg">確認中の申込はありません</td></tr>`;
     } else {
       tbody.innerHTML = list.map(a => buildAppRow(a, true)).join('');
     }
@@ -722,6 +926,8 @@ function renderApplications() {
 function buildAppRow(a, compact) {
   const typeBadge = `<span class="badge badge-${a.ticketType}">${TICKET_LABELS[a.ticketType] || a.ticketType}</span>`;
   const pickup = PICKUP_LABELS[a.pickupMethod] || a.pickupMethod;
+  const detailId = `details-${String(a.applicationId).replace(/[^a-zA-Z0-9_-]/g, '-')}-${compact ? 'pending' : 'all'}`;
+  const mobileToggle = `<button type="button" class="mobile-detail-toggle" onclick="toggleMobileDetails('${detailId}', this)">詳細</button>`;
   const statusSel = adminRole === 'manager'
     ? `<span class="badge badge-${a.status}">${STATUS_LABELS[a.status] || a.status}</span>`
     : `<select class="status-select" onchange="changeStatus('${a.applicationId}', this.value)">
@@ -730,6 +936,18 @@ function buildAppRow(a, compact) {
       <option value="rejected"  ${a.status==='rejected'  ? 'selected' : ''}>対応不可</option>
       <option value="cancelled" ${a.status==='cancelled' ? 'selected' : ''}>キャンセル</option>
     </select>`;
+  const detailsHtml = `<tr class="mobile-details-row" id="${detailId}">
+    <td colspan="${compact ? 9 : 10}">
+      <dl class="mobile-details">
+        <div><dt>申込ID</dt><dd>${a.applicationId}</dd></div>
+        <div><dt>種別</dt><dd>${TICKET_LABELS[a.ticketType] || a.ticketType}</dd></div>
+        <div><dt>受取者</dt><dd>${esc(a.receiverName) || '—'}</dd></div>
+        <div><dt>受取方法</dt><dd>${pickup || '—'}</dd></div>
+        ${compact ? '' : `<div><dt>備考</dt><dd>${esc(a.note) || '—'}</dd></div>`}
+        <div><dt>申込日時</dt><dd>${a.createdAt || '—'}</dd></div>
+      </dl>
+    </td>
+  </tr>`;
   if (compact) {
     return `<tr>
       <td style="font-size:12px">${a.applicationId}</td>
@@ -740,8 +958,8 @@ function buildAppRow(a, compact) {
       <td>${esc(a.receiverName) || '—'}</td>
       <td>${pickup}</td>
       <td style="font-size:12px">${a.createdAt || '—'}</td>
-      <td>${statusSel}</td>
-    </tr>`;
+      <td>${statusSel}${mobileToggle}</td>
+    </tr>${detailsHtml}`;
   }
   return `<tr>
     <td style="font-size:12px">${a.applicationId}</td>
@@ -753,8 +971,15 @@ function buildAppRow(a, compact) {
     <td>${pickup}</td>
     <td style="font-size:12px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
     <td style="font-size:12px">${a.createdAt || '—'}</td>
-    <td>${statusSel}</td>
-  </tr>`;
+    <td>${statusSel}${mobileToggle}</td>
+  </tr>${detailsHtml}`;
+}
+
+function toggleMobileDetails(id, btn) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  const open = row.classList.toggle('open');
+  btn.textContent = open ? '閉じる' : '詳細';
 }
 
 async function changeStatus(applicationId, status) {
@@ -786,7 +1011,7 @@ function renderMatrix() {
   });
   const today = new Date();
   const typeOrder = ['invite', 'family', 'paid'];
-  const typeIcons = { invite: '🎟', family: '👨‍👩‍👧', paid: '💳' };
+  const typeIcons = { invite: '招', family: '家', paid: '有' };
   const statusMarks = { confirmed: '✓', pending: '◐', rejected: '✕' };
   const matrixCellClass = apps => {
     const statuses = Object.values(apps);

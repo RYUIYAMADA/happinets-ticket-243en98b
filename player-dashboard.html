@@ -351,6 +351,66 @@
     }
     .summary-card .num { font-size: 26px; }
   }
+  @media (max-width: 480px) {
+    body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+    header { padding: 12px 16px; }
+    .header-inner { gap: 12px; }
+    header h1 { font-size: 15px; line-height: 1.35; }
+    .container { padding: 16px; }
+    .summary-grid {
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .summary-card { padding: 10px 8px; }
+    .summary-card .num { font-size: 22px; }
+    .filter-bar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .filter-btn {
+      width: 100%;
+      padding: 8px;
+      border-radius: 12px;
+    }
+    .game-card-header {
+      padding: 12px 14px;
+      gap: 8px;
+    }
+    .game-title {
+      font-size: 14px;
+      white-space: normal;
+      line-height: 1.45;
+    }
+    .game-card-detail { padding: 12px 14px; }
+    .detail-row {
+      gap: 6px;
+      line-height: 1.55;
+    }
+    .detail-label { min-width: 72px; }
+    .detail-actions {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-edit,
+    .btn-cancel,
+    .btn-apply {
+      width: 100%;
+      min-width: 0;
+    }
+    .ticket-status-row { gap: 5px; }
+    .ticket-pill { padding: 4px 8px; line-height: 1.35; }
+    .expired-toggle {
+      padding: 12px 14px;
+      margin-top: 16px;
+    }
+    .loading-msg { padding: 28px 16px; }
+    .fab {
+      right: 16px;
+      bottom: 16px;
+      max-width: calc(100vw - 32px);
+    }
+  }
   @media (min-width: 769px) {
     .container { padding: 24px 16px; }
   }
