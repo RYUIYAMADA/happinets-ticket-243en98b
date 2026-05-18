@@ -649,12 +649,6 @@
       <div class="section-title">試合ごとの枚数・受取方法</div>
       <div class="game-card-list" id="invite-list"></div>
     </div>
-    <div class="card">
-      <div class="section-title">特記事項</div>
-      <div class="form-group" style="margin-bottom:0">
-        <textarea id="inv-note" placeholder="例）11枚目以上希望、座席アップグレード希望など"></textarea>
-      </div>
-    </div>
     <button class="btn-primary" id="inv-submit" onclick="submitInvite()">申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span></button>
   </div>
 
@@ -681,12 +675,6 @@
       <div class="game-card-list" id="family-list"></div>
     </div>
     <datalist id="fam-receivers-datalist"></datalist>
-    <div class="card">
-      <div class="section-title">特記事項</div>
-      <div class="form-group" style="margin-bottom:0">
-        <textarea id="fam-note" placeholder="その他ご要望があれば記入"></textarea>
-      </div>
-    </div>
     <button class="btn-primary" id="fam-submit" onclick="submitFamily()">申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span></button>
   </div>
 
@@ -1001,6 +989,10 @@ function buildInviteGrid() {
         <label>受取者名 <span class="req">*</span></label>
         <input type="text" class="rec-input" id="rec-inv-${g.gameId}" placeholder="受取者の氏名">
       </div>
+      <div class="receiver-field">
+        <label>特記事項</label>
+        <textarea id="note-inv-${g.gameId}" rows="2" placeholder="例）座席アップグレード希望など" style="resize:vertical;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-family:inherit;line-height:1.5;"></textarea>
+      </div>
       <div class="qty-summary" data-existing="${invExisting}">
         <span class="qty-current">現在 ${invExisting} 枚申込済み</span>
         <span class="qty-new">
@@ -1053,6 +1045,10 @@ function buildFamilyGrid() {
         <label>受取者名 <span class="req">*</span></label>
         <input type="text" class="rec-input" id="rec-fam-${g.gameId}" list="fam-receivers-datalist" placeholder="登録済みから選択 または直接入力">
       </div>
+      <div class="receiver-field">
+        <label>特記事項</label>
+        <textarea id="note-fam-${g.gameId}" rows="2" placeholder="その他ご要望があれば記入" style="resize:vertical;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-family:inherit;line-height:1.5;"></textarea>
+      </div>
       <div class="qty-summary" data-existing="${famExisting}">
         <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
         <span class="qty-new">
@@ -1100,7 +1096,8 @@ async function submitInvite() {
     if (qty === 0) return;
     const isDay = row.querySelector('.inv-day').checked;
     const receiver = (document.getElementById('rec-inv-' + gameId)?.value || '').trim();
-    entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre', receiverName: receiver });
+    const note = document.getElementById('note-inv-' + gameId)?.value || '';
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre', receiverName: receiver, note });
   });
 
   if (entries.length === 0) { showAlert('1試合以上、1枚以上を選択してください', 'error'); return; }
@@ -1124,7 +1121,7 @@ async function submitInvite() {
         quantityAdult: e.quantityAdult,
         receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
-        note: document.getElementById('inv-note').value
+        note: e.note
       });
       if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
       else {
@@ -1159,7 +1156,8 @@ async function submitFamily() {
     if (qty === 0) return;
     const parking = parseInt(row.querySelector('.fam-parking').value);
     const receiver = (document.getElementById('rec-fam-' + gameId)?.value || '').trim();
-    entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking, receiverName: receiver });
+    const note = document.getElementById('note-fam-' + gameId)?.value || '';
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking, receiverName: receiver, note });
   });
 
   if (entries.length === 0) { showAlert('申込する試合を選択し、枚数と受取方法を設定してください', 'error'); return; }
@@ -1184,7 +1182,7 @@ async function submitFamily() {
         receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
         parkingCount: e.parkingCount,
-        note: document.getElementById('fam-note').value
+        note: e.note
       });
       if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
       else {
