@@ -420,6 +420,8 @@ function initSettings() {
 function initSamplePlayers() {
   const sheet = getSheet(SHEET_PLAYERS);
   sheet.clearContents();
+  // 選手番号列をテキスト形式に設定（006が6に変換されるのを防ぐ）
+  sheet.getRange(1, 1, 1000, 1).setNumberFormat('@');
   sheet.appendRow(['選手番号', '氏名']);
   const members = [
     ['001', '#1 Jamel McLean'],
@@ -456,7 +458,12 @@ function initSamplePlayers() {
     ['110', 'Mg 緑川樹'],
     ['111', 'Mg 北野陽菜'],
   ];
-  members.forEach(m => sheet.appendRow([m[0], m[1]]));
+  // setValueで1セルずつ書くことでテキスト形式を確実に維持
+  members.forEach((m, idx) => {
+    const row = idx + 2;
+    sheet.getRange(row, 1).setNumberFormat('@').setValue(m[0]);
+    sheet.getRange(row, 2).setValue(m[1]);
+  });
 }
 
 // =====================================================
