@@ -797,7 +797,10 @@ function formatGameDate(dateStr) {
   // ISO形式 "2026-10-09T..." → "10月9日"
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr; // パース失敗はそのまま
-  return `${d.getMonth() + 1}月${d.getDate()}日`;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}/${m}/${day}`;
 }
 
 function getExistingQty(gameId, ticketType) {
