@@ -848,7 +848,7 @@ async function loadGames() {
   games.forEach(g => {
     const opt = document.createElement('option');
     opt.value = g.gameId;
-    opt.textContent = `${g.date}（${g.dayOfWeek}）vs ${g.opponent}`;
+    opt.textContent = `${formatGameDate(g.date)}（${g.dayOfWeek}）vs ${g.opponent}`;
     if (g.isDeadlinePassed) { opt.textContent += ' ✕ 締切'; opt.disabled = true; }
     sel.appendChild(opt);
   });
@@ -863,7 +863,7 @@ function updateAvailBadges() {
   const count = open.length;
   const next = open[0];
   const label = count > 0
-    ? `✓ ${count}試合 受付中（次: ${next.date} vs ${next.opponent}）`
+    ? `✓ ${count}試合 受付中（次: ${formatGameDate(next.date)} vs ${next.opponent}）`
     : '現在受付中の試合はありません';
   const cls = count > 0 ? 'open' : 'none';
   ['invite','family','paid'].forEach(type => {
@@ -1255,7 +1255,7 @@ async function submitPaid() {
 
 function getGameLabel(gameId) {
   const g = games.find(g => g.gameId === gameId);
-  return g ? `${g.date} vs ${g.opponent}` : gameId;
+  return g ? `${formatGameDate(g.date)} vs ${g.opponent}` : gameId;
 }
 
 async function callGAS(method, params) {
