@@ -131,7 +131,7 @@
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(244,121,32,0.4);
+    box-shadow: 0 4px 16px rgba(236,0,140,0.3);
     min-height: 56px;
     min-width: 44px;
     transition: background 0.15s;
@@ -456,7 +456,7 @@
     <button class="filter-btn" onclick="setFilter('upcoming', this)">直近<span class="en-sub">Upcoming</span></button>
   </div>
 
-  <div id="game-list">
+  <div id="game-list" aria-live="polite">
     <div class="loading-msg">読み込み中...</div>
   </div>
 </div>

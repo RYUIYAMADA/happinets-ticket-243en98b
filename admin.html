@@ -639,7 +639,7 @@
       <div id="pending-panel-invite" class="pending-panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>申込ID</th><th>選手</th><th>試合</th><th>種別</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th></tr></thead>
+            <thead><tr><th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">申込日時</th><th scope="col">操作</th></tr></thead>
             <tbody id="pending-tbody-invite"><tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
@@ -647,7 +647,7 @@
       <div id="pending-panel-family" class="pending-panel" style="display:none;">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>申込ID</th><th>選手</th><th>試合</th><th>種別</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th></tr></thead>
+            <thead><tr><th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">申込日時</th><th scope="col">操作</th></tr></thead>
             <tbody id="pending-tbody-family"><tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
@@ -655,7 +655,7 @@
       <div id="pending-panel-paid" class="pending-panel" style="display:none;">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>申込ID</th><th>選手</th><th>試合</th><th>種別</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>申込日時</th><th>操作</th></tr></thead>
+            <thead><tr><th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">申込日時</th><th scope="col">操作</th></tr></thead>
             <tbody id="pending-tbody-paid"><tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
@@ -689,7 +689,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr id="app-thead-row">
-            <th>申込ID</th><th>選手</th><th>試合</th><th>種別</th><th>枚数</th><th>受取者</th><th>受取方法</th><th>備考</th><th>申込日時</th><th>ステータス</th>
+            <th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">備考</th><th scope="col">申込日時</th><th scope="col">ステータス</th>
           </tr></thead>
           <tbody id="app-tbody">
             <tr><td colspan="10" class="empty-msg"><span class="spinner"></span></td></tr>
@@ -747,7 +747,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>試合ID</th><th>日付</th><th>曜日</th><th>対戦相手</th><th>申込期限</th><th>状態</th><th>操作</th>
+            <th scope="col">試合ID</th><th scope="col">日付</th><th scope="col">曜日</th><th scope="col">対戦相手</th><th scope="col">申込期限</th><th scope="col">状態</th><th scope="col">操作</th>
           </tr></thead>
           <tbody id="deadline-tbody">
             <tr><td colspan="7" class="empty-msg"><span class="spinner"></span></td></tr>
@@ -758,7 +758,7 @@
   </div>
 
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" aria-live="assertive"></div>
 
 <script>
 function formatDate(dateStr) {
@@ -1021,9 +1021,9 @@ function renderMatrix() {
     return 'cell-none';
   };
 
-  let html = '<thead><tr><th>選手</th>';
+  let html = '<thead><tr><th scope="col">選手</th>';
   games.forEach(g => {
-    html += `<th title="${formatDate(g.date)} vs ${g.opponent}">${formatDate(g.date)}<br>${g.opponent}</th>`;
+    html += `<th scope="col" title="${formatDate(g.date)} vs ${g.opponent}">${formatDate(g.date)}<br>${g.opponent}</th>`;
   });
   html += '</tr></thead><tbody>';
 
