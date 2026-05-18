@@ -763,7 +763,11 @@
 <script>
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  return `${d.getMonth()+1}月${d.getDate()}日`;
+  if (isNaN(d.getTime())) return dateStr;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}/${m}/${day}`;
 }
 function esc(s) {
   const d = document.createElement('div');
