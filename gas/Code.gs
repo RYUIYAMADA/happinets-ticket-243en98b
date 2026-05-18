@@ -115,9 +115,11 @@ function doPost(e) {
 function login(playerId) {
   const sheet = getSheet(SHEET_PLAYERS);
   const data = sheet.getDataRange().getValues();
+  // 数値・ゼロ埋め両方に対応（例: 6 == "006"）
+  const norm = s => String(parseInt(s, 10));
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === String(playerId)) {
-      return { playerId: data[i][0], name: data[i][1], role: 'player' };
+    if (norm(data[i][0]) === norm(playerId)) {
+      return { playerId: String(data[i][0]), name: data[i][1], role: 'player' };
     }
   }
   throw new Error('番号が見つかりません');
