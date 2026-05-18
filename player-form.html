@@ -133,6 +133,33 @@
   }
   .game-card-row.row-disabled { opacity: 0.4; pointer-events: none; }
   .game-card-row.has-entry { border-color: var(--accent); background: #fff8f3; }
+  .receiver-field {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .receiver-field label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-sub);
+    letter-spacing: 0.04em;
+  }
+  .receiver-field input {
+    height: 40px;
+    padding: 0 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    width: 100%;
+  }
+  .receiver-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(236,0,140,.1);
+  }
   .qty-summary {
     display: flex;
     margin-top: 8px;
@@ -556,13 +583,8 @@
       <div class="game-card-list" id="invite-list"></div>
     </div>
     <div class="card">
-      <div class="section-title">共通情報</div>
-      <div class="form-group">
-        <label class="field-label">受取者名 <span class="req">*</span><span class="en-sub" aria-hidden="true">Receiver Name</span></label>
-        <input type="text" id="inv-receiver" placeholder="受取者の氏名">
-      </div>
-      <div class="form-group">
-        <label class="field-label">特記事項<span class="en-sub" aria-hidden="true">Notes</span></label>
+      <div class="section-title">特記事項</div>
+      <div class="form-group" style="margin-bottom:0">
         <textarea id="inv-note" placeholder="例）11枚目以上希望、座席アップグレード希望など"></textarea>
       </div>
     </div>
@@ -584,13 +606,8 @@
       <div class="game-card-list" id="family-list"></div>
     </div>
     <div class="card">
-      <div class="section-title">共通情報</div>
-      <div class="form-group">
-        <label class="field-label">受取者名 <span class="req">*</span><span class="en-sub" aria-hidden="true">Receiver Name</span></label>
-        <input type="text" id="fam-receiver" placeholder="受取者の氏名">
-      </div>
-      <div class="form-group">
-        <label class="field-label">特記事項<span class="en-sub" aria-hidden="true">Notes</span></label>
+      <div class="section-title">特記事項</div>
+      <div class="form-group" style="margin-bottom:0">
         <textarea id="fam-note" placeholder="その他ご要望があれば記入"></textarea>
       </div>
     </div>
@@ -865,6 +882,10 @@ function buildInviteGrid() {
           <input type="checkbox" class="inv-day" data-game="${g.gameId}">当日受取
         </label>
       </div>
+      <div class="receiver-field">
+        <label>受取者名 <span class="req">*</span></label>
+        <input type="text" class="rec-input" id="rec-inv-${g.gameId}" placeholder="受取者の氏名">
+      </div>
       <div class="qty-summary" data-existing="${invExisting}">
         <span class="qty-current">現在 ${invExisting} 枚申込済み</span>
         <span class="qty-new">
@@ -913,6 +934,10 @@ function buildFamilyGrid() {
           </select>
         </div>
       </div>
+      <div class="receiver-field">
+        <label>受取者名 <span class="req">*</span></label>
+        <input type="text" class="rec-input" id="rec-fam-${g.gameId}" placeholder="受取者の氏名">
+      </div>
       <div class="qty-summary" data-existing="${famExisting}">
         <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
         <span class="qty-new">
@@ -952,8 +977,6 @@ document.addEventListener('change', e => { if (e.target.id === 'paid-game') onPa
 // ===== 招待チケット送信 =====
 async function submitInvite() {
   clearAlert();
-  const receiver = document.getElementById('inv-receiver').value.trim();
-  if (!receiver) { showAlert('受取者名を入力してください', 'error'); return; }
 
   const entries = [];
   document.querySelectorAll('#invite-list .game-card-row:not(.row-disabled)').forEach(row => {
@@ -961,10 +984,13 @@ async function submitInvite() {
     const qty = parseInt(document.getElementById('val-inv-' + gameId)?.textContent) || 0;
     if (qty === 0) return;
     const isDay = row.querySelector('.inv-day').checked;
-    entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre' });
+    const receiver = (document.getElementById('rec-inv-' + gameId)?.value || '').trim();
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre', receiverName: receiver });
   });
 
   if (entries.length === 0) { showAlert('1試合以上、1枚以上を選択してください', 'error'); return; }
+  const missingReceiver = entries.find(e => !e.receiverName);
+  if (missingReceiver) { showAlert(`${getGameLabel(missingReceiver.gameId)} の受取者名を入力してください`, 'error'); return; }
   const duplicate = findDuplicateEntry(entries, 'invite');
   if (duplicate) { showAlert(`${getGameLabel(duplicate.gameId)} の招待チケットは既に申込済みです`, 'error'); return; }
 
@@ -981,7 +1007,7 @@ async function submitInvite() {
         playerId: auth.playerId,
         ticketType: 'invite',
         quantityAdult: e.quantityAdult,
-        receiverName: receiver,
+        receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
         note: document.getElementById('inv-note').value
       });
@@ -1009,8 +1035,6 @@ async function submitInvite() {
 // ===== 家族席送信 =====
 async function submitFamily() {
   clearAlert();
-  const receiver = document.getElementById('fam-receiver').value.trim();
-  if (!receiver) { showAlert('受取者名を入力してください', 'error'); return; }
 
   const entries = [];
   document.querySelectorAll('#family-list .game-card-row:not(.row-disabled)').forEach(row => {
@@ -1019,10 +1043,13 @@ async function submitFamily() {
     const pickup = row.querySelector('.fam-pickup').value;
     if (qty === 0) return;
     const parking = parseInt(row.querySelector('.fam-parking').value);
-    entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking });
+    const receiver = (document.getElementById('rec-fam-' + gameId)?.value || '').trim();
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking, receiverName: receiver });
   });
 
   if (entries.length === 0) { showAlert('申込する試合を選択し、枚数と受取方法を設定してください', 'error'); return; }
+  const missingReceiver = entries.find(e => !e.receiverName);
+  if (missingReceiver) { showAlert(`${getGameLabel(missingReceiver.gameId)} の受取者名を入力してください`, 'error'); return; }
   const duplicate = findDuplicateEntry(entries, 'family');
   if (duplicate) { showAlert(`${getGameLabel(duplicate.gameId)} の家族席は既に申込済みです`, 'error'); return; }
 
@@ -1039,7 +1066,7 @@ async function submitFamily() {
         playerId: auth.playerId,
         ticketType: 'family',
         quantityAdult: e.quantityAdult,
-        receiverName: receiver,
+        receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
         parkingCount: e.parkingCount,
         note: document.getElementById('fam-note').value
