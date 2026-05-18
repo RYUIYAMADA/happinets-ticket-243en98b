@@ -29,6 +29,7 @@
     --radius: 12px;
     --shadow: 0 4px 24px rgba(0,0,0,0.08);
   }
+  .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
@@ -359,7 +360,7 @@
 <header>
   <div class="header-inner">
     <div>
-      <h1>申込状況ダッシュボード</h1>
+      <h1>申込状況ダッシュボード<span class="en-sub">Request Status Dashboard</span></h1>
       <div class="header-sub" id="player-name-display"></div>
     </div>
     <button class="btn-logout" onclick="logout()">ログアウト</button>
@@ -371,28 +372,28 @@
   <div class="summary-grid">
     <div class="summary-card">
       <div class="num num-total" id="cnt-total">—</div>
-      <div class="lbl">申込済み</div>
+      <div class="lbl">申込済み<span class="en-sub">Requested</span></div>
     </div>
     <div class="summary-card">
       <div class="num num-pending" id="cnt-pending">—</div>
-      <div class="lbl">確認中</div>
+      <div class="lbl">確認中<span class="en-sub">Pending</span></div>
     </div>
     <div class="summary-card">
       <div class="num num-confirmed" id="cnt-confirmed">—</div>
-      <div class="lbl">確保済み</div>
+      <div class="lbl">確保済み<span class="en-sub">Confirmed</span></div>
     </div>
     <div class="summary-card">
       <div class="num num-rejected" id="cnt-rejected">—</div>
-      <div class="lbl">対応不可</div>
+      <div class="lbl">対応不可<span class="en-sub">Unavailable</span></div>
     </div>
   </div>
 
   <!-- フィルター -->
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="setFilter('all', this)">全試合</button>
-    <button class="filter-btn" onclick="setFilter('applied', this)">申込あり</button>
-    <button class="filter-btn" onclick="setFilter('none', this)">未申込</button>
-    <button class="filter-btn" onclick="setFilter('upcoming', this)">直近</button>
+    <button class="filter-btn active" onclick="setFilter('all', this)">全試合<span class="en-sub">All Games</span></button>
+    <button class="filter-btn" onclick="setFilter('applied', this)">申込あり<span class="en-sub">Requested</span></button>
+    <button class="filter-btn" onclick="setFilter('none', this)">未申込<span class="en-sub">Not Requested</span></button>
+    <button class="filter-btn" onclick="setFilter('upcoming', this)">直近<span class="en-sub">Upcoming</span></button>
   </div>
 
   <div id="game-list">
@@ -419,13 +420,17 @@ let games = [];
 let applications = [];
 let currentFilter = 'all';
 
-const TICKET_LABELS = { invite: '招待', family: '家族席', paid: '有料' };
+const TICKET_LABELS = {
+  invite: { ja: '招待', en: 'Invite' },
+  family: { ja: '家族席', en: 'Family' },
+  paid: { ja: '有料', en: 'Paid' },
+};
 const PICKUP_LABELS = { pre: '事前受取', day: '当日受取' };
 const STATUS_CONFIG = {
-  pending:   { label: '確認中',   cls: 'badge-pending' },
-  confirmed: { label: '確保済み', cls: 'badge-confirmed' },
-  rejected:  { label: '対応不可', cls: 'badge-rejected' },
-  cancelled: { label: 'キャンセル', cls: 'badge-none' },
+  pending:   { label: '確認中', en: 'Pending', cls: 'badge-pending' },
+  confirmed: { label: '確保済み', en: 'Confirmed', cls: 'badge-confirmed' },
+  rejected:  { label: '対応不可', en: 'Unavailable', cls: 'badge-rejected' },
+  cancelled: { label: 'キャンセル', en: 'Cancelled', cls: 'badge-none' },
 };
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -487,6 +492,18 @@ function getApps(gameId) {
   return applications.filter(a => String(a.gameId) === String(gameId));
 }
 
+function ticketLabelHtml(type) {
+  const label = TICKET_LABELS[type];
+  if (!label) return esc(type);
+  return `<span>${label.ja}<span class="en-sub">${label.en}</span></span>`;
+}
+
+function statusLabelHtml(status) {
+  const cfg = STATUS_CONFIG[status];
+  if (!cfg) return esc(status);
+  return `<span>${cfg.label}<span class="en-sub">${cfg.en}</span></span>`;
+}
+
 function renderList() {
   const filtered = filterGames();
   const el = document.getElementById('game-list');
@@ -545,21 +562,20 @@ function toggleExpired(btn) {
 }
 
 function buildTicketPill(app, type, isPassed) {
-  const label = TICKET_LABELS[type] || type;
+  const label = ticketLabelHtml(type);
   if (!app) {
-    if (isPassed) return `<span class="ticket-pill pill-none">${label} —</span>`;
-    return `<span class="ticket-pill pill-none">${label} 未申込</span>`;
+    if (isPassed) return `<span class="ticket-pill pill-none">${label}<span>—</span></span>`;
+    return `<span class="ticket-pill pill-none">${label}<span>未申込<span class="en-sub">Not Requested</span></span></span>`;
   }
-  const cfg = STATUS_CONFIG[app.status] || { label: app.status };
   const pillCls = app.status === 'confirmed' ? 'pill-confirmed'
     : app.status === 'pending' ? 'pill-pending'
     : app.status === 'rejected' ? 'pill-rejected'
     : 'pill-done';
-  return `<span class="ticket-pill ${pillCls}">${label} ${cfg.label}</span>`;
+  return `<span class="ticket-pill ${pillCls}">${label} ${statusLabelHtml(app.status)}</span>`;
 }
 
 function buildTicketSection(app, type, gameId, isPassed) {
-  const label = TICKET_LABELS[type] || type;
+  const label = ticketLabelHtml(type);
   const pickupLabel = PICKUP_LABELS[app.pickupMethod] || app.pickupMethod;
   let qtyText = '';
   if (type === 'family') {
@@ -578,7 +594,7 @@ function buildTicketSection(app, type, gameId, isPassed) {
     <div class="ticket-section">
       <div class="ticket-section-header">
         <span class="ticket-section-title">${label}</span>
-        <span class="badge ${cfg.cls}">${cfg.label}</span>
+        <span class="badge ${cfg.cls}">${statusLabelHtml(app.status)}</span>
       </div>
       <div class="detail-row"><span class="detail-label">枚数</span><span class="detail-value">${qtyText}${seatText}</span></div>
       <div class="detail-row"><span class="detail-label">受取者</span><span class="detail-value">${esc(app.receiverName) || '—'}</span></div>

@@ -85,6 +85,9 @@ function doPost(e) {
       case 'submitApplication':
         result = { ok: true, data: submitApplication(body) };
         break;
+      case 'cancelApplication':
+        result = { ok: true, data: cancelApplication(body.applicationId, body.playerId) };
+        break;
       case 'updateDeadline':
         verifyAdmin(body.pwHash);
         result = { ok: true, data: updateDeadline(body.gameId, body.deadline) };
@@ -125,10 +128,9 @@ function verifyAdmin(pwHash) {
   const sheet = getSheet(SHEET_SETTINGS);
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if ((data[i][0] === 'admin_password_hash' || data[i][0] === 'manager_password_hash')
-        && data[i][1] === pwHash) return true;
+    if (data[i][0] === 'admin_password_hash' && data[i][1] === pwHash) return true;
   }
-  throw new Error('認証に失敗しました');
+  throw new Error('この操作にはチケット担当者権限が必要です');
 }
 
 function adminLogin(passwordHash) {
@@ -542,7 +544,7 @@ function setupAfterMigration() {
     Logger.log('ヘッダー・ドロップダウン設定: ' + name);
   });
 
-  // パスワードハッシュを正しい値に更新（PW: 1234 / salt: hnts2026_）
+  // パスワードハッシュを正しい値に更新（PW: 1234 / manager1234）
   const settingsSheet = getSheet(SHEET_SETTINGS);
   const data = settingsSheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
@@ -550,7 +552,7 @@ function setupAfterMigration() {
       settingsSheet.getRange(i + 1, 2).setValue('245bcf738697fd2a395f6ccd445eaff32b08b340098510bad9da528dea7201ae');
     }
     if (data[i][0] === 'manager_password_hash') {
-      settingsSheet.getRange(i + 1, 2).setValue('245bcf738697fd2a395f6ccd445eaff32b08b340098510bad9da528dea7201ae');
+      settingsSheet.getRange(i + 1, 2).setValue('75dba5516e94695ce6c0871d9d41300715b72592b2580591ea013d1375115700');
     }
   }
 

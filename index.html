@@ -22,9 +22,11 @@
     --radius: 12px;
     --shadow: 0 4px 24px rgba(0,0,0,0.08);
   }
+  .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
     background: var(--bg);
+    font-size: 14px;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -51,7 +53,7 @@
     display: inline-block;
     background: var(--gold);
     color: #fff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     padding: 4px 10px;
@@ -114,7 +116,7 @@
   .btn {
     width: 100%;
     padding: 14px;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     color: #fff;
     background: var(--accent);
@@ -129,7 +131,7 @@
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .error-msg {
     color: var(--error);
-    font-size: 13px;
+    font-size: 14px;
     margin-top: 12px;
     text-align: center;
     min-height: 20px;
@@ -183,23 +185,23 @@
 <div class="card">
   <div class="logo">
     <div class="logo-badge">秋田ノーザンハピネッツ</div>
-    <h1>選手家族<br>チケット申込システム</h1>
+    <h1>選手家族<br>チケット申込システム<span class="en-sub">Player Family Ticket Request System</span></h1>
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('player')">選手ログイン</button>
-    <button class="tab" onclick="switchTab('admin')">管理者</button>
+    <button class="tab active" onclick="switchTab('player')">選手ログイン<span class="en-sub">Player Login</span></button>
+    <button class="tab" onclick="switchTab('admin')">管理者<span class="en-sub">Admin</span></button>
   </div>
 
   <div id="panel-player" class="panel active">
     <div class="form-group">
-      <label for="playerId">番号（3桁）</label>
+      <label for="playerId">番号（3桁）<span class="en-sub">ID Number (3 digits)</span></label>
       <input type="text" id="playerId" placeholder="例: 006（選手）　101（スタッフ）" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
     </div>
     <div class="id-hint">
-      選手: 背番号3桁　／　スタッフ: 101〜
+      選手: 背番号3桁　／　スタッフ: 101〜<span class="en-sub">Players: 3-digit jersey number / Staff: 101 and up</span>
     </div>
-    <button class="btn" onclick="loginPlayer()">ログイン</button>
+    <button class="btn" onclick="loginPlayer()">ログイン<span class="en-sub">Login</span></button>
     <div class="error-msg" id="player-error"></div>
   </div>
 
@@ -221,7 +223,7 @@
       <label for="adminPw">パスワード</label>
       <input type="password" id="adminPw" placeholder="パスワードを入力">
     </div>
-    <button class="btn" onclick="loginAdmin()">管理者ログイン</button>
+    <button class="btn" onclick="loginAdmin()">管理者ログイン<span class="en-sub">Admin Login</span></button>
     <div class="error-msg" id="admin-error"></div>
   </div>
 </div>
@@ -243,23 +245,48 @@ async function sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function callGAS(method, params) {
+function getLoginErrorMessage(e) {
+  if (e.name === 'AbortError') return '通信がタイムアウトしました。再度お試しください';
+  if (e.name === 'TypeError') return 'ネットワークエラーが発生しました。再度お試しください';
+  return e.message;
+}
+
+async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function callGAS(method, params, retries = 2) {
   if (!GAS_URL) {
     // デモモード: LocalStorageでオフライン動作
     return demoMode(method, params);
   }
-  if (method === 'GET') {
-    const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${GAS_URL}?${qs}`, { redirect: 'follow' });
-    return res.json();
-  } else {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(params),
-      redirect: 'follow'
-    });
-    return res.json();
+  for (let i = 0; i <= retries; i++) {
+    try {
+      if (method === 'GET') {
+        const qs = new URLSearchParams(params).toString();
+        const res = await fetchWithTimeout(`${GAS_URL}?${qs}`, { redirect: 'follow' });
+        const json = await res.json();
+        return json;
+      } else {
+        const res = await fetchWithTimeout(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(params),
+          redirect: 'follow'
+        });
+        const json = await res.json();
+        return json;
+      }
+    } catch(e) {
+      if (i === retries) throw e;
+      await new Promise(r => setTimeout(r, 800));
+    }
   }
 }
 
@@ -270,16 +297,20 @@ async function loginPlayer() {
 
   if (!playerId || playerId.length !== 3) { errEl.textContent = '3桁の番号を入力してください'; return; }
 
-  document.querySelector('#panel-player .btn').disabled = true;
+  const btn = document.querySelector('#panel-player .btn');
+  const originalBtnHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
   try {
     const result = await callGAS('POST', { action: 'login', playerId });
     if (!result.ok) throw new Error(result.error);
     sessionStorage.setItem('auth', JSON.stringify(result.data));
     window.location.href = 'player-dashboard.html';
   } catch (e) {
-    errEl.textContent = e.message || '番号が見つかりません';
+    errEl.textContent = getLoginErrorMessage(e) || '番号が見つかりません';
   } finally {
-    document.querySelector('#panel-player .btn').disabled = false;
+    btn.disabled = false;
+    btn.innerHTML = originalBtnHtml;
   }
 }
 
@@ -296,17 +327,23 @@ async function loginAdmin() {
   errEl.textContent = '';
   if (!pw) { errEl.textContent = 'パスワードを入力してください'; return; }
 
-  document.querySelector('#panel-admin .btn').disabled = true;
+  const btn = document.querySelector('#panel-admin .btn');
+  const originalBtnHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
   try {
-    const hash = await sha256(pw);
+    const SALT = 'hnts2026_';
+    const hash = await sha256(SALT + pw);
     const result = await callGAS('POST', { action: 'adminLogin', passwordHash: hash });
     if (!result.ok) throw new Error(result.error);
     sessionStorage.setItem('auth', JSON.stringify(result.data));
+    sessionStorage.setItem('adminPasswordHash', hash);
     window.location.href = 'admin.html';
   } catch (e) {
-    errEl.textContent = e.message || 'ログインに失敗しました';
+    errEl.textContent = getLoginErrorMessage(e) || 'ログインに失敗しました';
   } finally {
-    document.querySelector('#panel-admin .btn').disabled = false;
+    btn.disabled = false;
+    btn.innerHTML = originalBtnHtml;
   }
 }
 
