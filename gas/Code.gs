@@ -3,7 +3,15 @@
 // =====================================================
 
 const SS_ID = ''; // デプロイ後にSpreadsheetIDを設定（空白=アクティブSSを使用）
-const LINE_CHANNEL_ACCESS_TOKEN = ''; // LINE Messaging API チャンネルアクセストークン
+
+// =====================================================
+// LINE設定（トークンはPropertiesServiceで管理）
+// GASエディタ → プロジェクト設定 → スクリプトプロパティ に以下を登録:
+//   LINE_CHANNEL_ACCESS_TOKEN : チャンネルアクセストークン（長期）
+// =====================================================
+function getLineToken() {
+  return PropertiesService.getScriptProperties().getProperty('LINE_CHANNEL_ACCESS_TOKEN') || '';
+}
 
 // シート名（日本語）
 const SHEET_PLAYERS  = '選手・スタッフ';
@@ -74,6 +82,13 @@ function doPost(e) {
   let result;
   try {
     body = JSON.parse(e.postData.contents);
+
+    // LINE Webhook は body.events 配列を持つ → 専用ハンドラへ振り分け
+    if (body.events && Array.isArray(body.events)) {
+      handleLineWebhook(body.events);
+      return ContentService.createTextOutput('OK');
+    }
+
     const action = body.action || '';
     switch (action) {
       case 'login':
@@ -273,12 +288,29 @@ function updateStatus(applicationId, status) {
     throw new Error('不正なステータス: ' + status);
   }
   const jpStatus = STATUS_EN_TO_JP[status] || status;
+  const statusLabel = { pending:'確認中', confirmed:'確保済み', rejected:'対応不可', cancelled:'キャンセル' };
+
   for (const sheetName of [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID]) {
     const sheet = getSheet(sheetName);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === applicationId) {
         sheet.getRange(i + 1, 16).setValue(jpStatus); // col16 = ステータス（日本語）
+
+        // ===== LINE通知（トークン設定後に有効化）=====
+        const playerId  = data[i][1];
+        const gameLabel = data[i][3]; // 試合名
+        const players   = getPlayers();
+        const player    = players.find(p => String(p.playerId) === String(playerId));
+        if (player && player.lineUserId) {
+          const msg = `【チケット申込 更新通知】\n` +
+                      `試合: ${gameLabel}\n` +
+                      `ステータス: ${statusLabel[status] || jpStatus}\n` +
+                      `秋田ノーザンハピネッツ チケット担当`;
+          sendLineMessage(player.lineUserId, msg);
+        }
+        // ============================================
+
         return { updated: true };
       }
     }
@@ -339,19 +371,81 @@ function getPlayers() {
   const players = [];
   for (let i = 1; i < data.length; i++) {
     if (!data[i][0]) continue;
-    players.push({ playerId: data[i][0], name: data[i][1] });
+    players.push({
+      playerId:   data[i][0],
+      name:       data[i][1],
+      lineUserId: data[i][2] || '' // col3: LINE ユーザーID（友だち追加時に自動登録）
+    });
   }
   return players;
+}
+
+// 選手シートにLINE IDを保存（友だち追加・背番号登録時に呼ぶ）
+function saveLineUserId(playerId, lineUserId) {
+  const sheet = getSheet(SHEET_PLAYERS);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(parseInt(playerId, 10)) ||
+        String(data[i][0]) === String(playerId)) {
+      sheet.getRange(i + 1, 3).setValue(lineUserId);
+      return true;
+    }
+  }
+  return false; // 選手番号が見つからない
+}
+
+// =====================================================
+// LINE Webhook ハンドラ（実装準備）
+// =====================================================
+function handleLineWebhook(events) {
+  events.forEach(ev => {
+    if (ev.type === 'follow') {
+      // 友だち追加イベント → 背番号入力を促すメッセージを送信
+      sendLineMessage(ev.source.userId,
+        '秋田ノーザンハピネッツ チケット申込システムです。\n' +
+        'あなたの選手番号（背番号3桁 または スタッフ番号）を入力してください。\n' +
+        '例）006  /  101');
+    } else if (ev.type === 'message' && ev.message.type === 'text') {
+      // テキストメッセージ受信 → 選手番号として登録を試みる
+      const lineUserId = ev.source.userId;
+      const text = ev.message.text.trim();
+      const saved = saveLineUserId(text, lineUserId);
+      if (saved) {
+        sendLineMessage(lineUserId, '登録完了しました！\nチケットのステータスが更新された際にこちらでお知らせします。');
+      } else {
+        sendLineMessage(lineUserId, '選手番号が見つかりませんでした。\n正しい番号を入力してください（例：006 / 101）');
+      }
+    }
+  });
+}
+
+// LINE push通知送信（updateStatusから呼ぶ）
+function sendLineMessage(lineUserId, text) {
+  const token = getLineToken();
+  if (!token || !lineUserId) return;
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'post',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    payload: JSON.stringify({
+      to: lineUserId,
+      messages: [{ type: 'text', text: text }]
+    }),
+    muteHttpExceptions: true
+  });
 }
 
 // =====================================================
 // LINE統計
 // =====================================================
 function getLineStats() {
-  if (!LINE_CHANNEL_ACCESS_TOKEN) {
+  const token = getLineToken();
+  if (!token) {
     return { quota: 200, used: 0, remaining: 200, note: 'LINE未設定' };
   }
-  const headers = { Authorization: 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN };
+  const headers = { Authorization: 'Bearer ' + token };
   const quotaRes = JSON.parse(UrlFetchApp.fetch('https://api.line.me/v2/bot/message/quota', { headers }).getContentText());
   const usedRes  = JSON.parse(UrlFetchApp.fetch('https://api.line.me/v2/bot/message/quota/consumption', { headers }).getContentText());
   const quota    = quotaRes.value || 200;
@@ -422,7 +516,7 @@ function initSamplePlayers() {
   sheet.clearContents();
   // 選手番号列をテキスト形式に設定（006が6に変換されるのを防ぐ）
   sheet.getRange(1, 1, 1000, 1).setNumberFormat('@');
-  sheet.appendRow(['選手番号', '氏名']);
+  sheet.appendRow(['選手番号', '氏名', 'LINE ID']);
   const members = [
     ['001', '#1 Jamel McLean'],
     ['002', '#2 栗原翼'],
@@ -474,7 +568,7 @@ function createSheet(name) {
   const sheet = ss.insertSheet(name);
   switch (name) {
     case SHEET_PLAYERS:
-      sheet.appendRow(['選手番号', '氏名']);
+      sheet.appendRow(['選手番号', '氏名', 'LINE ID']);
       break;
     case SHEET_GAMES:
       sheet.appendRow(['試合ID', '日付', '曜日', '対戦相手', '申込期限']);
