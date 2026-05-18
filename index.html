@@ -154,29 +154,30 @@
   }
   .role-options {
     display: flex;
-    flex-direction: row;
-    gap: 10px;
+    background: #f1f3f5;
+    border-radius: 10px;
+    padding: 4px;
+    gap: 0;
     margin-bottom: 4px;
   }
   .role-option {
     flex: 1;
     position: relative;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 16px 10px 14px;
-    border: 2px solid var(--border);
-    border-radius: 12px;
+    padding: 10px 8px;
+    border-radius: 7px;
     cursor: pointer;
-    background: #fff;
-    transition: border-color .18s, background .18s, box-shadow .18s;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    background: transparent;
+    border: none;
+    transition: color .15s;
     user-select: none;
-  }
-  .role-option:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    min-height: 44px;
+    text-align: center;
   }
   .role-option input[type="radio"] {
     position: absolute;
@@ -185,67 +186,10 @@
     height: 0;
     pointer-events: none;
   }
-  .role-option .role-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    transition: background .18s;
-  }
-  .role-option .role-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-sub);
-    text-align: center;
-    line-height: 1.3;
-    transition: color .18s;
-  }
-  .role-option .role-check {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: #fff;
-    transition: all .18s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  /* Selected state */
   .role-option.selected {
-    border-color: var(--accent);
-    background: #fff5f8;
-    box-shadow: 0 0 0 3px rgba(220,38,127,.08);
-  }
-  .role-option.selected .role-icon {
-    background: rgba(220,38,127,.12);
-  }
-  .role-option.selected .role-name {
-    color: var(--accent);
-  }
-  .role-option.selected .role-check {
-    border-color: var(--accent);
-    background: var(--accent);
-  }
-  .role-option.selected .role-check::after {
-    content: '';
-    width: 5px;
-    height: 8px;
-    border: 2px solid #fff;
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg) translateY(-1px);
-    display: block;
-  }
-  @media (min-width: 481px) {
-    .role-option { flex: 1; }
+    background: #fff;
+    color: #111;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06);
   }
   @media (max-width: 480px) {
     body {
@@ -298,18 +242,14 @@
   <div id="panel-admin" class="panel">
     <div class="form-group">
       <label>アカウント種別</label>
-      <div class="role-options">
+      <div class="role-options" role="radiogroup" aria-label="アカウント種別">
         <label class="role-option selected" id="role-ticket-label">
           <input type="radio" name="adminRole" value="ticket" checked onchange="updateRoleUI()">
-          <div class="role-check" aria-hidden="true"></div>
-          <div class="role-icon">🎫</div>
-          <div class="role-name">チケット担当</div>
+          チケット担当
         </label>
         <label class="role-option" id="role-manager-label">
           <input type="radio" name="adminRole" value="manager" onchange="updateRoleUI()">
-          <div class="role-check" aria-hidden="true"></div>
-          <div class="role-icon">🏀</div>
-          <div class="role-name">チームマネージャー</div>
+          チームマネージャー
         </label>
       </div>
     </div>
