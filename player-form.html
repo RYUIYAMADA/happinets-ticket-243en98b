@@ -134,7 +134,7 @@
   .game-card-row.row-disabled { opacity: 0.4; pointer-events: none; }
   .game-card-row.has-entry { border-color: var(--accent); background: #fff8f3; }
   .qty-summary {
-    display: none;
+    display: flex;
     margin-top: 8px;
     font-size: 12px;
     color: var(--text-sub);
@@ -142,13 +142,19 @@
     align-items: center;
     flex-wrap: wrap;
   }
-  .qty-summary.visible { display: flex; }
   .qty-summary .qty-current {
     background: #f1f5f9;
     border-radius: 6px;
     padding: 3px 8px;
     font-weight: 600;
+    color: var(--text-sub);
   }
+  .qty-summary .qty-new {
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .qty-summary.has-new .qty-new { display: flex; }
   .qty-summary .qty-arrow { color: #9ca3af; font-size: 11px; }
   .qty-summary .qty-total {
     background: #fce7f3;
@@ -777,13 +783,21 @@ function stepQty(id, delta, max) {
     if (summaryEl) {
       const existing = parseInt(summaryEl.dataset.existing) || 0;
       if (total > 0) {
-        summaryEl.classList.add('visible');
-        summaryEl.querySelector('.qty-total').textContent = '合計 ' + (existing + total) + ' 枚';
+        summaryEl.classList.add('has-new');
+        summaryEl.querySelector('.qty-total').textContent = '追加後 合計 ' + (existing + total) + ' 枚';
       } else {
-        summaryEl.classList.remove('visible');
+        summaryEl.classList.remove('has-new');
       }
     }
   }
+}
+
+function formatGameDate(dateStr) {
+  if (!dateStr) return dateStr;
+  // ISO形式 "2026-10-09T..." → "10月9日"
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr; // パース失敗はそのまま
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
 function getExistingQty(gameId, ticketType) {
@@ -804,15 +818,10 @@ function buildInviteGrid() {
       : '';
     const sid = 'inv-' + g.gameId;
     const invExisting = getExistingQty(g.gameId, 'invite');
-    const invSummaryHtml = `<div class="qty-summary" data-existing="${invExisting}">
-      <span class="qty-current">現在 ${invExisting} 枚</span>
-      <span class="qty-arrow">→</span>
-      <span class="qty-total">合計 ${invExisting} 枚</span>
-    </div>`;
     return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${g.gameId}">
       <div class="game-card-top">
         <div class="game-card-info">
-          <div class="game-date">${g.date}（${g.dayOfWeek}）</div>
+          <div class="game-date">${formatGameDate(g.date)}（${g.dayOfWeek}）</div>
           <div class="game-name">vs ${g.opponent}</div>
         </div>
         ${dl}
@@ -823,7 +832,13 @@ function buildInviteGrid() {
           <input type="checkbox" class="inv-day" data-game="${g.gameId}">当日受取
         </label>
       </div>
-      ${invExisting > 0 ? invSummaryHtml : `<div class="qty-summary" data-existing="0"><span class="qty-current">現在 0 枚</span><span class="qty-arrow">→</span><span class="qty-total">合計 0 枚</span></div>`}
+      <div class="qty-summary" data-existing="${invExisting}">
+        <span class="qty-current">現在 ${invExisting} 枚申込済み</span>
+        <span class="qty-new">
+          <span class="qty-arrow">→</span>
+          <span class="qty-total"></span>
+        </span>
+      </div>
     </div>`;
   }).join('');
 }
@@ -839,15 +854,10 @@ function buildFamilyGrid() {
       : '';
     const famSid = 'fam-' + g.gameId;
     const famExisting = getExistingQty(g.gameId, 'family');
-    const famSummaryHtml = `<div class="qty-summary" data-existing="${famExisting}">
-      <span class="qty-current">現在 ${famExisting} 枚</span>
-      <span class="qty-arrow">→</span>
-      <span class="qty-total">合計 ${famExisting} 枚</span>
-    </div>`;
     return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${g.gameId}">
       <div class="game-card-top">
         <div class="game-card-info">
-          <div class="game-date">${g.date}（${g.dayOfWeek}）</div>
+          <div class="game-date">${formatGameDate(g.date)}（${g.dayOfWeek}）</div>
           <div class="game-name">vs ${g.opponent}</div>
         </div>
         ${dl}
@@ -864,7 +874,13 @@ function buildFamilyGrid() {
           <option value="2">2台</option>
         </select>
       </div>
-      ${famSummaryHtml}
+      <div class="qty-summary" data-existing="${famExisting}">
+        <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
+        <span class="qty-new">
+          <span class="qty-arrow">→</span>
+          <span class="qty-total"></span>
+        </span>
+      </div>
     </div>`;
   }).join('');
 }
