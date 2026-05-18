@@ -788,9 +788,7 @@ function buildFamilyGrid() {
     const dl = g.deadline
       ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? '締切済み' : '期限 ' + g.deadline}</span>`
       : '';
-    const adultSid = 'fam-adult-' + g.gameId;
-    const childSid = 'fam-child-' + g.gameId;
-    const infantSid = 'fam-infant-' + g.gameId;
+    const famSid = 'fam-' + g.gameId;
     return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${g.gameId}">
       <div class="game-card-top">
         <div class="game-card-info">
@@ -800,18 +798,7 @@ function buildFamilyGrid() {
         ${dl}
       </div>
       <div class="game-card-controls">
-        <div class="stepper-field">
-          <div class="stepper-label">大人</div>
-          ${stepperHtml(adultSid, 8)}
-        </div>
-        <div class="stepper-field">
-          <div class="stepper-label">子ども</div>
-          ${stepperHtml(childSid, 8)}
-        </div>
-        <div class="stepper-field">
-          <div class="stepper-label">未就学児</div>
-          ${stepperHtml(infantSid, 4)}
-        </div>
+        ${stepperHtml(famSid, 10)}
         <select class="game-card-sel fam-pickup" data-game="${g.gameId}">
           <option value="pre" selected>事前受取</option>
           <option value="day">当日受取</option>
@@ -917,13 +904,11 @@ async function submitFamily() {
   const entries = [];
   document.querySelectorAll('#family-list .game-card-row:not(.row-disabled)').forEach(row => {
     const gameId = row.dataset.game;
-    const adultQty = parseInt(document.getElementById('val-fam-adult-' + gameId)?.textContent) || 0;
-    const childQty = parseInt(document.getElementById('val-fam-child-' + gameId)?.textContent) || 0;
-    const infantQty = parseInt(document.getElementById('val-fam-infant-' + gameId)?.textContent) || 0;
+    const qty = parseInt(document.getElementById('val-fam-' + gameId)?.textContent) || 0;
     const pickup = row.querySelector('.fam-pickup').value;
-    if (adultQty + childQty + infantQty === 0) return;
+    if (qty === 0) return;
     const parking = parseInt(row.querySelector('.fam-parking').value);
-    entries.push({ gameId, quantityAdult: adultQty, quantityChild: childQty, quantityInfant: infantQty, pickupMethod: pickup, parkingCount: parking });
+    entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking });
   });
 
   if (entries.length === 0) { showAlert('申込する試合を選択し、枚数と受取方法を設定してください', 'error'); return; }
@@ -943,8 +928,6 @@ async function submitFamily() {
         playerId: auth.playerId,
         ticketType: 'family',
         quantityAdult: e.quantityAdult,
-        quantityChild: e.quantityChild,
-        quantityInfant: e.quantityInfant,
         receiverName: receiver,
         pickupMethod: e.pickupMethod,
         parkingCount: e.parkingCount,
