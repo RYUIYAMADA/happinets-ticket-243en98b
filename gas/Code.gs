@@ -508,17 +508,30 @@ function initTestData() {
     }
   }
 
-  // 招待チケット  申込ID, 選手番号, 選手名, 試合, 大人, 子, 乳幼児, 席種, 座席希望, 受取者, 受取方法, 支払方法, 駐車場, 備考, 申込日時, ステータス, 試合ID＊
-  inviteSheet.appendRow(['APP-T01','101','HC Mick Downer','10月10日（土）vs 琉球', 3,0,0,'','','Downer Sarah','pre','',0,'妻と両親',now,'確保済み','G01']);
-  inviteSheet.appendRow(['APP-T03','101','HC Mick Downer','10月11日（日）vs 琉球', 2,0,0,'','','Downer Sarah','day','',0,'',now,'確認中','G02']);
-  inviteSheet.appendRow(['APP-T04','006','#6 赤穂雷太','10月10日（土）vs 琉球',   2,1,0,'','','赤穂 由美','pre','',0,'',now,'確保済み','G01']);
+  // ===== 招待チケット（9件）=====
+  // 申込ID, 選手番号, 選手名, 試合, 大人, 子, 乳幼児, 席種, 座席希望, 受取者, 受取方法, 支払方法, 駐車場, 備考, 申込日時, ステータス, 試合ID＊
+  inviteSheet.appendRow(['APP-T01','101','HC Mick Downer',  '10月10日（土）vs 琉球',3,0,0,'','','Downer Sarah',  'pre','',0,'妻と両親',         now,'確保済み','G01']);
+  inviteSheet.appendRow(['APP-T02','101','HC Mick Downer',  '10月11日（日）vs 琉球',2,0,0,'','','Downer Sarah',  'day','',0,'',                  now,'確認中', 'G02']);
+  inviteSheet.appendRow(['APP-T03','006','#6 赤穂雷太',     '10月10日（土）vs 琉球',2,0,0,'','','赤穂 由美',     'pre','',0,'',                  now,'確保済み','G01']);
+  inviteSheet.appendRow(['APP-T04','006','#6 赤穂雷太',     '10月17日（土）vs 島根',4,0,0,'','','赤穂 由美',     'pre','',0,'家族4人分',          now,'確認中', 'G03']);
+  inviteSheet.appendRow(['APP-T05','002','#2 栗原翼',       '10月10日（土）vs 琉球',2,1,0,'','','栗原 美咲',     'pre','',1,'子供連れ',            now,'確保済み','G01']);
+  inviteSheet.appendRow(['APP-T06','002','#2 栗原翼',       '10月24日（土）vs 千葉J',3,0,0,'','','栗原 美咲',    'day','',0,'',                  now,'確認中', 'G05']);
+  inviteSheet.appendRow(['APP-T07','005','#5 田口成浩',     '10月11日（日）vs 琉球',2,0,0,'','','田口 幸子',     'pre','',0,'',                  now,'対応不可','G02']);
+  inviteSheet.appendRow(['APP-T08','011','#11 内藤晴樹',    '10月17日（土）vs 島根',3,1,0,'','','内藤 和子',     'pre','',1,'子供あり',            now,'確保済み','G03']);
+  inviteSheet.appendRow(['APP-T09','102','AC 庄司和広',     '10月24日（土）vs 千葉J',2,0,0,'','','庄司 明子',    'pre','',0,'',                  now,'確認中', 'G05']);
 
-  // 家族席
-  familySheet.appendRow(['APP-T02','101','HC Mick Downer','10月10日（土）vs 琉球', 2,1,0,'','','Downer Sarah','pre','',1,'',now,'確認中','G01']);
-  familySheet.appendRow(['APP-T06','006','#6 赤穂雷太','10月11日（日）vs 琉球',   2,2,1,'','','赤穂 由美','pre','',1,'乳児連れ・通路側希望',now,'確保済み','G02']);
+  // ===== 家族席（6件）=====
+  familySheet.appendRow(['APP-T10','101','HC Mick Downer',  '10月10日（土）vs 琉球',2,0,0,'','','Downer Sarah',  'pre','',1,'',                  now,'確認中', 'G01']);
+  familySheet.appendRow(['APP-T11','006','#6 赤穂雷太',     '10月11日（日）vs 琉球',3,0,0,'','','赤穂 由美',     'pre','',1,'乳児連れ・通路側希望',now,'確保済み','G02']);
+  familySheet.appendRow(['APP-T12','006','#6 赤穂雷太',     '10月17日（土）vs 島根',2,0,0,'','','赤穂 由美',     'day','',0,'',                  now,'確認中', 'G03']);
+  familySheet.appendRow(['APP-T13','002','#2 栗原翼',       '10月10日（土）vs 琉球',4,0,0,'','','栗原 美咲',     'pre','',2,'父母・兄弟4名',       now,'確保済み','G01']);
+  familySheet.appendRow(['APP-T14','011','#11 内藤晴樹',    '10月24日（土）vs 千葉J',2,0,0,'','','内藤 和子',    'pre','',1,'',                  now,'確認中', 'G05']);
+  familySheet.appendRow(['APP-T15','012','#12 元田大陽',    '10月11日（日）vs 琉球',3,0,0,'','','元田 由里子',   'day','',0,'子供2名含む',         now,'キャンセル','G02']);
 
-  // 有料チケット
-  paidSheet.appendRow(['APP-T05','006','#6 赤穂雷太','10月10日（土）vs 琉球', 2,0,0,'コートサイドシート','','赤穂 由美','pre','salary',0,'前列希望',now,'確認中','G01']);
+  // ===== 有料チケット（3件）=====
+  paidSheet.appendRow(['APP-T16','006','#6 赤穂雷太',       '10月10日（土）vs 琉球',2,0,0,'コートサイドシート','前列','赤穂 由美', 'pre','salary',0,'前列希望', now,'確認中', 'G01']);
+  paidSheet.appendRow(['APP-T17','002','#2 栗原翼',         '10月17日（土）vs 島根',2,0,0,'2F自由席','',         '栗原 美咲', 'pre','free',  0,'',          now,'確保済み','G03']);
+  paidSheet.appendRow(['APP-T18','103','AC 奈良篤人',       '10月24日（土）vs 千葉J',1,0,0,'コートサイドシート','','奈良 浩二','day','salary',0,'',          now,'対応不可','G05']);
 
   Logger.log('テストデータ挿入完了');
 }
