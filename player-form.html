@@ -133,6 +133,73 @@
   }
   .game-card-row.row-disabled { opacity: 0.4; pointer-events: none; }
   .game-card-row.has-entry { border-color: var(--accent); background: #fff8f3; }
+  /* 受取人登録 */
+  .receiver-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    min-height: 0;
+  }
+  .receiver-chips:empty { margin-bottom: 0; }
+  .receiver-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px 5px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .receiver-chip .chip-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+  }
+  .receiver-chip .chip-del:hover { color: var(--error); }
+  .add-receiver-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .add-receiver-row input {
+    flex: 1;
+    height: 42px;
+    padding: 0 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .add-receiver-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(236,0,140,.1);
+  }
+  .add-receiver-btn {
+    height: 42px;
+    padding: 0 18px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .add-receiver-btn:hover { background: var(--primary-hover); }
   .receiver-field {
     margin-top: 10px;
     display: flex;
@@ -602,9 +669,18 @@
       </ul>
     </div>
     <div class="card">
+      <div class="section-title">受取人登録 <span style="font-size:11px;font-weight:400;color:var(--text-sub);">試合ごとに選択できます</span></div>
+      <div id="fam-receiver-chips" class="receiver-chips"></div>
+      <div class="add-receiver-row">
+        <input type="text" id="fam-new-receiver-input" placeholder="氏名を入力（例：山田 花子）" maxlength="30">
+        <button type="button" class="add-receiver-btn" onclick="addFamReceiver()">追加</button>
+      </div>
+    </div>
+    <div class="card">
       <div class="section-title">試合ごとの枚数・受取方法</div>
       <div class="game-card-list" id="family-list"></div>
     </div>
+    <datalist id="fam-receivers-datalist"></datalist>
     <div class="card">
       <div class="section-title">特記事項</div>
       <div class="form-group" style="margin-bottom:0">
@@ -850,6 +926,45 @@ function formatGameDate(dateStr) {
   return `${y}/${m}/${day}`;
 }
 
+// ===== 受取人登録（家族席） =====
+let famReceivers = [];
+
+function addFamReceiver() {
+  const input = document.getElementById('fam-new-receiver-input');
+  const name = input.value.trim();
+  if (!name) return;
+  if (famReceivers.includes(name)) { input.value = ''; return; }
+  famReceivers.push(name);
+  input.value = '';
+  renderFamReceivers();
+}
+
+function removeFamReceiver(name) {
+  famReceivers = famReceivers.filter(n => n !== name);
+  renderFamReceivers();
+}
+
+function renderFamReceivers() {
+  const chips = document.getElementById('fam-receiver-chips');
+  if (chips) {
+    chips.innerHTML = famReceivers.map(name =>
+      `<span class="receiver-chip">${name}<button type="button" class="chip-del" onclick="removeFamReceiver('${name.replace(/'/g, "\\'")}')">×</button></span>`
+    ).join('');
+  }
+  const dl = document.getElementById('fam-receivers-datalist');
+  if (dl) {
+    dl.innerHTML = famReceivers.map(n => `<option value="${n}">`).join('');
+  }
+}
+
+// Enterキーで追加
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'fam-new-receiver-input') {
+    e.preventDefault();
+    addFamReceiver();
+  }
+});
+
 function getExistingQty(gameId, ticketType) {
   const apps = JSON.parse(sessionStorage.getItem('myApplications') || '[]');
   return apps
@@ -936,7 +1051,7 @@ function buildFamilyGrid() {
       </div>
       <div class="receiver-field">
         <label>受取者名 <span class="req">*</span></label>
-        <input type="text" class="rec-input" id="rec-fam-${g.gameId}" placeholder="受取者の氏名">
+        <input type="text" class="rec-input" id="rec-fam-${g.gameId}" list="fam-receivers-datalist" placeholder="登録済みから選択 または直接入力">
       </div>
       <div class="qty-summary" data-existing="${famExisting}">
         <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
