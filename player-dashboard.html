@@ -298,6 +298,37 @@
   .game-card.open .chevron { transform: rotate(180deg); }
 
   .loading-msg { text-align: center; padding: 40px; color: var(--text-sub); }
+  .skeleton-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 10px;
+    padding: 14px 16px;
+    overflow: hidden;
+  }
+  .skeleton-line {
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #edf2f7 0%, #f8fafc 45%, #edf2f7 90%);
+    background-size: 220% 100%;
+    animation: shimmer 1.25s ease-in-out infinite;
+  }
+  .skeleton-line.date { width: 34%; margin-bottom: 8px; }
+  .skeleton-line.title { width: 62%; height: 15px; margin-bottom: 8px; }
+  .skeleton-line.deadline { width: 48%; margin-bottom: 10px; }
+  .skeleton-pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .skeleton-pill {
+    width: 72px;
+    height: 24px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #edf2f7 0%, #f8fafc 45%, #edf2f7 90%);
+    background-size: 220% 100%;
+    animation: shimmer 1.25s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 120% 0; }
+    100% { background-position: -120% 0; }
+  }
 
   /* 終了試合まとめ */
   .expired-toggle {
@@ -457,7 +488,36 @@
   </div>
 
   <div id="game-list" aria-live="polite">
-    <div class="loading-msg">読み込み中...</div>
+    <div class="skeleton-card" aria-hidden="true">
+      <div class="skeleton-line date"></div>
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line deadline"></div>
+      <div class="skeleton-pill-row">
+        <div class="skeleton-pill"></div>
+        <div class="skeleton-pill"></div>
+        <div class="skeleton-pill"></div>
+      </div>
+    </div>
+    <div class="skeleton-card" aria-hidden="true">
+      <div class="skeleton-line date"></div>
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line deadline"></div>
+      <div class="skeleton-pill-row">
+        <div class="skeleton-pill"></div>
+        <div class="skeleton-pill"></div>
+        <div class="skeleton-pill"></div>
+      </div>
+    </div>
+    <div class="skeleton-card" aria-hidden="true">
+      <div class="skeleton-line date"></div>
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line deadline"></div>
+      <div class="skeleton-pill-row">
+        <div class="skeleton-pill"></div>
+        <div class="skeleton-pill"></div>
+        <div class="skeleton-pill"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -479,6 +539,9 @@ let auth = null;
 let games = [];
 let applications = [];
 let currentFilter = 'all';
+const GAMES_CACHE_KEY = 'games_cache';
+const GAMES_CACHE_TS_KEY = 'games_cache_ts';
+const GAMES_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const TICKET_LABELS = {
   invite: { ja: '招待', en: 'Invite' },
@@ -503,8 +566,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 async function loadData() {
   try {
     const [gamesRes, appsRes] = await Promise.all([
-      callGAS('GET', { action: 'getGames' }),
-      callGAS('GET', { action: 'getApplications', playerId: auth.playerId })
+      getGames(),
+      getApplications()
     ]);
     if (!gamesRes.ok) throw new Error(gamesRes.error);
     if (!appsRes.ok) throw new Error(appsRes.error);
@@ -515,6 +578,30 @@ async function loadData() {
   } catch (e) {
     document.getElementById('game-list').innerHTML = `<div class="loading-msg" style="color:#dc2626">データ読み込み失敗: ${e.message}</div>`;
   }
+}
+
+async function getGames() {
+  const ts = Number(sessionStorage.getItem(GAMES_CACHE_TS_KEY) || 0);
+  const cached = sessionStorage.getItem(GAMES_CACHE_KEY);
+  if (cached && Date.now() - ts < GAMES_CACHE_TTL_MS) {
+    try {
+      return JSON.parse(cached);
+    } catch (e) {
+      sessionStorage.removeItem(GAMES_CACHE_KEY);
+      sessionStorage.removeItem(GAMES_CACHE_TS_KEY);
+    }
+  }
+
+  const result = await callGAS('GET', { action: 'getGames' });
+  if (result.ok) {
+    sessionStorage.setItem(GAMES_CACHE_KEY, JSON.stringify(result));
+    sessionStorage.setItem(GAMES_CACHE_TS_KEY, String(Date.now()));
+  }
+  return result;
+}
+
+function getApplications() {
+  return callGAS('GET', { action: 'getApplications', playerId: auth.playerId });
 }
 
 function updateSummary() {

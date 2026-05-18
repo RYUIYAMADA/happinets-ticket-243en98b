@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel='preconnect' href='https://script.google.com'>
+<link rel='preconnect' href='https://script.googleusercontent.com'>
 <title>選手家族チケット申込 — ログイン</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -307,7 +309,7 @@ async function callGAS(method, params, retries = 2) {
       }
     } catch(e) {
       if (i === retries) throw e;
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 200));
     }
   }
 }
@@ -436,6 +438,15 @@ document.addEventListener('keydown', e => {
 if (!GAS_URL) {
   console.info('デモモード: GAS_URLが未設定です。LocalStorage に GAS_URL を設定するか、index.html の GAS_URL 定数を更新してください。');
 }
+
+// GASウォームアップ（ログイン前にコールドスタートを解消）
+function warmupGAS() {
+  if (!GAS_URL) return;
+  fetch(GAS_URL + '?action=ping', { method: 'GET', redirect: 'follow' })
+    .catch(() => {}); // エラーは無視
+}
+// ページ読み込み後500ms後に実行（ユーザーの入力を邪魔しない）
+setTimeout(warmupGAS, 500);
 </script>
 </body>
 </html>
