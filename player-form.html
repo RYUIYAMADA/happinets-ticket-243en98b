@@ -13,9 +13,9 @@
     --accent-hover: #c4006e;
     --gold: #E6B422;
     --gold-hover: #c9971b;
-    --bg: #f5f7fa;
+    --bg: #ffffff;
     --card: #fff;
-    --border: #e2e8f0;
+    --border: #e5e7eb;
     --text: #1a202c;
     --text-sub: #4a5568;
     --success: #16a34a;
@@ -23,8 +23,7 @@
     --error: #dc2626;
     --error-bg: #fee2e2;
     --warning-bg: #FEF3C7;
-    --radius: 12px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --radius: 6px;
   }
   .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
@@ -65,7 +64,7 @@
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
     padding: 16px 14px;
     margin-bottom: 14px;
   }
@@ -91,8 +90,8 @@
     padding: 11px 13px;
     font-size: 16px;
     min-height: 44px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     color: var(--text);
     background: #fff;
     -webkit-appearance: none;
@@ -111,8 +110,8 @@
     align-items: flex-start;
     gap: 10px;
     padding: 12px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
     min-height: 44px;
@@ -126,8 +125,8 @@
   .game-card-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
   .game-card-row {
     background: #fff;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     padding: 12px 14px;
     transition: border-color 0.15s;
   }
@@ -147,8 +146,8 @@
     align-items: center;
     gap: 6px;
     background: #f1f5f9;
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     padding: 5px 12px 5px 14px;
     font-size: 13px;
     font-weight: 600;
@@ -176,15 +175,14 @@
     flex: 1;
     height: 42px;
     padding: 0 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     font-size: 14px;
     color: var(--text);
   }
   .add-receiver-row input:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(236,0,140,.1);
   }
   .add-receiver-btn {
     height: 42px;
@@ -215,8 +213,8 @@
   .receiver-field input {
     height: 40px;
     padding: 0 10px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     font-size: 14px;
     color: var(--text);
     background: #fff;
@@ -225,7 +223,6 @@
   .receiver-field input:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(236,0,140,.1);
   }
   .qty-summary {
     display: flex;
@@ -287,8 +284,8 @@
     display: flex;
     align-items: center;
     gap: 0;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     overflow: hidden;
     height: 44px;
     min-width: 132px;
@@ -367,8 +364,8 @@
     padding: 18px 28px 4px 10px;
     font-size: 14px;
     font-weight: 600;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     color: var(--text);
     background: #fff;
     cursor: pointer;
@@ -378,7 +375,6 @@
   .game-card-sel:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(236,0,140,.1);
   }
   .inv-day-label {
     display: flex;
@@ -401,9 +397,9 @@
   /* 座席図 */
   .seat-map-wrap {
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
-    border: 1.5px solid var(--border);
+    border: 1px solid var(--border);
     position: relative;
     background: #f8f9fa;
   }
@@ -473,7 +469,7 @@
     color: #fff;
     background: var(--accent);
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     min-height: 48px;
     min-width: 44px;
@@ -482,7 +478,7 @@
   .btn-primary:hover { background: var(--accent-hover); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .alert { padding: 13px 15px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
+  .alert { padding: 13px 15px; border-radius: 6px; font-size: 14px; margin-bottom: 14px; }
   .alert-error { background: var(--error-bg); color: var(--error); }
   .alert-success { background: var(--success-bg); color: var(--success); }
 
@@ -584,16 +580,16 @@
   .rc-avail-badge.none { background: #f3f4f6; color: #6b7280; }
 
   .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 <header>
-  <button class="back" onclick="history.back()">← 戻る</button>
+  <button class="back" onclick="history.back()" data-i18n="backBtn">← 戻る</button>
   <div style="flex:1">
-    <h1>チケット申込フォーム</h1>
+    <h1 data-i18n="title">チケット申込フォーム</h1>
     <div id="header-name" style="font-size:12px; opacity:0.8; margin-top:2px;"></div>
   </div>
+  <button id="lang-toggle" onclick="toggleLang()" style="border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;color:#fff;min-height:32px;white-space:nowrap;">JA / en</button>
 </header>
 
 <div class="container">
@@ -786,11 +782,48 @@
 </div>
 
 <script>
+// ─── i18n ───────────────────────────────────────────
+const STRINGS = { ja: {}, en: {} };
+let lang = localStorage.getItem('ht_lang') || 'ja';
+function t(key) { return (STRINGS[lang] && STRINGS[lang][key]) || (STRINGS.ja && STRINGS.ja[key]) || key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) el.placeholder = t(k);
+    else el.textContent = t(k);
+  });
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = lang === 'ja' ? 'JA / en' : 'ja / EN';
+}
+function toggleLang() {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  localStorage.setItem('ht_lang', lang);
+  applyI18n();
+}
+
+STRINGS.ja = {
+  title: 'チケット申込フォーム',
+  backBtn: '← 戻る',
+};
+STRINGS.en = {
+  title: 'Ticket Request Form',
+  backBtn: '← Back',
+};
+// ────────────────────────────────────────────────────
+
+// XSS対策: HTML特殊文字をエスケープ
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s ?? '');
+  return d.innerHTML;
+}
+
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 let games = [];
 let auth = null;
 
 window.addEventListener('DOMContentLoaded', async () => {
+  applyI18n();
   auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
   if (!auth || auth.role !== 'player') { location.href = 'index.html'; return; }
   document.getElementById('header-name').textContent = auth.name + '（' + auth.playerId + '）';
@@ -936,7 +969,7 @@ function renderFamReceivers() {
   const chips = document.getElementById('fam-receiver-chips');
   if (chips) {
     chips.innerHTML = famReceivers.map(name =>
-      `<span class="receiver-chip">${name}<button type="button" class="chip-del" onclick="removeFamReceiver('${name.replace(/'/g, "\\'")}')">×</button></span>`
+      `<span class="receiver-chip">${esc(name)}<button type="button" class="chip-del" onclick="removeFamReceiver('${name.replace(/'/g, "\\'")}')">×</button></span>`
     ).join('');
   }
   const dl = document.getElementById('fam-receivers-datalist');
@@ -1309,7 +1342,7 @@ function demoCallGAS(method, params) {
 }
 
 function showAlert(msg, type) {
-  document.getElementById('alert-area').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  document.getElementById('alert-area').innerHTML = `<div class="alert alert-${esc(type)}">${esc(msg)}</div>`;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function clearAlert() { document.getElementById('alert-area').innerHTML = ''; }

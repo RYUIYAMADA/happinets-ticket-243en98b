@@ -13,9 +13,9 @@
     --accent-hover: #c4006e;
     --gold: #E6B422;
     --gold-hover: #c9971b;
-    --bg: #f5f7fa;
+    --bg: #ffffff;
     --card: #ffffff;
-    --border: #e2e8f0;
+    --border: #e5e7eb;
     --text: #1a202c;
     --text-sub: #4a5568;
     --success: #16a34a;
@@ -26,8 +26,7 @@
     --error-bg: #fee2e2;
     --muted: #6b7280;
     --muted-bg: #f3f4f6;
-    --radius: 12px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --radius: 6px;
   }
   .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
@@ -80,10 +79,10 @@
   }
   .summary-card {
     background: var(--card);
-    border-radius: 10px;
+    border-radius: 6px;
     padding: 12px 10px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
   }
   .summary-card .num { font-size: 24px; font-weight: 700; line-height: 1.1; }
   .summary-card .lbl { font-size: 12px; color: var(--text-sub); margin-top: 4px; line-height: 1.3; }
@@ -103,14 +102,14 @@
     padding: 8px 14px;
     font-size: 13px;
     font-weight: 600;
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     background: var(--card);
     color: var(--text-sub);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
-    transition: all 0.15s;
+    transition: border-color 0.15s;
   }
   .filter-btn.active {
     background: var(--accent);
@@ -126,13 +125,12 @@
     background: var(--accent);
     color: #fff;
     border: none;
-    border-radius: 28px;
-    padding: 14px calc(22px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(22px + env(safe-area-inset-left));
+    border-radius: 6px;
+    padding: 14px 20px;
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(236,0,140,0.3);
-    min-height: 56px;
+    min-height: 44px;
     min-width: 44px;
     transition: background 0.15s;
     z-index: 100;
@@ -143,12 +141,12 @@
   .game-card {
     background: var(--card);
     border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
     margin-bottom: 10px;
     overflow: hidden;
-    transition: box-shadow 0.15s;
+    transition: border-color 0.15s;
   }
-  .game-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .game-card:hover { border-color: var(--accent); }
   .game-card-header {
     display: flex;
     align-items: center;
@@ -301,7 +299,7 @@
   .skeleton-card {
     background: var(--card);
     border-radius: var(--radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
     margin-bottom: 10px;
     padding: 14px 16px;
     overflow: hidden;
@@ -309,9 +307,7 @@
   .skeleton-line {
     height: 12px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #edf2f7 0%, #f8fafc 45%, #edf2f7 90%);
-    background-size: 220% 100%;
-    animation: shimmer 1.25s ease-in-out infinite;
+    background: var(--muted-bg);
   }
   .skeleton-line.date { width: 34%; margin-bottom: 8px; }
   .skeleton-line.title { width: 62%; height: 15px; margin-bottom: 8px; }
@@ -320,14 +316,8 @@
   .skeleton-pill {
     width: 72px;
     height: 24px;
-    border-radius: 12px;
-    background: linear-gradient(90deg, #edf2f7 0%, #f8fafc 45%, #edf2f7 90%);
-    background-size: 220% 100%;
-    animation: shimmer 1.25s ease-in-out infinite;
-  }
-  @keyframes shimmer {
-    0% { background-position: 120% 0; }
-    100% { background-position: -120% 0; }
+    border-radius: 6px;
+    background: var(--muted-bg);
   }
 
   /* 終了試合まとめ */
@@ -451,10 +441,13 @@
 <header>
   <div class="header-inner">
     <div>
-      <h1>申込状況ダッシュボード<span class="en-sub">Request Status Dashboard</span></h1>
+      <h1 data-i18n="title">申込状況ダッシュボード</h1>
       <div class="header-sub" id="player-name-display"></div>
     </div>
-    <button class="btn-logout" onclick="logout()">ログアウト</button>
+    <div style="display: flex; gap: 8px;">
+      <button id="lang-toggle" onclick="toggleLang()" style="border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;color:#fff;min-height:32px;">JA / en</button>
+      <button class="btn-logout" onclick="logout()" data-i18n="logout">ログアウト</button>
+    </div>
   </div>
 </header>
 
@@ -463,28 +456,28 @@
   <div class="summary-grid">
     <div class="summary-card">
       <div class="num num-total" id="cnt-total">—</div>
-      <div class="lbl">申込済み<span class="en-sub">Requested</span></div>
+      <div class="lbl" data-i18n="cntTotal">申込済み</div>
     </div>
     <div class="summary-card">
       <div class="num num-pending" id="cnt-pending">—</div>
-      <div class="lbl">確認中<span class="en-sub">Pending</span></div>
+      <div class="lbl" data-i18n="cntPending">確認中</div>
     </div>
     <div class="summary-card">
       <div class="num num-confirmed" id="cnt-confirmed">—</div>
-      <div class="lbl">確保済み<span class="en-sub">Confirmed</span></div>
+      <div class="lbl" data-i18n="cntConfirmed">確保済み</div>
     </div>
     <div class="summary-card">
       <div class="num num-rejected" id="cnt-rejected">—</div>
-      <div class="lbl">対応不可<span class="en-sub">Unavailable</span></div>
+      <div class="lbl" data-i18n="cntRejected">対応不可</div>
     </div>
   </div>
 
   <!-- フィルター -->
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="setFilter('all', this)">全試合<span class="en-sub">All Games</span></button>
-    <button class="filter-btn" onclick="setFilter('applied', this)">申込あり<span class="en-sub">Requested</span></button>
-    <button class="filter-btn" onclick="setFilter('none', this)">未申込<span class="en-sub">Not Requested</span></button>
-    <button class="filter-btn" onclick="setFilter('upcoming', this)">直近<span class="en-sub">Upcoming</span></button>
+    <button class="filter-btn active" onclick="setFilter('all', this)" data-i18n="filterAll">全試合</button>
+    <button class="filter-btn" onclick="setFilter('applied', this)" data-i18n="filterApplied">申込あり</button>
+    <button class="filter-btn" onclick="setFilter('none', this)" data-i18n="filterNone">未申込</button>
+    <button class="filter-btn" onclick="setFilter('upcoming', this)" data-i18n="filterUpcoming">直近</button>
   </div>
 
   <div id="game-list" aria-live="polite">
@@ -521,9 +514,61 @@
   </div>
 </div>
 
-<button class="fab" onclick="location.href='player-form.html'">＋ 新規申込</button>
+<button class="fab" onclick="location.href='player-form.html'" data-i18n="newApp">＋ 新規申込</button>
 
 <script>
+// ─── i18n ───────────────────────────────────────────
+const STRINGS = { ja: {}, en: {} };
+let lang = localStorage.getItem('ht_lang') || 'ja';
+function t(key) { return (STRINGS[lang] && STRINGS[lang][key]) || (STRINGS.ja && STRINGS.ja[key]) || key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) el.placeholder = t(k);
+    else el.textContent = t(k);
+  });
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = lang === 'ja' ? 'JA / en' : 'ja / EN';
+}
+function toggleLang() {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  localStorage.setItem('ht_lang', lang);
+  applyI18n();
+  location.reload();
+}
+
+STRINGS.ja = {
+  title: '申込状況ダッシュボード',
+  logout: 'ログアウト',
+  cntTotal: '申込済み',
+  cntPending: '確認中',
+  cntConfirmed: '確保済み',
+  cntRejected: '対応不可',
+  filterAll: '全試合',
+  filterApplied: '申込あり',
+  filterNone: '未申込',
+  filterUpcoming: '直近',
+  newApp: '＋ 新規申込',
+  noMatch: '該当する試合はありません',
+  expiredLabel: '終了した試合',
+};
+STRINGS.en = {
+  title: 'Request Status Dashboard',
+  logout: 'Logout',
+  cntTotal: 'Requested',
+  cntPending: 'Pending',
+  cntConfirmed: 'Confirmed',
+  cntRejected: 'Unavailable',
+  filterAll: 'All Games',
+  filterApplied: 'Requested',
+  filterNone: 'Not Requested',
+  filterUpcoming: 'Upcoming',
+  newApp: '＋ New Request',
+  noMatch: 'No matching games',
+  expiredLabel: 'Completed Games',
+};
+// ────────────────────────────────────────────────────
+
 function formatDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
@@ -561,6 +606,7 @@ const STATUS_CONFIG = {
 };
 
 window.addEventListener('DOMContentLoaded', async () => {
+  applyI18n();
   auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
   if (!auth || auth.role !== 'player') { window.location.href = 'index.html'; return; }
   document.getElementById('player-name-display').textContent = auth.name + '（' + auth.playerId + '）';
@@ -580,7 +626,7 @@ async function loadData() {
     updateSummary();
     renderList();
   } catch (e) {
-    document.getElementById('game-list').innerHTML = `<div class="loading-msg" style="color:#dc2626">データ読み込み失敗: ${e.message}</div>`;
+    document.getElementById('game-list').innerHTML = `<div class="loading-msg" style="color:#dc2626">データ読み込み失敗: ${esc(e.message)}</div>`;
   }
 }
 
@@ -659,7 +705,7 @@ function renderList() {
   const filtered = filterGames();
   const el = document.getElementById('game-list');
   if (filtered.length === 0) {
-    el.innerHTML = '<div class="loading-msg">該当する試合はありません</div>';
+    el.innerHTML = `<div class="loading-msg">${t('noMatch')}</div>`;
     return;
   }
 
@@ -687,13 +733,13 @@ function renderList() {
   let html = '';
 
   if (active.length === 0 && expired.length === 0) {
-    html = '<div class="loading-msg">該当する試合はありません</div>';
+    html = `<div class="loading-msg">${t('noMatch')}</div>`;
   } else {
     html += groupHtml(active);
     if (expired.length > 0) {
       html += `
         <div class="expired-toggle" onclick="toggleExpired(this)">
-          <span>終了した試合（${expired.length}件）</span>
+          <span>${t('expiredLabel')}（${expired.length}件）</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="expired-list" hidden>

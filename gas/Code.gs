@@ -56,9 +56,21 @@ function doGet(e) {
         result = { ok: true, data: getApplicationsByPlayer(pid) };
         break;
       case 'getAllApplications':
+        // 管理者トークン認証（P0: 必須）
+        const adminTokenAll = e.parameter.adminToken;
+        const storedTokenAll = PropertiesService.getScriptProperties().getProperty('ADMIN_API_TOKEN');
+        if (!storedTokenAll || adminTokenAll !== storedTokenAll) {
+          throw new Error('unauthorized');
+        }
         result = { ok: true, data: getAllApplications() };
         break;
       case 'getPlayers':
+        // 管理者トークン認証（P0: 必須）
+        const adminTokenPlayers = e.parameter.adminToken;
+        const storedTokenPlayers = PropertiesService.getScriptProperties().getProperty('ADMIN_API_TOKEN');
+        if (!storedTokenPlayers || adminTokenPlayers !== storedTokenPlayers) {
+          throw new Error('unauthorized');
+        }
         result = { ok: true, data: getPlayers() };
         break;
       case 'getLineStats':
@@ -82,6 +94,13 @@ function doPost(e) {
   let result;
   try {
     body = JSON.parse(e.postData.contents);
+
+    // LINE Webhook シークレットトークン検証（P0: 必須）
+    const webhookSecret = PropertiesService.getScriptProperties().getProperty('LINE_WEBHOOK_SECRET');
+    if (webhookSecret && body.secret !== webhookSecret) {
+      return ContentService.createTextOutput(JSON.stringify({ error: 'unauthorized' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
     // LINE Webhook は body.events 配列を持つ → 専用ハンドラへ振り分け
     if (body.events && Array.isArray(body.events)) {
@@ -650,15 +669,15 @@ function setupAfterMigration() {
     Logger.log('ヘッダー・ドロップダウン設定: ' + name);
   });
 
-  // パスワードハッシュを正しい値に更新（PW: 1234 / manager1234）
+  // パスワードハッシュを正しい値に更新（実際の値はスクリプトプロパティから取得）
   const settingsSheet = getSheet(SHEET_SETTINGS);
   const data = settingsSheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === 'admin_password_hash') {
-      settingsSheet.getRange(i + 1, 2).setValue('245bcf738697fd2a395f6ccd445eaff32b08b340098510bad9da528dea7201ae');
+      settingsSheet.getRange(i + 1, 2).setValue('SET_VIA_SCRIPT_PROPERTIES'); // 実際の値はGASエディタで手動設定
     }
     if (data[i][0] === 'manager_password_hash') {
-      settingsSheet.getRange(i + 1, 2).setValue('75dba5516e94695ce6c0871d9d41300715b72592b2580591ea013d1375115700');
+      settingsSheet.getRange(i + 1, 2).setValue('SET_VIA_SCRIPT_PROPERTIES'); // 実際の値はGASエディタで手動設定
     }
   }
 
