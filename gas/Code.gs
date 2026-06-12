@@ -236,6 +236,30 @@ function doPost(e) {
         }
         break;
       }
+      case 'replaceSeason2627':
+        verifyAdmin(body.pwHash);
+        result = { ok: true, data: replaceWithSeason2627() };
+        break;
+      case 'addGame':
+        verifyAdmin(body.pwHash);
+        result = { ok: true, data: addGame(body.game) };
+        break;
+      case 'updateGame':
+        verifyAdmin(body.pwHash);
+        result = { ok: true, data: updateGame(body.gameId, body.fields) };
+        break;
+      case 'deleteGame':
+        verifyAdmin(body.pwHash);
+        result = { ok: true, data: deleteGame(body.gameId) };
+        break;
+      case 'addPlayer':
+        verifyAdmin(body.pwHash);
+        result = { ok: true, data: addPlayer(body.player) };
+        break;
+      case 'updatePlayer':
+        verifyAdmin(body.pwHash);
+        result = { ok: true, data: updatePlayer(body.playerId, body.fields) };
+        break;
       default:
         result = { ok: false, error: 'unknown action: ' + action };
     }
@@ -1617,4 +1641,203 @@ function setDefaultDeadlines() {
   const result = { updated: updated, skipped: skipped };
   Logger.log('setDefaultDeadlines: updated=' + updated + ', skipped=' + skipped);
   return result;
+}
+
+// =====================================================
+// 試合 CRUD（addGame / updateGame / deleteGame）
+// =====================================================
+
+// 曜日を日本語で返す（Date オブジェクトから）
+function getDayOfWeekJa(dateObj) {
+  return ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
+}
+
+// games シートの既存最大連番を取得し次の gameId を返す（例: G31）
+function nextGameId() {
+  const sheet = getSheet(SHEET_GAMES);
+  const data = sheet.getDataRange().getValues();
+  let max = 0;
+  for (let i = 1; i < data.length; i++) {
+    const id = String(data[i][0]);
+    const m = id.match(/^G(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  const num = max + 1;
+  return 'G' + (num < 10 ? '0' + num : String(num));
+}
+
+/**
+ * action:'addGame'
+ * @param {{ date: string, opponent: string, dayOfWeek?: string, deadline?: string }} game
+ * @returns {{ gameId, date, dayOfWeek, opponent, deadline }}
+ */
+function addGame(game) {
+  if (!game || !game.date || !game.opponent) {
+    throw new Error('date と opponent は必須です');
+  }
+  const gameDate = new Date(game.date);
+  const dayOfWeek = game.dayOfWeek || getDayOfWeekJa(gameDate);
+
+  let deadlineDate;
+  if (game.deadline) {
+    deadlineDate = new Date(game.deadline);
+  } else {
+    deadlineDate = new Date(game.date);
+    deadlineDate.setDate(deadlineDate.getDate() - 7);
+  }
+
+  const gameId = nextGameId();
+  const sheet = getSheet(SHEET_GAMES);
+  sheet.appendRow([gameId, gameDate, dayOfWeek, game.opponent, deadlineDate]);
+
+  return {
+    gameId:     gameId,
+    date:       Utilities.formatDate(gameDate,    'Asia/Tokyo', 'yyyy-MM-dd'),
+    dayOfWeek:  dayOfWeek,
+    opponent:   game.opponent,
+    deadline:   Utilities.formatDate(deadlineDate, 'Asia/Tokyo', 'yyyy-MM-dd')
+  };
+}
+
+/**
+ * action:'updateGame'
+ * @param {string} gameId
+ * @param {{ date?: string, opponent?: string, deadline?: string }} fields
+ * @returns {{ gameId, date, dayOfWeek, opponent, deadline }}
+ */
+function updateGame(gameId, fields) {
+  if (!gameId) throw new Error('gameId は必須です');
+  if (!fields || Object.keys(fields).length === 0) throw new Error('fields は必須です');
+
+  const sheet = getSheet(SHEET_GAMES);
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) !== String(gameId)) continue;
+
+    // date 変更 → 曜日も再計算
+    if (fields.date !== undefined) {
+      const newDate = new Date(fields.date);
+      sheet.getRange(i + 1, 2).setValue(newDate);
+      sheet.getRange(i + 1, 3).setValue(getDayOfWeekJa(newDate));
+      data[i][1] = newDate;
+      data[i][2] = getDayOfWeekJa(newDate);
+    }
+    if (fields.opponent !== undefined) {
+      sheet.getRange(i + 1, 4).setValue(fields.opponent);
+      data[i][3] = fields.opponent;
+    }
+    // deadline: 明示値優先
+    if (fields.deadline !== undefined) {
+      sheet.getRange(i + 1, 5).setValue(new Date(fields.deadline));
+      data[i][4] = new Date(fields.deadline);
+    }
+
+    const dateVal  = data[i][1];
+    const dlVal    = data[i][4];
+    return {
+      gameId:    String(data[i][0]),
+      date:      dateVal ? Utilities.formatDate(new Date(dateVal), 'Asia/Tokyo', 'yyyy-MM-dd') : '',
+      dayOfWeek: String(data[i][2]),
+      opponent:  String(data[i][3]),
+      deadline:  dlVal  ? Utilities.formatDate(new Date(dlVal),   'Asia/Tokyo', 'yyyy-MM-dd') : ''
+    };
+  }
+  throw new Error('試合が見つかりません: ' + gameId);
+}
+
+/**
+ * action:'deleteGame'
+ * 申込が1件でもあれば throw new Error('has_applications')
+ */
+function deleteGame(gameId) {
+  if (!gameId) throw new Error('gameId は必須です');
+
+  // 申込シート3枚を検索
+  for (const sheetName of [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID]) {
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][16]) === String(gameId)) {
+        throw new Error('has_applications');
+      }
+    }
+  }
+
+  const gSheet = getSheet(SHEET_GAMES);
+  const gData  = gSheet.getDataRange().getValues();
+  for (let i = 1; i < gData.length; i++) {
+    if (String(gData[i][0]) === String(gameId)) {
+      gSheet.deleteRow(i + 1);
+      return { deleted: true, gameId: gameId };
+    }
+  }
+  throw new Error('試合が見つかりません: ' + gameId);
+}
+
+// =====================================================
+// 選手 CRUD（addPlayer / updatePlayer）
+// =====================================================
+
+/**
+ * action:'addPlayer'
+ * @param {{ playerId: string, name: string, lineUserId?: string }} player
+ * @returns {{ playerId, name, lineUserId }}
+ */
+function addPlayer(player) {
+  if (!player || !player.playerId || !player.name) {
+    throw new Error('playerId と name は必須です');
+  }
+  const sheet = getSheet(SHEET_PLAYERS);
+  const data  = sheet.getDataRange().getValues();
+
+  // 重複チェック
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(player.playerId)) {
+      throw new Error('playerId が重複しています: ' + player.playerId);
+    }
+  }
+
+  const lineId = player.lineUserId || '';
+  // 選手番号列はテキスト形式を維持
+  const newRow = sheet.getLastRow() + 1;
+  sheet.getRange(newRow, 1).setNumberFormat('@').setValue(String(player.playerId));
+  sheet.getRange(newRow, 2).setValue(player.name);
+  sheet.getRange(newRow, 3).setValue(lineId);
+
+  return { playerId: String(player.playerId), name: player.name, lineUserId: lineId };
+}
+
+/**
+ * action:'updatePlayer'
+ * @param {string} playerId
+ * @param {{ name?: string, lineUserId?: string }} fields
+ * @returns {{ playerId, name, lineUserId }}
+ */
+function updatePlayer(playerId, fields) {
+  if (!playerId) throw new Error('playerId は必須です');
+  if (!fields || Object.keys(fields).length === 0) throw new Error('fields は必須です');
+
+  const sheet = getSheet(SHEET_PLAYERS);
+  const data  = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) !== String(playerId)) continue;
+
+    if (fields.name !== undefined) {
+      sheet.getRange(i + 1, 2).setValue(fields.name);
+      data[i][1] = fields.name;
+    }
+    if (fields.lineUserId !== undefined) {
+      sheet.getRange(i + 1, 3).setValue(fields.lineUserId);
+      data[i][2] = fields.lineUserId;
+    }
+
+    return {
+      playerId:   String(data[i][0]),
+      name:       String(data[i][1]),
+      lineUserId: String(data[i][2] || '')
+    };
+  }
+  throw new Error('選手が見つかりません: ' + playerId);
 }
