@@ -6,3 +6,7 @@
 
 # GAS clasp設定（スクリプトIDを含むため）
 gas/.clasp.json
+
+# GAS 環境変数（機密情報）
+.env.gas
+scripts/*.env

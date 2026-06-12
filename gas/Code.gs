@@ -1035,3 +1035,14 @@ function buildConfirmMessage(state, quickReply) {
 
   return { type: 'text', text: lines.join('\n'), quickReply };
 }
+
+// =====================================================
+// セットアップヘルパー（一度だけ実行・本番環境では削除推奨）
+// setup-gas-env.sh が自動生成するコードを貼り付けて実行する代替手段
+// =====================================================
+function setupProperties_RUNONCE() {
+  // ⚠️ このコードは setup-gas-env.sh が自動生成します
+  // 手動設定が必要な場合: bash scripts/setup-gas-env.sh を実行してください
+  Logger.log('setup-gas-env.sh を実行してコードを生成してください');
+  Logger.log('生成されたコードをこの関数に貼り付けて実行すると設定が完了します');
+}
