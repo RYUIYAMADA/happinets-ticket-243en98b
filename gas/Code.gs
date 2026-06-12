@@ -1453,3 +1453,168 @@ function setupDailyTrigger_RUNONCE() {
     .create();
   Logger.log('✅ 毎朝10時の通知トリガーを設定しました');
 }
+
+// =====================================================
+// 2026-27シーズン実データ入替（管理用・手動実行専用）
+// GASエディタの「関数を選択」から replaceWithSeason2627 を選んで実行する。
+// doGet / doPost からは呼ばれない。
+// =====================================================
+/**
+ * games シートと applications 3シートを 2026-27 実データに入れ替える。
+ * 1. games・applications 全データを backup_*_YYYYMMDD シートにコピー（既存は別名で退避）
+ * 2. applications 3シートのデータ行を全削除（ヘッダー保持）
+ * 3. games シートのデータ行を全削除し、2026-27 ホームゲーム実データ30試合を投入
+ * 列順: A=試合ID, B=日付, C=曜日, D=対戦相手, E=申込期限（試合日の7日前）
+ * @returns {{ backedUpGames: number, backedUpApps: number, inserted: number }}
+ */
+function replaceWithSeason2627() {
+  var ss = getSpreadsheet();
+  var today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyyMMdd');
+
+  // ---------- 1. バックアップ ----------
+  function backupSheet(srcName, prefix) {
+    var src = ss.getSheetByName(srcName);
+    if (!src) return 0;
+    var data = src.getDataRange().getValues();
+    // 既存バックアップがあればタイムスタンプ付きで区別
+    var baseName = prefix + '_' + today;
+    var destName = baseName;
+    var suffix = 0;
+    while (ss.getSheetByName(destName)) {
+      suffix++;
+      destName = baseName + '_' + suffix;
+    }
+    var dest = ss.insertSheet(destName);
+    if (data.length > 0) {
+      dest.getRange(1, 1, data.length, data[0].length).setValues(data);
+    }
+    Logger.log('バックアップ完了: ' + destName + ' (' + (data.length - 1) + '行)');
+    return data.length - 1; // ヘッダー除く行数
+  }
+
+  var backedUpGames = backupSheet(SHEET_GAMES, 'backup_games');
+  var backedUpApps = 0;
+  backedUpApps += backupSheet(SHEET_INVITE, 'backup_invite');
+  backedUpApps += backupSheet(SHEET_FAMILY, 'backup_family');
+  backedUpApps += backupSheet(SHEET_PAID,   'backup_paid');
+
+  // ---------- 2. applications 3シート データ行削除（ヘッダー保持）----------
+  [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID].forEach(function(name) {
+    var s = ss.getSheetByName(name);
+    if (!s) return;
+    var lastRow = s.getLastRow();
+    if (lastRow > 1) {
+      s.deleteRows(2, lastRow - 1);
+    }
+    Logger.log('クリア完了: ' + name);
+  });
+
+  // ---------- 3. games シート入替 ----------
+  var gamesSheet = getSheet(SHEET_GAMES);
+  var gLastRow = gamesSheet.getLastRow();
+  if (gLastRow > 1) {
+    gamesSheet.deleteRows(2, gLastRow - 1);
+  }
+
+  // 2026-27 ホームゲーム実データ（秋田ノーザンハピネッツ 30試合）
+  // 出典: 秋田ノーザンハピネッツ_2026-27_Schedule.xlsx「🏠 ホーム全試合Schedule」シート
+  // 会場: 全試合 CNAアリーナ☆あきた
+  var season2627 = [
+    ['G01', '2026/10/08', '木', '川崎ブレイブサンダース'],
+    ['G02', '2026/10/17', '土', '信州ブレイブウォリアーズ'],
+    ['G03', '2026/10/24', '土', '横浜ビー・コルセアーズ'],
+    ['G04', '2026/10/30', '金', 'アルティーリ千葉'],
+    ['G05', '2026/11/01', '日', 'アルティーリ千葉'],
+    ['G06', '2026/11/08', '日', '信州ブレイブウォリアーズ'],
+    ['G07', '2026/11/11', '水', '茨城ロボッツ'],
+    ['G08', '2026/11/13', '金', '名古屋ダイヤモンドドルフィンズ'],
+    ['G09', '2026/11/15', '日', '大阪エヴェッサ'],
+    ['G10', '2026/12/12', '土', '千葉ジェッツ'],
+    ['G11', '2026/12/13', '日', '千葉ジェッツ'],
+    ['G12', '2026/12/26', '土', '富山グラウジーズ'],
+    ['G13', '2026/12/27', '日', '富山グラウジーズ'],
+    ['G14', '2027/01/24', '日', '仙台89ERS'],
+    ['G15', '2027/01/27', '水', 'サンロッカーズ渋谷'],
+    ['G16', '2027/02/03', '水', '大阪エヴェッサ'],
+    ['G17', '2027/02/10', '水', '京都ハンナリーズ'],
+    ['G18', '2027/02/17', '水', '滋賀レイクス'],
+    ['G19', '2027/03/06', '土', '佐賀バルーナーズ'],
+    ['G20', '2027/03/07', '日', '佐賀バルーナーズ'],
+    ['G21', '2027/03/10', '水', '群馬クレインサンダーズ'],
+    ['G22', '2027/03/19', '金', 'レバンガ北海道'],
+    ['G23', '2027/03/21', '日', 'レバンガ北海道'],
+    ['G24', '2027/04/02', '金', '滋賀レイクス'],
+    ['G25', '2027/04/10', '土', 'アルバルク東京'],
+    ['G26', '2027/04/11', '日', 'アルバルク東京'],
+    ['G27', '2027/04/24', '土', '宇都宮ブレックス'],
+    ['G28', '2027/04/25', '日', '宇都宮ブレックス'],
+    ['G29', '2027/04/28', '水', '琉球ゴールデンキングス'],
+    ['G30', '2027/05/02', '日', '長崎ヴェルカ']
+  ];
+
+  season2627.forEach(function(g) {
+    var gameDate = new Date(g[1]);
+    var deadline = new Date(g[1]);
+    deadline.setDate(deadline.getDate() - 7);
+    gamesSheet.appendRow([
+      g[0],          // A: 試合ID
+      gameDate,      // B: 日付（Date オブジェクト）
+      g[2],          // C: 曜日
+      g[3],          // D: 対戦相手
+      deadline       // E: 申込期限（試合日の7日前）
+    ]);
+  });
+
+  var result = {
+    backedUpGames: backedUpGames,
+    backedUpApps:  backedUpApps,
+    inserted:      season2627.length
+  };
+  Logger.log('replaceWithSeason2627 完了: ' + JSON.stringify(result));
+  return result;
+}
+
+// =====================================================
+// 申込期限のデフォルト設定（管理用・手動実行専用）
+// GASエディタの「関数を選択」から setDefaultDeadlines を選んで実行する。
+// doGet / doPost からは呼ばれない。
+// =====================================================
+/**
+ * games シートの締切列（5列目）が空の行に、試合日の7日前を一括設定する。
+ * 既に締切が入っている行は変更しない（冪等）。
+ * 戻り値: { updated: 件数, skipped: 件数 }
+ */
+function setDefaultDeadlines() {
+  const sheet = getSheet(SHEET_GAMES);
+  const data = sheet.getDataRange().getValues();
+  let updated = 0;
+  let skipped = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const gameDate = data[i][1]; // 2列目: 試合日
+    const deadline = data[i][4]; // 5列目: 締切
+
+    // 試合日が空の行はスキップ
+    if (!gameDate) {
+      skipped++;
+      continue;
+    }
+
+    // 締切が既に設定済みならスキップ
+    if (deadline !== '' && deadline !== null && deadline !== undefined) {
+      skipped++;
+      continue;
+    }
+
+    // 試合日の7日前を計算（日付のみ・時刻なし）
+    const d = new Date(gameDate);
+    d.setDate(d.getDate() - 7);
+    // updateDeadline と同じ形式（Date オブジェクト）で保存
+    sheet.getRange(i + 1, 5).setValue(d);
+    updated++;
+  }
+
+  const result = { updated: updated, skipped: skipped };
+  Logger.log('setDefaultDeadlines: updated=' + updated + ', skipped=' + skipped);
+  return result;
+}
