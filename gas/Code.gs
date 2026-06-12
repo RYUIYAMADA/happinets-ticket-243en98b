@@ -395,25 +395,15 @@ function saveLineUserId(playerId, lineUserId) {
 }
 
 // =====================================================
-// LINE Webhook ハンドラ（実装準備）
+// LINE Webhook ハンドラ（チャットボット本体）
 // =====================================================
 function handleLineWebhook(events) {
   events.forEach(ev => {
-    if (ev.type === 'follow') {
-      // 友だち追加イベント → 背番号入力を促すメッセージを送信
-      sendLineMessage(ev.source.userId,
-        '秋田ノーザンハピネッツ チケット申込システムです。\n' +
-        'あなたの選手番号（背番号3桁 または スタッフ番号）を入力してください。\n' +
-        '例）006  /  101');
-    } else if (ev.type === 'message' && ev.message.type === 'text') {
-      // テキストメッセージ受信 → 選手番号として登録を試みる
-      const lineUserId = ev.source.userId;
-      const text = ev.message.text.trim();
-      const saved = saveLineUserId(text, lineUserId);
-      if (saved) {
-        sendLineMessage(lineUserId, '登録完了しました！\nチケットのステータスが更新された際にこちらでお知らせします。');
-      } else {
-        sendLineMessage(lineUserId, '選手番号が見つかりませんでした。\n正しい番号を入力してください（例：006 / 101）');
+    try {
+      processLineEvent(ev);
+    } catch (e) {
+      if (ev.source && ev.source.userId) {
+        sendLineMessage(ev.source.userId, 'エラーが発生しました。もう一度お試しください。');
       }
     }
   });
@@ -682,4 +672,317 @@ function applyStatusDropdown(sheet, rowNum) {
     .setAllowInvalid(false)
     .build();
   sheet.getRange(rowNum, 16).setDataValidation(rule);
+}
+
+// =====================================================
+// LINE チャットボット — 会話状態管理
+// =====================================================
+
+// CacheService で会話状態を保存（TTL: 600秒）
+function getConversationState(lineUserId) {
+  const cache = CacheService.getScriptCache();
+  const json = cache.get('LINE_STATE_' + lineUserId);
+  return json ? JSON.parse(json) : null;
+}
+
+function saveConversationState(lineUserId, stateObj) {
+  const cache = CacheService.getScriptCache();
+  cache.put('LINE_STATE_' + lineUserId, JSON.stringify(stateObj), 600);
+}
+
+function clearConversationState(lineUserId) {
+  CacheService.getScriptCache().remove('LINE_STATE_' + lineUserId);
+}
+
+// LINE ID から選手データを逆引き
+function getPlayerByLineUserId(lineUserId) {
+  const sheet = getSheet(SHEET_PLAYERS);
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][2] && String(data[i][2]) === String(lineUserId)) {
+      return { playerId: String(data[i][0]), name: data[i][1] };
+    }
+  }
+  return null;
+}
+
+// 申込期限内の直近n試合を返す
+function getUpcomingGames(n) {
+  const all = getGames();
+  const now = new Date();
+  return all
+    .filter(g => !g.isDeadlinePassed && g.deadline)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, n || 3);
+}
+
+// LINE quickReply オブジェクトを生成
+// items: [{label: string, data: string}]
+function buildQuickReply(items) {
+  return {
+    items: items.map(item => ({
+      type: 'action',
+      action: { type: 'postback', label: item.label, data: item.data, displayText: item.label }
+    }))
+  };
+}
+
+// Reply API（replyToken使用）
+function replyToLine(replyToken, messages) {
+  const token = getLineToken();
+  if (!token || !replyToken) return;
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
+    method: 'post',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    payload: JSON.stringify({ replyToken, messages }),
+    muteHttpExceptions: true
+  });
+}
+
+// LINE から申込を送信
+function submitLineApplication(lineUserId, stateData) {
+  const player = getPlayerByLineUserId(lineUserId);
+  if (!player) throw new Error('選手データが見つかりません');
+  const game = getGames().find(g => g.gameId === stateData.gameId);
+  if (!game) throw new Error('試合データが見つかりません');
+  const gameLabel = Utilities.formatDate(new Date(game.date), 'Asia/Tokyo', 'M月d日') +
+    '（' + game.dayOfWeek + '）vs ' + game.opponent;
+
+  const body = {
+    playerId: player.playerId,
+    ticketType: stateData.ticketType,
+    gameId: stateData.gameId,
+    game: gameLabel,
+    adultCount: parseInt(stateData.adultCount) || 1,
+    childCount: 0,
+    infantCount: 0,
+    seatType: stateData.seatType || '',
+    seatPref: '',
+    receiverName: stateData.receiverName || player.name,
+    receiveMethod: 'pre',
+    paymentMethod: stateData.payment || '',
+    parkingCount: 0,
+    notes: 'LINE申込'
+  };
+  return submitApplication(body);
+}
+
+// =====================================================
+// LINE チャットボット — メインフロー
+// =====================================================
+function processLineEvent(ev) {
+  const userId = ev.source && ev.source.userId;
+  if (!userId) return;
+
+  // 友だち追加
+  if (ev.type === 'follow') {
+    replyToLine(ev.replyToken, [{
+      type: 'text',
+      text: '秋田ノーザンハピネッツ 選手家族チケット申込システムです。\n' +
+            '背番号（3桁）またはスタッフ番号を入力してください。\n' +
+            '例）006  /  101'
+    }]);
+    return;
+  }
+
+  const player = getPlayerByLineUserId(userId);
+
+  // テキストメッセージ
+  if (ev.type === 'message' && ev.message.type === 'text') {
+    const text = ev.message.text.trim();
+
+    // 未登録 → 背番号として登録を試みる
+    if (!player) {
+      const saved = saveLineUserId(text, userId);
+      if (saved) {
+        replyToLine(ev.replyToken, [buildMainMenuMessage('登録完了しました！チケット申込や確認はメニューから操作できます。')]);
+      } else {
+        replyToLine(ev.replyToken, [{ type: 'text', text: '選手番号が見つかりませんでした。\n正しい番号を入力してください（例：006 / 101）' }]);
+      }
+      return;
+    }
+
+    const state = getConversationState(userId);
+
+    // 枚数入力待ち
+    if (state && state.step === 'SELECTING_COUNT') {
+      const n = parseInt(text);
+      if (!n || n < 1 || n > 6) {
+        replyToLine(ev.replyToken, [{ type: 'text', text: '1〜6の数字を入力してください。' }]);
+        return;
+      }
+      state.adultCount = n;
+      if (state.ticketType === 'paid') {
+        state.step = 'SELECTING_SEAT_TYPE';
+        saveConversationState(userId, state);
+        replyToLine(ev.replyToken, [{
+          type: 'text', text: '席種を選んでください。',
+          quickReply: buildQuickReply([
+            { label: 'コートサイドシート', data: 'seat:courtside' },
+            { label: '2F自由席', data: 'seat:free' },
+            { label: 'その他', data: 'seat:other' }
+          ])
+        }]);
+      } else {
+        state.step = 'SELECTING_RECEIVER';
+        saveConversationState(userId, state);
+        replyToLine(ev.replyToken, [{ type: 'text', text: '受取者氏名を入力してください。' }]);
+      }
+      return;
+    }
+
+    // 受取者入力待ち
+    if (state && state.step === 'SELECTING_RECEIVER') {
+      state.receiverName = text;
+      state.step = 'CONFIRMING';
+      saveConversationState(userId, state);
+      replyToLine(ev.replyToken, [buildConfirmMessage(state, buildQuickReply([
+        { label: 'はい（送信）', data: 'confirm:yes' },
+        { label: 'キャンセル', data: 'confirm:no' }
+      ]))]);
+      return;
+    }
+
+    // その他テキスト → メインメニュー表示
+    replyToLine(ev.replyToken, [buildMainMenuMessage('メニューから操作してください。')]);
+    return;
+  }
+
+  // postbackイベント
+  if (ev.type === 'postback') {
+    const data = ev.postback && ev.postback.data;
+    if (!data) return;
+
+    if (data === 'menu:apply') {
+      const games = getUpcomingGames(3);
+      if (!games.length) {
+        replyToLine(ev.replyToken, [{ type: 'text', text: '現在申込可能な試合はありません。' }]);
+        return;
+      }
+      saveConversationState(userId, { step: 'SELECTING_GAME' });
+      replyToLine(ev.replyToken, [{
+        type: 'text',
+        text: '試合を選んでください。',
+        quickReply: buildQuickReply(games.map(g => ({
+          label: Utilities.formatDate(new Date(g.date), 'Asia/Tokyo', 'M/d') + ' vs ' + g.opponent,
+          data: 'game:' + g.gameId
+        })))
+      }]);
+      return;
+    }
+
+    if (data === 'menu:check') {
+      const apps = getApplicationsByPlayer(player.playerId);
+      const recent = apps.slice(-5).reverse();
+      const statusEmoji = { '確保済み': '✅', '確認中': '⏳', '対応不可': '❌', 'キャンセル': '🚫' };
+      const lines = recent.length
+        ? recent.map(a => (statusEmoji[a.status] || '📋') + ' ' + a.status + ': ' + a.game + ' ' + a.ticketType)
+        : ['申込はありません。'];
+      replyToLine(ev.replyToken, [{ type: 'text', text: '直近の申込状況\n\n' + lines.join('\n') }]);
+      return;
+    }
+
+    if (data === 'menu:help') {
+      replyToLine(ev.replyToken, [{ type: 'text', text: 'ご不明な点はチケット担当にお問い合わせください。' }]);
+      return;
+    }
+
+    if (data.startsWith('game:')) {
+      const gameId = data.split(':')[1];
+      saveConversationState(userId, { step: 'SELECTING_TYPE', gameId });
+      replyToLine(ev.replyToken, [{
+        type: 'text', text: '種別を選んでください。',
+        quickReply: buildQuickReply([
+          { label: '招待チケット', data: 'type:invite' },
+          { label: '家族席', data: 'type:family' },
+          { label: '有料チケット', data: 'type:paid' }
+        ])
+      }]);
+      return;
+    }
+
+    if (data.startsWith('type:')) {
+      const state = getConversationState(userId) || {};
+      state.ticketType = data.split(':')[1];
+      state.step = 'SELECTING_COUNT';
+      saveConversationState(userId, state);
+      replyToLine(ev.replyToken, [{ type: 'text', text: '大人の枚数を入力してください（1〜6）。' }]);
+      return;
+    }
+
+    if (data.startsWith('seat:')) {
+      const state = getConversationState(userId);
+      if (!state) return;
+      state.seatType = data.split(':')[1];
+      state.step = 'SELECTING_PAYMENT';
+      saveConversationState(userId, state);
+      replyToLine(ev.replyToken, [{
+        type: 'text', text: '支払方法を選んでください。',
+        quickReply: buildQuickReply([
+          { label: '給与天引き', data: 'payment:salary' },
+          { label: '当日現金', data: 'payment:cash' }
+        ])
+      }]);
+      return;
+    }
+
+    if (data.startsWith('payment:')) {
+      const state = getConversationState(userId);
+      if (!state) return;
+      state.payment = data.split(':')[1];
+      state.step = 'CONFIRMING';
+      saveConversationState(userId, state);
+      replyToLine(ev.replyToken, [buildConfirmMessage(state, buildQuickReply([
+        { label: 'はい（送信）', data: 'confirm:yes' },
+        { label: 'キャンセル', data: 'confirm:no' }
+      ]))]);
+      return;
+    }
+
+    if (data === 'confirm:yes') {
+      const state = getConversationState(userId);
+      if (!state) return;
+      submitLineApplication(userId, state);
+      clearConversationState(userId);
+      replyToLine(ev.replyToken, [buildMainMenuMessage('申込が完了しました！担当から確定の連絡が届きます。')]);
+      return;
+    }
+
+    if (data === 'confirm:no') {
+      clearConversationState(userId);
+      replyToLine(ev.replyToken, [buildMainMenuMessage('キャンセルしました。')]);
+      return;
+    }
+  }
+}
+
+// メインメニュー付きメッセージを生成
+function buildMainMenuMessage(text) {
+  return {
+    type: 'text',
+    text: text,
+    quickReply: buildQuickReply([
+      { label: 'チケット申込', data: 'menu:apply' },
+      { label: '申込確認', data: 'menu:check' },
+      { label: 'ヘルプ', data: 'menu:help' }
+    ])
+  };
+}
+
+// 確認メッセージを生成
+function buildConfirmMessage(state, quickReply) {
+  const game = getGames().find(g => g.gameId === state.gameId);
+  const gameLabel = game
+    ? Utilities.formatDate(new Date(game.date), 'Asia/Tokyo', 'M月d日') + '（' + game.dayOfWeek + '）vs ' + game.opponent
+    : state.gameId;
+  const typeLabel = { invite: '招待チケット', family: '家族席', paid: '有料チケット' }[state.ticketType] || state.ticketType;
+  const seatLabel = { courtside: 'コートサイドシート', free: '2F自由席', other: 'その他' }[state.seatType] || '';
+  const payLabel = { salary: '給与天引き', cash: '当日現金' }[state.payment] || '';
+
+  let lines = ['以下の内容で申込みます', '', '試合: ' + gameLabel, '種別: ' + typeLabel, '大人: ' + state.adultCount + '枚'];
+  if (state.receiverName) lines.push('受取者: ' + state.receiverName);
+  if (seatLabel) lines.push('席種: ' + seatLabel);
+  if (payLabel) lines.push('支払: ' + payLabel);
+
+  return { type: 'text', text: lines.join('\n'), quickReply };
 }
