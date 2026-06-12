@@ -6,11 +6,33 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/../.env.gas"
 
+# ─── 確認ガード: .env.gas が既に存在する場合は上書き確認 ─────────────────
+if [[ -f "$ENV_FILE" ]]; then
+  # 非対話実行（パイプ・source 等）では即終了
+  if [[ ! -t 0 ]]; then
+    echo "❌ .env.gas が既に存在します。非対話環境での上書きは禁止されています。" >&2
+    echo "   誤って source されていないか確認してください。" >&2
+    exit 1
+  fi
+  echo "⚠️  .env.gas が既に存在します。上書きすると既存シークレットが失われます。"
+  read -r -p "続行しますか？ [y/N]: " _CONFIRM
+  case "$_CONFIRM" in
+    y|Y) ;;
+    *) echo "中断しました。"; exit 1 ;;
+  esac
+fi
+# ──────────────────────────────────────────────────────────────────────────────
+
 echo "=== family-tickets GAS セットアップ ==="
 echo ""
 
-# 1. ランダムトークン生成
-WEBHOOK_SECRET=$(openssl rand -hex 24)
+# 1. トークン生成（既存値があれば再利用）
+# LINE_WEBHOOK_SECRET: .env.gas に既存値があれば再利用、なければ新規生成
+if [[ -f "$ENV_FILE" ]] && grep -q '^LINE_WEBHOOK_SECRET=' "$ENV_FILE"; then
+  WEBHOOK_SECRET=$(grep '^LINE_WEBHOOK_SECRET=' "$ENV_FILE" | cut -d'=' -f2-)
+else
+  WEBHOOK_SECRET=$(openssl rand -hex 24)
+fi
 ADMIN_TOKEN=$(openssl rand -hex 32)
 
 # 2. LINE 認証情報の入力案内
@@ -120,21 +142,7 @@ echo ""
 echo "次のステップ:"
 echo "1. GAS をウェブアプリとしてデプロイ（デプロイID を取得）"
 echo "2. LINE Webhook URL を設定:"
-echo "   https://script.google.com/macros/s/<デプロイID>/exec?secret=${WEBHOOK_SECRET}"
-echo ""
-echo "LINE Webhook URL を今すぐ生成しますか？デプロイIDを入力してください"
-echo "（スキップ: Enter キーを押す）"
-read -r -p "デプロイ ID: " DEPLOY_ID
-if [[ -n "$DEPLOY_ID" ]]; then
-  WEBHOOK_URL="https://script.google.com/macros/s/${DEPLOY_ID}/exec?secret=${WEBHOOK_SECRET}"
-  echo ""
-  echo "✅ LINE Webhook URL:"
-  echo "   ${WEBHOOK_URL}"
-  echo ""
-  echo "${WEBHOOK_URL}" | pbcopy
-  echo "📋 クリップボードにコピーしました"
-  echo "LINE Developers Console > Messaging API > Webhook URL に貼り付けてください"
-  open -a "Google Chrome" --args --profile-directory="Profile 1" "https://developers.line.biz/console/"
-  # .env.gas に追記
-  echo "WEBHOOK_URL=${WEBHOOK_URL}" >> "$ENV_FILE"
-fi
+echo "   Cloudflare Worker の URL を LINE Developers Console > Messaging API > Webhook URL に設定する"
+echo "   https://family-tickets-line-proxy.row2014-2015-k.workers.dev"
+echo "   ※ GAS 直 URL（script.google.com/...）は設定しない（署名検証が効かないため）"
+echo "   ※ ?whsec= パラメータは Worker が自動付与するため手動入力不要"

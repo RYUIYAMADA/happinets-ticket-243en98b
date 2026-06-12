@@ -187,8 +187,8 @@ function doPost(e) {
 
     // LINE Webhook は body.events 配列を持つ → 専用ハンドラへ振り分け
     if (body.events && Array.isArray(body.events)) {
-      // WEBHOOK_SECRET チェック（LINE の再送ループを避けるため不一致でも 200 相当を返す）
-      const expectedSecret = PropertiesService.getScriptProperties().getProperty('WEBHOOK_SECRET');
+      // LINE_WEBHOOK_SECRET チェック（LINE の再送ループを避けるため不一致でも 200 相当を返す）
+      const expectedSecret = PropertiesService.getScriptProperties().getProperty('LINE_WEBHOOK_SECRET');
       if (!expectedSecret || e.parameter.whsec !== expectedSecret) {
         return ContentService.createTextOutput(JSON.stringify({ ok: false }))
           .setMimeType(ContentService.MimeType.JSON);
