@@ -1,0 +1,32 @@
+name            = "family-tickets-api"
+main            = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# D1 データベース
+# database_id は wrangler d1 create family-tickets-db 実行後に返される ID を転記すること
+# 例: wrangler d1 create family-tickets-db
+[[d1_databases]]
+binding       = "DB"
+database_name = "family-tickets-db"
+database_id   = "TBD-after-d1-create"   # wrangler d1 create family-tickets-db 後に転記
+# D1 リージョン（日本ユーザー向け）
+# location_hint は wrangler.toml では設定不可。wrangler d1 create 時に --location=apac を指定する
+# wrangler d1 create family-tickets-db --location=apac
+
+# Cron Triggers（朝通知・期限切れセッション削除）
+[triggers]
+crons = ["0 1 * * *"]   # 毎朝 10:00 JST (UTC 01:00)
+
+# 環境変数（秘密情報は wrangler secret put で設定）
+[vars]
+ALLOWED_ORIGIN = "https://app-five-pi-50.vercel.app"
+
+# secrets（wrangler secret put で設定・ここには書かない）
+# LINE_CHANNEL_SECRET
+# LINE_CHANNEL_ACCESS_TOKEN
+# ADMIN_SALT
+# GOOGLE_SERVICE_ACCOUNT_KEY （フェーズ5で追加）
+
+# マイグレーションファイル
+# cloudflare-worker/migrations/ から cloudflare-worker-api/migrations/ へ git mv 後に適用
+# wrangler d1 execute family-tickets-db --file=migrations/0001_init.sql

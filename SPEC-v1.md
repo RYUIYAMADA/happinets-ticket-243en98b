@@ -33,11 +33,17 @@
 | admin | pw_hash 照合→ admin セッショントークン（TTL 12h） | player の全操作 + 選手/試合 CRUD・一括入替・統計・エクスポート即時実行 |
 | line-webhook | X-Line-Signature HMAC 検証（実装流用） | bot イベント処理のみ |
 - 包含: admin ⊃ player。トークンは URL クエリ禁止・Authorization ヘッダで送る（現行 GET クエリ方式からの改善）。
+- トークン生成: `crypto.randomUUID()`（122bit エントロピー）
+- ログアウト: `POST /api/auth/logout` で sessions 行を DELETE
+- 期限切れセッション: 朝通知 cron（0 1 * * *）に相乗りで日次 DELETE
+- 管理者認証: サーバー側 PBKDF2（SubtleCrypto deriveBits・iterations=100000・salt=env.ADMIN_SALT）で保存・比較
+- ログイン試行制限: 5回失敗で10分ロック（admins.failed_count / admins.locked_until）
 
 ## 5. API 設計方針（契約詳細は docs/api-contract.md へ肉付け）
 - REST 風 JSON。`/api/auth/login` `/api/games` `/api/applications` `/api/admin/*` `/line/webhook`
 - エラー形式統一: `{ok:false, error:{code, message}}`。i18n は FE 側辞書（現行踏襲）
-- CORS: FE ホスティングオリジンのみ許可
+- CORS: `env.ALLOWED_ORIGIN`（https://app-five-pi-50.vercel.app）固定・`*` 禁止
+- D1 複数書き込み: 必ず `env.DB.batch([...])` でアトミック実行（INSERT + audit_log 等）
 
 ## 6. LINE bot 移行方針
 - 現行 Code.gs の会話フロー（番号連携 / menu:apply / menu:check / 日英デフォルト返信）を Worker に移植。署名検証は worker.js 実装を流用
@@ -240,10 +246,11 @@ node scripts/migrate-to-d1.js --input scripts/migration-data.json --env producti
 
 スクリプトの処理順（FK 制約のため順序厳守）:
 
-1. **admins**: 設定シートのハッシュ値を INSERT
+1. **admins**: migration-data.json に admins.pw_hash を含めない。移行後に wrangler d1 execute で直接 INSERT する。
    ```sql
-   INSERT INTO admins(role, pw_hash) VALUES('ticket', '<hash>');
-   INSERT INTO admins(role, pw_hash) VALUES('manager', '<hash>');
+   -- wrangler d1 execute で実行（migration-data.json 経由禁止）
+   INSERT INTO admins(role, pw_hash) VALUES('ticket', '<pbkdf2-hash>');
+   INSERT INTO admins(role, pw_hash) VALUES('manager', '<pbkdf2-hash>');
    ```
 
 2. **players**: `player_no = String(parseInt(no))` で正規化してから INSERT
@@ -252,7 +259,7 @@ node scripts/migrate-to-d1.js --input scripts/migration-data.json --env producti
    VALUES('6', '#6 赤穂雷太', '', 'U...');
    ```
 
-3. **games**: 日付は `'YYYY-MM-DD'` 文字列に変換
+3. **games**: 日付は `'YYYY-MM-DD'` 文字列に変換。season は必ず `'2026-27'` を明示
    ```sql
    INSERT INTO games(game_no, date, day_of_week, opponent, deadline, season)
    VALUES('G01', '2026-10-08', '木', '川崎ブレイブサンダース', '2026-10-01', '2026-27');
@@ -333,6 +340,8 @@ HAVING COUNT(*) > 1;
      □ LINE bot でチケット申込 → D1 に記録される
 □ 6. 異常なし確認後、GAS を「読み取り専用デプロイ」として2週間保持
 □ 7. 2週間後: GAS プロジェクトをアーカイブ（削除しない）
+□ 8. 旧プロキシ worker.js を切替日に即削除（LINE bot が Worker 内で完結するため不要）
+□ 9. 切替当日に管理者パスワード変更（PBKDF2ハッシュを再生成して admins テーブルを更新）
 ```
 
 ### 11-8. ロールバック手順
@@ -356,3 +365,8 @@ GAS は切替後2週間「読み取り専用」で稼働継続するため、ロ
 | D-6 | adminSetup?task=*（GET セットアップ群） | **廃止を正式決定**。リッチメニュー登録・トリガー設定は wrangler / LINE API 直呼び出しで代替（本セッションで実績あり） |
 | D-7 | 朝通知 sendMorningNotifications | **移行スコープに含める**（受入条件「機能同等」の一部）。Cloudflare Cron Triggers（毎朝10:00 JST = cron "0 1 * * *" UTC）で実装。§6 の bot 移行に追加 |
 | D-8 | FE の initData 呼び出し残存 | FE 切替タスクの完了条件に「initData 呼び出しの除去確認」を追加 |
+| R-4 | initData Worker 実装 | **廃止**。移行スクリプト（migrate-to-d1.js）が代替。FE からの呼び出し除去必須 |
+| R-5 | Sheets 用 Service Account 権限 | 書込スコープを持つが共有は対象シート1枚のみ。フェーズ5着手時にセキュリティ再チェック |
+| R-6 | 管理者認証方式 | PBKDF2（SubtleCrypto・iterations=100000・env.ADMIN_SALT）+ ログイン5回失敗=10分ロック採用 |
+| R-7 | D1 リージョン | location_hint="apac"（日本ユーザー向け）を wrangler.toml に設定 |
+| D-6(追記) | 廃止スコープ | adminSetup?task=* / adminSetupPost を廃止スコープに含める |

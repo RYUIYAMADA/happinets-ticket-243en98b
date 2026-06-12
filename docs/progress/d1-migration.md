@@ -54,10 +54,11 @@ progress_pct: 0
 状態: ⬜未着手 / 🔄作業中 / ✅完了 / ⏸️保留 / ❌中止
 
 ### フェーズ1: 設計（PM スケルトン → 技術詳細肉付け → Gate1/2）
-- 🔄 SPEC-v1 スケルトン作成（PM: スコープ・トレードオフ・RBAC・ERD 方針）
-- ⬜ D1 スキーマ詳細設計（DDL・インデックス・migration）
-- ⬜ API 契約書 docs/api-contract.md（FE/BE/bot 並列実装の正本）
-- ⬜ Gate1 レビュー（engineer/designer/security 並列）
+- ✅ SPEC-v1 スケルトン作成（PM: スコープ・トレードオフ・RBAC・ERD 方針）
+- ✅ D1 スキーマ詳細設計（migrations/0001_init.sql・9テーブル）
+- ✅ API 契約書 docs/api-contract.md（GAS 全 action 対照表つき・620行）
+- ✅ PM 裁定6件を SPEC §12 に記録（朝通知=Cron Triggers 等）
+- 🔄 Gate1 レビュー（engineer/security 並列。designer は FE 切替フェーズで実施＝デザイン変更なしのため）
 - ⬜ SPEC レビュー（Claude+Codex 並列）→ Gate2
 
 ### フェーズ2: 実装（垂直スライス先行 → 並列）
@@ -88,6 +89,7 @@ progress_pct: 0
 - 受入条件達成率: 0%（0/7）
 
 ## 作業ログ
+- **2026-06-13 05:52** — SPEC-v1 完成（スケルトン+技術詳細+PM裁定6件）。0001_init.sql / api-contract.md 作成。Gate1（engineer/security）起動。次: Gate1 指摘の裁定 → Gate2
 - **2026-06-13 05:41** — 進捗管理表作成。龍偉が案1（D1+Workers）を承認。次: SPEC-v1 スケルトン作成 → Gate1
 
 ## 🔀 方向転換・仕様変更ログ

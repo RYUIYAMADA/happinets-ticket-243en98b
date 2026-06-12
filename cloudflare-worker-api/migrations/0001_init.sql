@@ -87,6 +87,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_applications_app_id ON applications(app_id)
 CREATE INDEX       IF NOT EXISTS idx_applications_player_game ON applications(player_id, game_id);
 CREATE INDEX       IF NOT EXISTS idx_applications_game_id     ON applications(game_id);
 CREATE INDEX       IF NOT EXISTS idx_applications_status      ON applications(status);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_applications_active ON applications(player_id, game_id, category) WHERE status != 'cancelled';
 
 -- =====================================================
 -- sessions
@@ -118,11 +119,13 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 -- GAS 対応: 設定シート admin_password_hash / manager_password_hash
 -- =====================================================
 CREATE TABLE IF NOT EXISTS admins (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  role       TEXT    NOT NULL UNIQUE CHECK(role IN ('ticket','manager')),
-  pw_hash    TEXT    NOT NULL,     -- SHA-256(salt + password)。GAS互換
-  api_token  TEXT    DEFAULT NULL, -- 管理 API トークン (GAS: ADMIN_API_TOKEN スクリプトプロパティ相当)
-  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  role         TEXT    NOT NULL UNIQUE CHECK(role IN ('ticket','manager')),
+  pw_hash      TEXT    NOT NULL,     -- PBKDF2(SubtleCrypto deriveBits, iterations=100000, salt=env.ADMIN_SALT) ハッシュ
+  api_token    TEXT    DEFAULT NULL, -- 管理 API トークン (GAS: ADMIN_API_TOKEN スクリプトプロパティ相当)
+  failed_count INTEGER NOT NULL DEFAULT 0,  -- ログイン試行失敗カウント（5回で10分ロック）
+  locked_until TEXT    DEFAULT NULL,         -- ロック解除 datetime（ISO 8601）。NULL=非ロック
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 -- =====================================================
@@ -131,7 +134,7 @@ CREATE TABLE IF NOT EXISTS admins (
 -- =====================================================
 CREATE TABLE IF NOT EXISTS audit_log (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  actor      TEXT    NOT NULL,  -- 'player:{player_no}' | 'admin:{role}' | 'line:{line_user_id}' | 'system'
+  actor      TEXT    NOT NULL,  -- 'player:{players.id}' / 'admin:{admins.id}' 形式。LINE UID の直記録は禁止（個人情報保護）
   action     TEXT    NOT NULL,  -- 'login' | 'submit' | 'cancel' | 'status_update' | 'game_crud' | 'player_crud'
   target     TEXT    NOT NULL,  -- 'application:{app_id}' | 'game:{game_no}' | 'player:{player_no}'
   detail     TEXT    NOT NULL DEFAULT '{}',  -- JSON
