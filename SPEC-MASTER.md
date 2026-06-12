@@ -1,5 +1,5 @@
 # 秋田ノーザンハピネッツ 選手家族チケット申込システム
-## マスター仕様書 v1.0（2026-05-23）
+## マスター仕様書 v1.1（2026-06-12）
 
 ---
 
@@ -219,35 +219,199 @@ GASエディタでデプロイバージョンを更新
 
 ---
 
-## 11. LINE 通知（実装準備済み・未稼働）
+## 11. LINE 公式アカウント統合（v1.1 全面実装）
 
-### 現状
-- `getLineToken()`: PropertiesService からトークン取得（コードにトークンなし）
-- `sendLineMessage(lineUserId, text)`: push 通知送信関数（実装済み）
-- `handleLineWebhook(events)`: 友だち追加・背番号登録フロー（実装済み）
-- `updateStatus()`: ステータス更新時に通知呼び出し（実装済み・トークン未設定時スキップ）
-- 選手シートに `LINE ID` 列追加済み
+### アーキテクチャ方針
+<!-- Gate1-MUST: pm-LINE-arch-1 -->
+- GAS Web App を LINE Webhook エンドポイントとして兼用（新規サーバー不要）
+- 状態管理: `CacheService.getScriptCache()` TTL=600秒
+- キー: `LINE_STATE_{lineUserId}` → JSON文字列
+- Lステップ等外部ツールとの共存: Webhook は自前が占有。自前機能はなるべく URI ボタンで完結させ、postback（Webhook依存）を最小化
+- **外部ツール導入時は Webhook を明け渡す設計にする（将来拡張性）**
 
-### 稼働に必要な残作業
-1. LINE Developers でチャンネル作成（Messaging API）
-2. チャンネルアクセストークンを GAS スクリプトプロパティに登録
-   - キー名: `LINE_CHANNEL_ACCESS_TOKEN`
-3. LINE Developers の Webhook URL に GAS Web App URL を設定
-4. 選手に公式アカウントを友だち追加してもらう
-5. 友だち追加後、選手が背番号を送信 → LINE ID が自動登録される
-
-### 通知フロー
+### 11-1. 初回登録フロー
 ```
-チケット担当がステータス更新
-    ↓
-updateStatus() 実行
-    ↓
-getPlayers() で該当選手の LINE ID を取得
-    ↓
-sendLineMessage() で push 通知
-    ↓
-選手のLINEに「試合名・ステータス」が届く
+友だち追加（follow イベント）
+  → 「背番号を送ってください（例：006 / 101）」
+選手番号送信
+  → 選手・スタッフシートで照合
+  → 一致: LINE ID をシートの col3 に保存
+         「登録完了しました！」＋ クイックリプライメニュー表示
+  → 不一致: 「番号が見つかりません。正しい番号を入力してください」
 ```
+
+### 11-2. チケット自己申込フロー（新機能 v1.1）
+```
+Quick Reply: [チケット申込] → 状態: SELECTING_GAME
+  → 申込期限内の直近3試合をクイックリプライで表示
+     例）[10/10 土 vs 琉球] [10/11 日 vs 琉球] [10/17 土 vs 島根]
+
+ゲーム選択 → 状態: SELECTING_TYPE
+  → 「種別を選んでください」
+     [招待チケット] [家族席] [有料チケット]
+
+種別選択 → 状態: SELECTING_COUNT
+  → 「大人の枚数を入力してください（1〜6）」
+  → テキストで数字を返信
+
+枚数入力（招待/家族席の場合） → 状態: SELECTING_RECEIVER
+  → 「受取者氏名を入力してください」
+
+受取者入力 → 状態: CONFIRMING
+  → 確認メッセージ表示:
+     「以下の内容で申込みます」
+     試合: 10/10（土）vs 琉球
+     種別: 招待チケット
+     大人: 2枚
+     受取者: ○○ 様
+     [はい（送信）] [キャンセル]
+
+「はい」返信 → GAS が submitApplication を呼び出し
+  → 「申込完了！担当から確定連絡が届きます」
+  → 状態リセット → メニューに戻る
+
+「キャンセル」返信 → 「キャンセルしました」→ メニューに戻る
+```
+
+### 11-3. 有料チケット追加ステップ
+```
+SELECTING_COUNT 後 → SELECTING_SEAT_TYPE
+  → 「席種を選んでください」
+     [コートサイドシート] [2F自由席] [その他]
+→ SELECTING_PAYMENT
+  → 「支払方法を選んでください」
+     [給与天引き] [当日現金]
+→ CONFIRMING（上記と同じ確認フロー）
+```
+
+### 11-4. 申込確認フロー
+```
+Quick Reply: [申込確認]
+  → getApplicationsByPlayer() で直近5件取得
+  → ステータス絵文字付きで一覧表示:
+     ✅ 確保済み: 10/10 招待 2枚
+     ⏳ 確認中: 10/17 家族席 3枚
+     ❌ 対応不可: 10/11 招待 2枚
+```
+
+### 11-5. ステータス更新通知（既存・継続）
+```
+admin.html でチケット担当がステータス更新
+  → updateStatus() がスプレッドシートを更新
+  → 該当選手の LINE ID を取得
+  → push 通知: 「【チケット確定】10/10 琉球戦 招待チケット 2枚 → 確保済み」
+```
+
+### 11-6. GAS 新規関数（実装仕様）
+| 関数 | 概要 |
+|---|---|
+| `getConversationState(uid)` | CacheService から状態 JSON を取得 |
+| `saveConversationState(uid, state)` | CacheService に状態 JSON を保存（TTL 600秒） |
+| `clearConversationState(uid)` | 状態をクリア（キャンセル・完了時） |
+| `getUpcomingGames(n)` | 申込期限内の直近 n 試合を返す |
+| `buildQuickReply(items)` | LINE quickReply オブジェクトを生成 |
+| `submitLineApplication(uid, data)` | LINE 申込データをスプレッドシートに登録 |
+| `getPlayerByLineUserId(uid)` | LINE ID → 選手データを逆引き |
+
+### 11-7. スクリプトプロパティ（必須設定）
+```
+LINE_CHANNEL_ACCESS_TOKEN : チャンネルアクセストークン（長期）
+```
+
+### 11-8. Webhook URL 設定手順
+1. LINE Developers → Messaging API チャンネル作成
+2. Webhook URL = GAS Web App URL を設定
+3. Webhook の利用: ON / 応答メッセージ: OFF
+4. 友だち追加あいさつ: OFF（GAS 側で制御）
+5. GAS スクリプトプロパティに `LINE_CHANNEL_ACCESS_TOKEN` 登録
+
+---
+
+## 12. i18n（日英切替）仕様 — v1.1 新規
+
+<!-- Gate1-MUST: pm-i18n-1 -->
+対象: 選手向け3画面（index.html / player-dashboard.html / player-form.html）
+非対象: admin.html（日本語のみ）
+
+### 実装方針
+```javascript
+// 各 HTML ファイルの先頭に定義
+const STRINGS = {
+  ja: { login: 'ログイン', playerLogin: '選手ログイン', ... },
+  en: { login: 'Login',    playerLogin: 'Player Login', ... }
+};
+const lang = localStorage.getItem('ht_lang') || 'ja';
+function t(key) { return STRINGS[lang][key] || STRINGS.ja[key]; }
+function applyI18n() { /* data-i18n 属性で一括適用 */ }
+```
+
+### 言語切替 UI
+- 位置: ヘッダー右上
+- 表示: `JA / EN`（現在のものをハイライト）
+- 動作: クリックで即切替 + localStorage 保存 + ページ全体に再適用
+- 初回訪問時: `ja`（日本語優先）
+- **前回の切替状態が次回訪問に引き継がれる**（localStorage 永続）
+
+---
+
+## 13. デザインシステム v1.1（ミニマル刷新）
+
+<!-- Gate1-MUST: pm-design-1 -->
+
+| 項目 | 旧 | 新 |
+|---|---|---|
+| 背景色 | `#f5f7fa`（グレー） | `#ffffff`（白） |
+| カード | `box-shadow: 0 4px 24px ...` | `border: 1px solid #e5e7eb` のみ |
+| 角丸 | `12px` | `4px` |
+| アニメーション | shimmer / transition 多用 | なし（loading は opacity fade のみ） |
+| フォント | 変更なし | 変更なし |
+| カラー変数 | 変更なし | 変更なし |
+
+**AI臭排除の基準:**
+- ゴースト系エフェクト（shimmer / glassmorphism / gradient）禁止
+- 装飾的 shadow 禁止（border のみで立体感を排除）
+- 過度な rounded 禁止（最大 `6px`）
+- `transition: all 0.3s ease` のような「なんでもトランジション」禁止
+
+---
+
+## 14. テストデータ（変更なし）
+
+`initTestData()` を GAS エディタから実行することで投入。
+
+| 種別 | 件数 | 備考 |
+|------|------|------|
+| 招待チケット | 9件 | 複数選手・複数試合・全ステータス網羅 |
+| 家族席 | 6件 | 駐車場・乳幼児・キャンセルケース含む |
+| 有料チケット | 3件 | コートサイド・自由席・対応不可含む |
+
+---
+
+## 15. ロードマップ v1.1
+
+### ✅ 完了（v1.0）
+- ログイン・認証（選手 / 管理者）
+- 3種チケット申込フォーム
+- 管理者画面（ステータス更新・期限設定）
+- スプレッドシート DB 設計
+- GitHub Actions による自動デプロイ
+- モバイル最適化・WCAG AA 準拠
+- LINE 通知の構造準備
+
+### 🔜 v1.1 実装対象（本セッション）
+| 優先度 | タスク |
+|--------|--------|
+| 高 | LINE 公式アカウント チケット自己申込ボット（GAS 拡張） |
+| 高 | HTML デザイン刷新（AI臭ゼロ・ミニマル） |
+| 高 | 日英切替（選手向け3画面・localStorage永続） |
+
+### 🔜 v1.2 以降
+| 優先度 | タスク |
+|--------|--------|
+| 高 | 本番パスワード変更・LINE チャンネル本番設定 |
+| 中 | 申込期限のデフォルト設定（試合7日前自動） |
+| 低 | 管理者画面：CSV エクスポート |
+| 低 | 申込枚数上限の設定機能 |
 
 ---
 
@@ -289,19 +453,14 @@ sendLineMessage() で push 通知
 
 ---
 
-## 14. 参照ファイル
+## 16. 参照ファイル
 
 | ファイル | 内容 |
 |---------|------|
-| `gas/Code.gs` | バックエンド全コード |
+| `gas/Code.gs` | バックエンド全コード（LINE チャットボット含む） |
 | `gas/.clasp.json` | clasp 設定（Script ID等） |
 | `.github/workflows/deploy-gas.yml` | CI/CD |
-| `SPEC-security-ux.md` | セキュリティ・UX 修正仕様（過去） |
-| `SPEC-responsive.md` | レスポンシブ対応仕様（過去） |
-| `招待チケット申込 2026年5月 - Google フォーム.pdf` | 移行元フォーム（参考） |
-| `家族席申込 2026年5月ホームゲーム - Google フォーム.pdf` | 移行元フォーム（参考） |
-| `有料チケット申込 2026年1~5月 - Google フォーム.pdf` | 移行元フォーム（参考） |
 
 ---
 
-*最終更新: 2026-05-23*
+*最終更新: 2026-06-12 (v1.1)*

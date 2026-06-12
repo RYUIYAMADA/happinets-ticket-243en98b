@@ -15,14 +15,13 @@
     --accent-hover: #c4006e;
     --gold: #E6B422;
     --gold-hover: #c9971b;
-    --bg: #f5f7fa;
+    --bg: #ffffff;
     --card: #ffffff;
-    --border: #e2e8f0;
+    --border: #e5e7eb;
     --text: #1a202c;
     --text-sub: #374151;
     --error: #dc2626;
-    --radius: 12px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --radius: 6px;
   }
   .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
@@ -44,7 +43,7 @@
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
     width: 100%;
     max-width: 420px;
     padding: 32px 20px;
@@ -86,7 +85,7 @@
     cursor: pointer;
     border-radius: 6px;
     color: var(--text-sub);
-    transition: all 0.15s;
+    transition: border-color 0.15s;
     border: none;
     background: transparent;
     min-height: 44px;
@@ -95,7 +94,7 @@
   .tab.active {
     background: var(--card);
     color: var(--accent);
-    box-shadow: 0 0 0 1px var(--border);
+    border: 1px solid var(--border);
   }
   .form-group { margin-bottom: 20px; }
   label {
@@ -110,8 +109,8 @@
     padding: 12px 14px;
     font-size: 16px;
     min-height: 44px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     color: var(--text);
     background: #fff;
     transition: border-color 0.15s;
@@ -126,7 +125,7 @@
     color: #fff;
     background: var(--accent);
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: background 0.15s;
     min-height: 44px;
@@ -167,7 +166,7 @@
     align-items: center;
     justify-content: center;
     padding: 10px 8px;
-    border-radius: 7px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 600;
@@ -189,7 +188,7 @@
   .role-option.selected {
     background: #fff;
     color: #111;
-    box-shadow: 0 1px 4px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06);
+    border: 1px solid var(--border);
   }
   @media (max-width: 480px) {
     body {
@@ -217,52 +216,107 @@
 </head>
 <body>
 <div class="card">
+  <div style="position: absolute; top: 20px; right: 20px;">
+    <button id="lang-toggle" onclick="toggleLang()" style="border:1px solid #e5e7eb;background:#fff;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer;font-family:inherit;color:#374151;">JA / en</button>
+  </div>
+
   <div class="logo">
     <div class="logo-badge">秋田ノーザンハピネッツ</div>
-    <h1>選手家族<br>チケット申込システム<span class="en-sub">Player Family Ticket Request System</span></h1>
+    <h1 data-i18n="pageTitle">選手家族<br>チケット申込システム</h1>
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('player')">選手ログイン<span class="en-sub">Player Login</span></button>
-    <button class="tab" onclick="switchTab('admin')">管理者<span class="en-sub">Admin</span></button>
+    <button class="tab active" onclick="switchTab('player')" data-i18n="playerTab">選手ログイン</button>
+    <button class="tab" onclick="switchTab('admin')" data-i18n="adminTab">管理者</button>
   </div>
 
   <div id="panel-player" class="panel active">
     <div class="form-group">
-      <label for="playerId">番号（3桁）<span class="en-sub">ID Number (3 digits)</span></label>
-      <input type="text" id="playerId" placeholder="例: 006（選手）　101（スタッフ）" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
+      <label for="playerId" data-i18n="numberLabel">番号（3桁）</label>
+      <input type="text" id="playerId" data-i18n="numberPlaceholder" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
     </div>
-    <div class="id-hint">
-      選手: 背番号3桁　／　スタッフ: 101〜<span class="en-sub">Players: 3-digit jersey number / Staff: 101 and up</span>
+    <div class="id-hint" data-i18n="loginHint">
+      選手: 背番号3桁　／　スタッフ: 101〜
     </div>
-    <button class="btn" onclick="loginPlayer()">ログイン<span class="en-sub">Login</span></button>
+    <button class="btn" onclick="loginPlayer()" data-i18n="loginBtn">ログイン</button>
     <div class="error-msg" id="player-error"></div>
   </div>
 
   <div id="panel-admin" class="panel">
     <div class="form-group">
-      <label>アカウント種別</label>
+      <label data-i18n="roleLabel">アカウント種別</label>
       <div class="role-options" role="radiogroup" aria-label="アカウント種別">
         <label class="role-option selected" id="role-ticket-label">
           <input type="radio" name="adminRole" value="ticket" checked onchange="updateRoleUI()">
-          チケット担当
+          <span data-i18n="ticketRole">チケット担当</span>
         </label>
         <label class="role-option" id="role-manager-label">
           <input type="radio" name="adminRole" value="manager" onchange="updateRoleUI()">
-          チームマネージャー
+          <span data-i18n="managerRole">チームマネージャー</span>
         </label>
       </div>
     </div>
     <div class="form-group">
-      <label for="adminPw">パスワード</label>
-      <input type="password" id="adminPw" placeholder="パスワードを入力">
+      <label for="adminPw" data-i18n="pwLabel">パスワード</label>
+      <input type="password" id="adminPw" data-i18n="pwPlaceholder">
     </div>
-    <button class="btn" onclick="loginAdmin()">管理者ログイン<span class="en-sub">Admin Login</span></button>
+    <button class="btn" onclick="loginAdmin()" data-i18n="adminLoginBtn">管理者ログイン</button>
     <div class="error-msg" id="admin-error"></div>
   </div>
 </div>
 
 <script>
+// ─── i18n ───────────────────────────────────────────
+const STRINGS = { ja: {}, en: {} };
+let lang = localStorage.getItem('ht_lang') || 'ja';
+function t(key) { return (STRINGS[lang] && STRINGS[lang][key]) || (STRINGS.ja && STRINGS.ja[key]) || key; }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) el.placeholder = t(k);
+    else el.textContent = t(k);
+  });
+  const btn = document.getElementById('lang-toggle');
+  if (btn) btn.textContent = lang === 'ja' ? 'JA / en' : 'ja / EN';
+}
+function toggleLang() {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  localStorage.setItem('ht_lang', lang);
+  applyI18n();
+}
+
+STRINGS.ja = {
+  pageTitle: '選手家族チケット申込システム',
+  playerTab: '選手ログイン',
+  adminTab: '管理者',
+  numberLabel: '番号（3桁）',
+  numberPlaceholder: '例: 006（選手）　101（スタッフ）',
+  loginHint: '選手: 背番号3桁　／　スタッフ: 101〜',
+  loginBtn: 'ログイン',
+  roleLabel: 'アカウント種別',
+  ticketRole: 'チケット担当',
+  managerRole: 'チームマネージャー',
+  pwLabel: 'パスワード',
+  pwPlaceholder: 'パスワードを入力',
+  adminLoginBtn: '管理者ログイン',
+};
+STRINGS.en = {
+  pageTitle: 'Player Family Ticket Request System',
+  playerTab: 'Player Login',
+  adminTab: 'Admin',
+  numberLabel: 'ID Number (3 digits)',
+  numberPlaceholder: 'e.g. 006 (Player), 101 (Staff)',
+  loginHint: 'Players: 3-digit jersey number / Staff: 101 and up',
+  loginBtn: 'Login',
+  roleLabel: 'Account Type',
+  ticketRole: 'Ticket Manager',
+  managerRole: 'Team Manager',
+  pwLabel: 'Password',
+  pwPlaceholder: 'Enter password',
+  adminLoginBtn: 'Admin Login',
+};
+// ────────────────────────────────────────────────────
+
 // ★ デプロイ後にGAS Web AppのURLを設定 ★
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 
@@ -434,6 +488,11 @@ const DEMO_MEMBERS = [
   { playerId: '110', name: 'Mg 緑川 樹' },
   { playerId: '111', name: 'Mg 北野 陽菜' },
 ];
+
+// ページ読込時の初期化
+window.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
+});
 
 // Enter キー対応
 document.addEventListener('keydown', e => {

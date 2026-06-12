@@ -40,6 +40,17 @@ cd ~/Desktop/ryui-workspace/projects/happinets/family-tickets && claude
 ## GitHub
 - origin: `ryuiyamada/happinets-ticket-243en98b`
 
+## IMPORTANT: HTML プレビュールール
+- **Chrome で直接開くのは禁止**（`open -a "Google Chrome"` 等すべて禁止）
+- **html-share へのアップロードは龍偉が「アップして」と明示指示した時のみ実行する**（自発アップ禁止）
+- アップロードコマンド: `bash ~/Desktop/ryui-workspace/projects/html\ share/html-share-upload.sh <file.html>`
+- 再アップ時は `--slug <既存slug>` で上書き（新規作成しない）
+- アップ後はリンクをチャットに貼って報告
+- **アップ・フォルダ操作など html-share への変更後は必ずブラウザをリロードする**
+  ```bash
+  osascript -e 'tell application "Google Chrome" to reload active tab of front window'
+  ```
+
 ## 関連
 - グローバル鉄則: `~/.claude/CLAUDE.md`
 - カテゴリ: `projects/happinets/`

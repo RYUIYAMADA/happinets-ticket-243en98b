@@ -862,6 +862,27 @@ function processLineEvent(ev) {
       return;
     }
 
+    // SELECTING_SEAT_TYPE ステップでテキスト送信されたら案内
+    if (state && state.step === 'SELECTING_SEAT_TYPE') {
+      replyToLine(ev.replyToken, [{ type: 'text', text: '下のボタンから席種を選んでください。' }]);
+      return;
+    }
+
+    // SELECTING_PAYMENT ステップでテキスト送信されたら案内
+    if (state && state.step === 'SELECTING_PAYMENT') {
+      replyToLine(ev.replyToken, [{ type: 'text', text: '下のボタンから支払方法を選んでください。' }]);
+      return;
+    }
+
+    // CONFIRMING ステップでテキスト送信されたら確認画面を再表示
+    if (state && state.step === 'CONFIRMING') {
+      replyToLine(ev.replyToken, [buildConfirmMessage(state, buildQuickReply([
+        { label: 'はい（送信）', data: 'confirm:yes' },
+        { label: 'キャンセル', data: 'confirm:no' }
+      ]))]);
+      return;
+    }
+
     // その他テキスト → メインメニュー表示
     replyToLine(ev.replyToken, [buildMainMenuMessage('メニューから操作してください。')]);
     return;
@@ -931,7 +952,10 @@ function processLineEvent(ev) {
 
     if (data.startsWith('seat:')) {
       const state = getConversationState(userId);
-      if (!state) return;
+      if (!state) {
+        replyToLine(ev.replyToken, [buildMainMenuMessage('セッションが切れました。もう一度「チケット申込」から始めてください。')]);
+        return;
+      }
       state.seatType = data.split(':')[1];
       state.step = 'SELECTING_PAYMENT';
       saveConversationState(userId, state);
@@ -947,7 +971,10 @@ function processLineEvent(ev) {
 
     if (data.startsWith('payment:')) {
       const state = getConversationState(userId);
-      if (!state) return;
+      if (!state) {
+        replyToLine(ev.replyToken, [buildMainMenuMessage('セッションが切れました。もう一度「チケット申込」から始めてください。')]);
+        return;
+      }
       state.payment = data.split(':')[1];
       state.step = 'CONFIRMING';
       saveConversationState(userId, state);
@@ -960,7 +987,10 @@ function processLineEvent(ev) {
 
     if (data === 'confirm:yes') {
       const state = getConversationState(userId);
-      if (!state) return;
+      if (!state) {
+        replyToLine(ev.replyToken, [buildMainMenuMessage('セッションが切れました。もう一度「チケット申込」から始めてください。')]);
+        return;
+      }
       submitLineApplication(userId, state);
       clearConversationState(userId);
       replyToLine(ev.replyToken, [buildMainMenuMessage('申込が完了しました！担当から確定の連絡が届きます。')]);

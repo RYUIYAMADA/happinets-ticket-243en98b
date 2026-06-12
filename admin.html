@@ -13,9 +13,9 @@
     --accent-hover: #c4006e;
     --gold: #E6B422;
     --gold-hover: #c9971b;
-    --bg: #f5f7fa;
+    --bg: #ffffff;
     --card: #fff;
-    --border: #e2e8f0;
+    --border: #e5e7eb;
     --text: #1a202c;
     --text-sub: #4a5568;
     --success: #16a34a;
@@ -26,8 +26,7 @@
     --error-bg: #fee2e2;
     --muted: #6b7280;
     --muted-bg: #f3f4f6;
-    --radius: 12px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --radius: 6px;
   }
   body {
     font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
@@ -126,9 +125,9 @@
   }
   .kpi-card {
     background: var(--card);
-    border-radius: 10px;
+    border-radius: 6px;
     padding: 18px 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
   }
   .kpi-num { font-size: 32px; font-weight: 700; }
   .kpi-lbl { font-size: 14px; color: var(--text-sub); margin-top: 4px; }
@@ -141,7 +140,7 @@
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
     margin-bottom: 20px;
     overflow: hidden;
   }
@@ -197,7 +196,7 @@
   .deadline-input {
     padding: 6px 10px;
     font-size: 16px;
-    border: 1.5px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
     background: #fff;
@@ -224,7 +223,7 @@
   .status-select {
     padding: 5px 8px;
     font-size: 16px;
-    border: 1.5px solid var(--border);
+    border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
     background: #fff;
