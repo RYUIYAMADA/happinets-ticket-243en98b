@@ -978,13 +978,19 @@ function processLineEvent(ev) {
   if (ev.type === 'message' && ev.message.type === 'text') {
     const text = ev.message.text.trim();
 
-    // 未登録 → 背番号として登録を試みる
+    // 未登録 → 選手番号らしき入力のみ登録を試みる
     if (!player) {
-      const saved = saveLineUserId(text, userId);
-      if (saved) {
-        replyToLine(ev.replyToken, [buildMainMenuMessage('Registration complete! / 登録完了しました！\nUse the menu to apply for tickets or check your applications.\nチケット申込や確認はメニューから操作できます。')]);
+      if (/^\d{1,4}$/.test(text)) {
+        // 数字1〜4桁 → 選手番号として照合・登録
+        const saved = saveLineUserId(text, userId);
+        if (saved) {
+          replyToLine(ev.replyToken, [buildMainMenuMessage('Registration complete! / 登録完了しました！\nUse the menu to apply for tickets or check your applications.\nチケット申込や確認はメニューから操作できます。')]);
+        } else {
+          replyToLine(ev.replyToken, [{ type: 'text', text: 'Player number not found. / 選手番号が見つかりませんでした。\nPlease enter the correct number.\n正しい番号を入力してください（例：006 / 101）' }]);
+        }
       } else {
-        replyToLine(ev.replyToken, [{ type: 'text', text: 'Player number not found. / 選手番号が見つかりませんでした。\nPlease enter the correct number.\n正しい番号を入力してください（例：006 / 101）' }]);
+        // 自由文 → 個別連絡不可メッセージ（日英1通）
+        replyToLine(ev.replyToken, [{ type: 'text', text: '個別のご連絡は本アカウントでは承っておりません。\nチームマネージャーまたはチケットチームまでお願いします。\n\nThis account cannot respond to individual messages.\nPlease contact your team manager or the ticket team.' }]);
       }
       return;
     }
