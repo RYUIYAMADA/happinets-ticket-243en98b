@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # GAS スクリプトプロパティ自動設定スクリプト
 # Usage: bash scripts/setup-gas-env.sh [--script-id <ID>]
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/../.env.gas"
@@ -79,16 +79,23 @@ if [[ "${FORCE_MANUAL:-false}" == "true" ]]; then
   echo "======================================"
   echo "📋 手動設定用 GAS コード（一度だけ実行）"
   echo "======================================"
+  # ターミナル表示用マスク（先頭4文字 + ****）
+  _mask() { local v="$1"; echo "${v:0:4}****"; }
+  LINE_TOKEN_MASK=$(_mask "$LINE_TOKEN")
+  LINE_SECRET_MASK=$(_mask "$LINE_SECRET")
+  WEBHOOK_SECRET_MASK=$(_mask "$WEBHOOK_SECRET")
+  ADMIN_TOKEN_MASK=$(_mask "$ADMIN_TOKEN")
+
   cat <<GASEOF
 
 GAS エディタに以下を貼り付けて「実行」してください:
 
 function setupProperties_RUNONCE() {
   var p = PropertiesService.getScriptProperties();
-  p.setProperty('LINE_CHANNEL_ACCESS_TOKEN', '${LINE_TOKEN}');
-  p.setProperty('LINE_CHANNEL_SECRET', '${LINE_SECRET}');
-  p.setProperty('LINE_WEBHOOK_SECRET', '${WEBHOOK_SECRET}');
-  p.setProperty('ADMIN_API_TOKEN', '${ADMIN_TOKEN}');
+  p.setProperty('LINE_CHANNEL_ACCESS_TOKEN', '${LINE_TOKEN_MASK}');
+  p.setProperty('LINE_CHANNEL_SECRET', '${LINE_SECRET_MASK}');
+  p.setProperty('LINE_WEBHOOK_SECRET', '${WEBHOOK_SECRET_MASK}');
+  p.setProperty('ADMIN_API_TOKEN', '${ADMIN_TOKEN_MASK}');
   Logger.log('✅ プロパティ設定完了');
 }
 

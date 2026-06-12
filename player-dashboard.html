@@ -30,7 +30,7 @@
   }
   .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
   body {
-    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
     background: var(--bg);
     font-size: 14px;
     min-height: 100vh;
@@ -82,7 +82,7 @@
     border-radius: 6px;
     padding: 12px 10px;
     text-align: center;
-    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
   .summary-card .num { font-size: 24px; font-weight: 700; line-height: 1.1; }
   .summary-card .lbl { font-size: 12px; color: var(--text-sub); margin-top: 4px; line-height: 1.3; }
@@ -141,12 +141,12 @@
   .game-card {
     background: var(--card);
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     margin-bottom: 10px;
     overflow: hidden;
-    transition: border-color 0.15s;
+    transition: box-shadow 0.15s;
   }
-  .game-card:hover { border-color: var(--accent); }
+  .game-card:hover { box-shadow: 0 0 0 2px var(--accent); }
   .game-card-header {
     display: flex;
     align-items: center;
@@ -299,7 +299,7 @@
   .skeleton-card {
     background: var(--card);
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     margin-bottom: 10px;
     padding: 14px 16px;
     overflow: hidden;
@@ -340,7 +340,6 @@
   .expired-toggle.open svg { transform: rotate(180deg); }
   .expired-list .game-card {
     opacity: 0.5;
-    filter: grayscale(40%);
   }
   .expired-list .section-label { color: var(--muted); }
   .section-label {
@@ -435,6 +434,10 @@
   @media (min-width: 769px) {
     .container { padding: 24px 16px; }
   }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 </style>
 </head>
 <body>
@@ -445,7 +448,7 @@
       <div class="header-sub" id="player-name-display"></div>
     </div>
     <div style="display: flex; gap: 8px;">
-      <button id="lang-toggle" onclick="toggleLang()" style="border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;color:#fff;min-height:32px;">JA / en</button>
+      <button id="lang-toggle" onclick="toggleLang()" style="border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;color:#fff;min-height:44px;">JA / en</button>
       <button class="btn-logout" onclick="logout()" data-i18n="logout">ログアウト</button>
     </div>
   </div>
@@ -651,7 +654,8 @@ async function getGames() {
 }
 
 function getApplications() {
-  return callGAS('GET', { action: 'getApplications', playerId: auth.playerId });
+  const sessionToken = sessionStorage.getItem('sessionToken');
+  return callGAS('GET', { action: 'getApplications', playerId: auth.playerId, sessionToken });
 }
 
 function updateSummary() {
@@ -837,12 +841,12 @@ function buildGameCard(g) {
   }
 
   return `
-    <div class="game-card" id="card-${g.gameId}">
-      <div class="game-card-header" onclick="toggleCard('${g.gameId}')">
+    <div class="game-card" id="card-${esc(g.gameId)}">
+      <div class="game-card-header" onclick="toggleCard('${esc(g.gameId)}')">
         <div class="game-info">
-          <div class="game-date">${formatDate(g.date)}（${g.dayOfWeek}）</div>
-          <div class="game-title">vs ${g.opponent}</div>
-          <div class="game-deadline">${deadlineText}</div>
+          <div class="game-date">${esc(formatDate(g.date))}（${esc(g.dayOfWeek)}）</div>
+          <div class="game-title">vs ${esc(g.opponent)}</div>
+          <div class="game-deadline">${esc(deadlineText)}</div>
           ${pillsHtml}
         </div>
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -866,7 +870,8 @@ function editApp(gameId, type) {
 async function cancelApp(applicationId, gameId) {
   if (!confirm('この申込をキャンセルしますか？')) return;
   try {
-    const result = await callGAS('POST', { action: 'cancelApplication', applicationId, playerId: auth.playerId });
+    const sessionToken = sessionStorage.getItem('sessionToken');
+    const result = await callGAS('POST', { action: 'cancelApplication', applicationId, playerId: auth.playerId, sessionToken });
     if (!result.ok) throw new Error(result.error);
     await loadData();
   } catch (e) {
@@ -881,12 +886,23 @@ function logout() {
 
 async function callGAS(method, params) {
   if (!GAS_URL) return demoCallGAS(method, params);
+  let result;
   if (method === 'GET') {
     const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
-    return res.json();
+    result = await res.json();
+  } else {
+    const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
+    result = await res.json();
   }
-  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
-  return res.json();
+  if (result && result.error === 'unauthorized') {
+    sessionStorage.clear();
+    window.location.href = 'index.html';
+    return result;
+  }
+  if (result && result.sessionToken) {
+    sessionStorage.setItem('sessionToken', result.sessionToken);
+  }
+  return result;
 }
 
 function demoCallGAS(method, params) {

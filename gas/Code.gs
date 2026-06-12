@@ -53,6 +53,7 @@ function doGet(e) {
       case 'getApplications':
         const pid = e.parameter.playerId;
         if (!pid) throw new Error('playerId required');
+        verifyPlayerSession(e.parameter.sessionToken, pid);
         result = { ok: true, data: getApplicationsByPlayer(pid) };
         break;
       case 'getAllApplications':
@@ -73,9 +74,95 @@ function doGet(e) {
         }
         result = { ok: true, data: getPlayers() };
         break;
-      case 'getLineStats':
+      case 'getLineStats': {
+        const adminTokenStats = e.parameter.adminToken;
+        const storedTokenStats = PropertiesService.getScriptProperties().getProperty('ADMIN_API_TOKEN');
+        if (!storedTokenStats || adminTokenStats !== storedTokenStats) {
+          throw new Error('unauthorized');
+        }
         result = { ok: true, data: getLineStats() };
         break;
+      }
+      case 'adminSetup': {
+        const tok = e.parameter.adminToken;
+        const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_API_TOKEN');
+        if (!stored || tok !== stored) throw new Error('unauthorized');
+        const task = e.parameter.task;
+        if (task === 'setRichMenuImageBase64') {
+          setRichMenuImageBase64_RUNONCE();
+          result = { ok: true, done: 'setRichMenuImageBase64' };
+        } else if (task === 'createRichMenu') {
+          createRichMenu_RUNONCE();
+          const rid = PropertiesService.getScriptProperties().getProperty('LINE_RICH_MENU_ID');
+          result = { ok: true, done: 'createRichMenu', richMenuId: rid };
+        } else if (task === 'uploadRichMenuImage') {
+          const rid2 = e.parameter.richMenuId || PropertiesService.getScriptProperties().getProperty('LINE_RICH_MENU_ID');
+          uploadRichMenuImage_RUNONCE(rid2);
+          result = { ok: true, done: 'uploadRichMenuImage' };
+        } else if (task === 'setupDailyTrigger') {
+          setupDailyTrigger_RUNONCE();
+          result = { ok: true, done: 'setupDailyTrigger' };
+        } else if (task === 'setBase64Chunk') {
+          const chunkIdx = parseInt(e.parameter.chunk || '0', 10);
+          const total = parseInt(e.parameter.total || '1', 10);
+          const data = e.parameter.data || '';
+          PropertiesService.getScriptProperties().setProperty('RICH_MENU_B64_CHUNK_' + chunkIdx, data);
+          if (chunkIdx === total - 1) {
+            var assembled = '';
+            for (var ci = 0; ci < total; ci++) {
+              assembled += PropertiesService.getScriptProperties().getProperty('RICH_MENU_B64_CHUNK_' + ci) || '';
+            }
+            PropertiesService.getScriptProperties().setProperty('RICH_MENU_IMAGE_BASE64', assembled);
+            for (var di = 0; di < total; di++) {
+              PropertiesService.getScriptProperties().deleteProperty('RICH_MENU_B64_CHUNK_' + di);
+            }
+            result = { ok: true, done: 'assembled', len: assembled.length };
+          } else {
+            result = { ok: true, done: 'chunk_saved', chunk: chunkIdx };
+          }
+        } else if (task === 'createRichMenuDirect') {
+          const lineToken = PropertiesService.getScriptProperties().getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+          if (!lineToken) { result = { ok: false, error: 'LINE_CHANNEL_ACCESS_TOKEN not set' }; break; }
+          const menuBody = {
+            size: { width: 2500, height: 843 }, selected: true,
+            name: 'ハピネッツ家族チケット', chatBarText: 'チケットメニュー',
+            areas: [
+              { bounds: { x: 0, y: 0, width: 1250, height: 843 },
+                action: { type: 'uri', uri: 'https://app-five-pi-50.vercel.app/api/serve/hnts-player-form', label: 'チケット申込' } },
+              { bounds: { x: 1250, y: 0, width: 1250, height: 843 },
+                action: { type: 'uri', uri: 'https://app-five-pi-50.vercel.app/api/serve/hnts-player-dashboard', label: '申込確認' } }
+            ]
+          };
+          const cr = UrlFetchApp.fetch('https://api.line.me/v2/bot/richmenu', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + lineToken, 'Content-Type': 'application/json' },
+            payload: JSON.stringify(menuBody), muteHttpExceptions: true
+          });
+          const crCode = cr.getResponseCode();
+          const crBody = JSON.parse(cr.getContentText());
+          if (crCode !== 200) { result = { ok: false, error: crBody }; break; }
+          const rid = crBody.richMenuId;
+          PropertiesService.getScriptProperties().setProperty('LINE_RICH_MENU_ID', rid);
+          // 画像アップロード
+          const b64 = PropertiesService.getScriptProperties().getProperty('RICH_MENU_IMAGE_BASE64');
+          if (b64) {
+            const imgBlob = Utilities.newBlob(Utilities.base64Decode(b64), 'image/png', 'rich-menu.png');
+            UrlFetchApp.fetch('https://api-data.line.me/v2/bot/richmenu/' + rid + '/content', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + lineToken, 'Content-Type': 'image/png' },
+              payload: imgBlob.getBytes(), muteHttpExceptions: true
+            });
+          }
+          // デフォルト設定
+          UrlFetchApp.fetch('https://api.line.me/v2/bot/user/all/richmenu/' + rid, {
+            method: 'POST', headers: { 'Authorization': 'Bearer ' + lineToken }, muteHttpExceptions: true
+          });
+          result = { ok: true, done: 'createRichMenuDirect', richMenuId: rid };
+        } else {
+          result = { ok: false, error: 'unknown task: ' + task };
+        }
+        break;
+      }
       default:
         result = { ok: false, error: 'unknown action: ' + action };
     }
@@ -95,15 +182,17 @@ function doPost(e) {
   try {
     body = JSON.parse(e.postData.contents);
 
-    // LINE Webhook シークレットトークン検証（P0: 必須）
-    const webhookSecret = PropertiesService.getScriptProperties().getProperty('LINE_WEBHOOK_SECRET');
-    if (webhookSecret && body.secret !== webhookSecret) {
-      return ContentService.createTextOutput(JSON.stringify({ error: 'unauthorized' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
+    // LINE Webhook — X-Line-Signature による検証が本来の方式
+    // GAS はリクエストヘッダーを読めないため、body.events の有無で LINE からのリクエストか判定
 
     // LINE Webhook は body.events 配列を持つ → 専用ハンドラへ振り分け
     if (body.events && Array.isArray(body.events)) {
+      // WEBHOOK_SECRET チェック（LINE の再送ループを避けるため不一致でも 200 相当を返す）
+      const expectedSecret = PropertiesService.getScriptProperties().getProperty('WEBHOOK_SECRET');
+      if (!expectedSecret || e.parameter.whsec !== expectedSecret) {
+        return ContentService.createTextOutput(JSON.stringify({ ok: false }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
       handleLineWebhook(body.events);
       return ContentService.createTextOutput('OK');
     }
@@ -117,9 +206,11 @@ function doPost(e) {
         result = { ok: true, data: adminLogin(body.passwordHash) };
         break;
       case 'submitApplication':
+        verifyPlayerSession(body.sessionToken, body.playerId);
         result = { ok: true, data: submitApplication(body) };
         break;
       case 'cancelApplication':
+        verifyPlayerSession(body.sessionToken, body.playerId);
         result = { ok: true, data: cancelApplication(body.applicationId, body.playerId) };
         break;
       case 'updateDeadline':
@@ -131,8 +222,20 @@ function doPost(e) {
         result = { ok: true, data: updateStatus(body.applicationId, body.status) };
         break;
       case 'initData':
+        verifyAdmin(body.pwHash);
         result = { ok: true, data: initData() };
         break;
+      case 'adminSetupPost': {
+        const stored = PropertiesService.getScriptProperties().getProperty('ADMIN_API_TOKEN');
+        if (!stored || body.adminToken !== stored) throw new Error('unauthorized');
+        if (body.task === 'setRichMenuImageBase64') {
+          PropertiesService.getScriptProperties().setProperty('RICH_MENU_IMAGE_BASE64', body.base64);
+          result = { ok: true, done: 'setRichMenuImageBase64', len: body.base64.length };
+        } else {
+          result = { ok: false, error: 'unknown task' };
+        }
+        break;
+      }
       default:
         result = { ok: false, error: 'unknown action: ' + action };
     }
@@ -153,10 +256,20 @@ function login(playerId) {
   const norm = s => String(parseInt(s, 10));
   for (let i = 1; i < data.length; i++) {
     if (norm(data[i][0]) === norm(playerId)) {
-      return { playerId: String(data[i][0]), name: data[i][1], role: 'player' };
+      // セッショントークン発行（TTL: 6時間）
+      var token = Utilities.getUuid();
+      CacheService.getScriptCache().put('SESS_' + token, norm(data[i][0]), 21600);
+      return { playerId: norm(data[i][0]), name: data[i][1], role: 'player', sessionToken: token };
     }
   }
   throw new Error('番号が見つかりません');
+}
+
+// 選手セッショントークン検証（playerId と一致しない場合は例外）
+function verifyPlayerSession(token, playerId) {
+  if (!token) throw new Error('unauthorized');
+  var stored = CacheService.getScriptCache().get('SESS_' + token);
+  if (!stored || String(stored) !== String(parseInt(playerId, 10))) throw new Error('unauthorized');
 }
 
 function verifyAdmin(pwHash) {
@@ -257,45 +370,52 @@ function submitApplication(body) {
 
   if (!TICKET_SHEET[ticketType]) throw new Error('不正なチケット種別: ' + ticketType);
 
-  // 期限チェック
+  // 期限チェック（ロック取得前に実行可能な前処理）
   const games = getGames();
   const game = games.find(g => String(g.gameId) === String(gameId));
   if (!game) throw new Error('試合が見つかりません');
   if (game.isDeadlinePassed) throw new Error('申込期限を過ぎています');
 
-  // 重複チェック（同種別シート内）
-  const existing = getApplicationsByPlayer(playerId).find(
-    a => String(a.gameId) === String(gameId) && a.ticketType === ticketType && a.status !== 'cancelled'
-  );
-  if (existing) throw new Error('この試合・種別は既に申込済みです');
+  // 排他ロック（重複チェック〜appendRow を保護）
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    // 重複チェック（同種別シート内）
+    const existing = getApplicationsByPlayer(playerId).find(
+      a => String(a.gameId) === String(gameId) && a.ticketType === ticketType && a.status !== 'cancelled'
+    );
+    if (existing) throw new Error('この試合・種別は既に申込済みです');
 
-  const sheet = getSheet(TICKET_SHEET[ticketType]);
-  const appId = 'APP-' + new Date().getTime();
-  const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
-  const playerName = getPlayerNameById(playerId);
-  const gameLabel  = buildGameLabel(game);
+    const sheet = getSheet(TICKET_SHEET[ticketType]);
+    const appId = 'APP-' + new Date().getTime();
+    const now = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+    const playerName = getPlayerNameById(playerId);
+    const gameLabel  = buildGameLabel(game);
 
-  sheet.appendRow([
-    appId,
-    playerId,
-    playerName,
-    gameLabel,
-    body.quantityAdult   || 0,
-    body.quantityChild   || 0,
-    body.quantityInfant  || 0,
-    body.seatType        || '',
-    body.seatRequest     || '',
-    body.receiverName    || '',
-    body.pickupMethod    || '',
-    body.paymentMethod   || '',
-    body.parkingCount    || 0,
-    body.note            || '',
-    now,
-    '確認中',
-    gameId
-  ]);
-  applyStatusDropdown(sheet, sheet.getLastRow());
-  return { applicationId: appId };
+    sheet.appendRow([
+      appId,
+      playerId,
+      playerName,
+      gameLabel,
+      body.quantityAdult   || 0,
+      body.quantityChild   || 0,
+      body.quantityInfant  || 0,
+      body.seatType        || '',
+      body.seatRequest     || '',
+      body.receiverName    || '',
+      body.pickupMethod    || '',
+      body.paymentMethod   || '',
+      body.parkingCount    || 0,
+      body.note            || '',
+      now,
+      '確認中',
+      gameId
+    ]);
+    applyStatusDropdown(sheet, sheet.getLastRow());
+    return { applicationId: appId };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // 日本語→英語マッピング（スプレッドシートは日本語、APIは英語キーで通信）
@@ -337,6 +457,33 @@ function updateStatus(applicationId, status) {
   throw new Error('申込が見つかりません');
 }
 
+// 申込キャンセル（選手本人のみ実行可。doPost で sessionToken 検証済み）
+function cancelApplication(applicationId, playerId) {
+  for (const sheetName of [SHEET_INVITE, SHEET_FAMILY, SHEET_PAID]) {
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] !== applicationId) continue;
+      // 申込の playerId と要求者が一致するか確認
+      if (String(data[i][1]) !== String(parseInt(playerId, 10)) &&
+          String(data[i][1]) !== String(playerId)) {
+        throw new Error('unauthorized');
+      }
+      sheet.getRange(i + 1, 16).setValue('キャンセル');
+      // 更新後の申込オブジェクトを返す
+      const updated = data[i].slice();
+      updated[15] = 'キャンセル';
+      // ticketType を逆引き
+      const typeMap = {};
+      typeMap[SHEET_INVITE] = 'invite';
+      typeMap[SHEET_FAMILY] = 'family';
+      typeMap[SHEET_PAID]   = 'paid';
+      return rowToApplication(updated, typeMap[sheetName]);
+    }
+  }
+  throw new Error('application not found');
+}
+
 function getApplicationsByPlayer(playerId) {
   const apps = [];
   for (const [type, sheetName] of Object.entries(TICKET_SHEET)) {
@@ -364,10 +511,22 @@ function getAllApplications() {
 }
 
 function rowToApplication(row, ticketType) {
+  // games シートから gameId に対応するラベルを生成
+  var gameLabel = row[3] || ''; // col4 = 試合（ラベル文字列）がシートに保存済み
+  try {
+    var gameId = row[16];
+    if (gameId) {
+      var games = getGames();
+      var found = games.find(function(g) { return String(g.gameId) === String(gameId); });
+      if (found) gameLabel = buildGameLabel(found);
+    }
+  } catch (e) { /* フォールバック: col4 の値をそのまま使う */ }
+
   return {
     applicationId: row[0],
     playerId:      row[1],
     gameId:        row[16], // 最終列（システム用）
+    gameLabel:     gameLabel,
     ticketType:    ticketType,
     quantityAdult: row[4],
     quantityChild: row[5],
@@ -516,8 +675,11 @@ function initSettings() {
   const sheet = getSheet(SHEET_SETTINGS);
   sheet.clearContents();
   sheet.appendRow(['キー', '値']);
-  sheet.appendRow(['admin_password_hash', 'sha256_of_admin1234_set_manually']);
-  sheet.appendRow(['manager_password_hash', 'sha256_of_manager1234_set_manually']);
+  // ADMIN_PW_HASH は Script Properties から読む。未設定時は空のまま（壊れた値を書き込まない）
+  const adminHash   = PropertiesService.getScriptProperties().getProperty('ADMIN_PW_HASH') || '';
+  const managerHash = PropertiesService.getScriptProperties().getProperty('MANAGER_PW_HASH') || '';
+  sheet.appendRow(['admin_password_hash',   adminHash]);
+  sheet.appendRow(['manager_password_hash', managerHash]);
 }
 
 function initSamplePlayers() {
@@ -771,17 +933,16 @@ function submitLineApplication(lineUserId, stateData) {
     playerId: player.playerId,
     ticketType: stateData.ticketType,
     gameId: stateData.gameId,
-    game: gameLabel,
-    adultCount: parseInt(stateData.adultCount) || 1,
-    childCount: 0,
-    infantCount: 0,
+    quantityAdult: parseInt(stateData.adultCount) || 1,
+    quantityChild: 0,
+    quantityInfant: 0,
     seatType: stateData.seatType || '',
-    seatPref: '',
+    seatRequest: '',
     receiverName: stateData.receiverName || player.name,
-    receiveMethod: 'pre',
+    pickupMethod: 'pre',
     paymentMethod: stateData.payment || '',
     parkingCount: 0,
-    notes: 'LINE申込'
+    note: 'LINE申込'
   };
   return submitApplication(body);
 }
@@ -797,9 +958,16 @@ function processLineEvent(ev) {
   if (ev.type === 'follow') {
     replyToLine(ev.replyToken, [{
       type: 'text',
-      text: '秋田ノーザンハピネッツ 選手家族チケット申込システムです。\n' +
-            '背番号（3桁）またはスタッフ番号を入力してください。\n' +
-            '例）006  /  101'
+      text: '🏀 Akita Northern Happinets\n\n' +
+            'This account is exclusively for the Player Family Ticket Application System.\n' +
+            'このアカウントは選手家族チケット申込システム専用です。\n\n' +
+            'Please enter your player number (3 digits) or staff number.\n' +
+            '選手番号（3桁）またはスタッフ番号を入力してください。\n\n' +
+            'Your number can be confirmed with the team manager.\n' +
+            '番号はチームマネージャーにご確認ください。\n\n' +
+            'This system is only available for Akita Northern Happinets home games.\n' +
+            'このシステムは秋田ノーザンハピネッツのホームゲームのみ対象です。\n\n' +
+            'Example / 例）006 / 101'
     }]);
     return;
   }
@@ -814,9 +982,9 @@ function processLineEvent(ev) {
     if (!player) {
       const saved = saveLineUserId(text, userId);
       if (saved) {
-        replyToLine(ev.replyToken, [buildMainMenuMessage('登録完了しました！チケット申込や確認はメニューから操作できます。')]);
+        replyToLine(ev.replyToken, [buildMainMenuMessage('Registration complete! / 登録完了しました！\nUse the menu to apply for tickets or check your applications.\nチケット申込や確認はメニューから操作できます。')]);
       } else {
-        replyToLine(ev.replyToken, [{ type: 'text', text: '選手番号が見つかりませんでした。\n正しい番号を入力してください（例：006 / 101）' }]);
+        replyToLine(ev.replyToken, [{ type: 'text', text: 'Player number not found. / 選手番号が見つかりませんでした。\nPlease enter the correct number.\n正しい番号を入力してください（例：006 / 101）' }]);
       }
       return;
     }
@@ -884,7 +1052,14 @@ function processLineEvent(ev) {
     }
 
     // その他テキスト → メインメニュー表示
-    replyToLine(ev.replyToken, [buildMainMenuMessage('メニューから操作してください。')]);
+    replyToLine(ev.replyToken, [buildMainMenuMessage(
+      'Individual inquiries cannot be accepted through this account.\n' +
+      '個別のご連絡は本アカウントでは承っておりません。\n\n' +
+      'Please contact the team manager or ticket team.\n' +
+      'チームマネージャーまたはチケットチームまでお願いします。\n\n' +
+      'Please use the menu below.\n' +
+      '以下のメニューからご利用ください。'
+    )]);
     return;
   }
 
@@ -894,19 +1069,15 @@ function processLineEvent(ev) {
     if (!data) return;
 
     if (data === 'menu:apply') {
-      const games = getUpcomingGames(3);
-      if (!games.length) {
-        replyToLine(ev.replyToken, [{ type: 'text', text: '現在申込可能な試合はありません。' }]);
-        return;
-      }
-      saveConversationState(userId, { step: 'SELECTING_GAME' });
+      clearConversationState(userId);
+      saveConversationState(userId, { step: 'SELECTING_TYPE' });
       replyToLine(ev.replyToken, [{
-        type: 'text',
-        text: '試合を選んでください。',
-        quickReply: buildQuickReply(games.map(g => ({
-          label: Utilities.formatDate(new Date(g.date), 'Asia/Tokyo', 'M/d') + ' vs ' + g.opponent,
-          data: 'game:' + g.gameId
-        })))
+        type: 'text', text: 'チケット種別を選んでください。',
+        quickReply: buildQuickReply([
+          { label: '招待チケット', data: 'type:invite' },
+          { label: '家族席', data: 'type:family' },
+          { label: '有料チケット', data: 'type:paid' }
+        ])
       }]);
       return;
     }
@@ -916,7 +1087,7 @@ function processLineEvent(ev) {
       const recent = apps.slice(-5).reverse();
       const statusEmoji = { '確保済み': '✅', '確認中': '⏳', '対応不可': '❌', 'キャンセル': '🚫' };
       const lines = recent.length
-        ? recent.map(a => (statusEmoji[a.status] || '📋') + ' ' + a.status + ': ' + a.game + ' ' + a.ticketType)
+        ? recent.map(a => (statusEmoji[a.status] || '📋') + ' ' + a.status + ': ' + a.gameLabel + ' ' + a.ticketType)
         : ['申込はありません。'];
       replyToLine(ev.replyToken, [{ type: 'text', text: '直近の申込状況\n\n' + lines.join('\n') }]);
       return;
@@ -928,25 +1099,31 @@ function processLineEvent(ev) {
     }
 
     if (data.startsWith('game:')) {
-      const gameId = data.split(':')[1];
-      saveConversationState(userId, { step: 'SELECTING_TYPE', gameId });
-      replyToLine(ev.replyToken, [{
-        type: 'text', text: '種別を選んでください。',
-        quickReply: buildQuickReply([
-          { label: '招待チケット', data: 'type:invite' },
-          { label: '家族席', data: 'type:family' },
-          { label: '有料チケット', data: 'type:paid' }
-        ])
-      }]);
+      const state = getConversationState(userId) || {};
+      state.gameId = data.split(':')[1];
+      state.step = 'SELECTING_COUNT';
+      saveConversationState(userId, state);
+      replyToLine(ev.replyToken, [{ type: 'text', text: '大人の枚数を入力してください（1〜6）。' }]);
       return;
     }
 
     if (data.startsWith('type:')) {
       const state = getConversationState(userId) || {};
       state.ticketType = data.split(':')[1];
-      state.step = 'SELECTING_COUNT';
+      state.step = 'SELECTING_GAME';
       saveConversationState(userId, state);
-      replyToLine(ev.replyToken, [{ type: 'text', text: '大人の枚数を入力してください（1〜6）。' }]);
+      const games = getUpcomingGames(20);
+      if (!games.length) {
+        replyToLine(ev.replyToken, [{ type: 'text', text: '現在申込可能な試合はありません。' }]);
+        return;
+      }
+      replyToLine(ev.replyToken, [{
+        type: 'text', text: '試合を選んでください。',
+        quickReply: buildQuickReply(games.map(g => ({
+          label: Utilities.formatDate(new Date(g.date), 'Asia/Tokyo', 'M/d') + ' vs ' + g.opponent,
+          data: 'game:' + g.gameId
+        })))
+      }]);
       return;
     }
 
@@ -1045,4 +1222,228 @@ function setupProperties_RUNONCE() {
   // 手動設定が必要な場合: bash scripts/setup-gas-env.sh を実行してください
   Logger.log('setup-gas-env.sh を実行してコードを生成してください');
   Logger.log('生成されたコードをこの関数に貼り付けて実行すると設定が完了します');
+}
+
+// =====================================================
+// LINE リッチメニュー管理
+// =====================================================
+function createRichMenu_RUNONCE() {
+  var token = PropertiesService.getScriptProperties().getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+  if (!token) {
+    Logger.log('❌ LINE_CHANNEL_ACCESS_TOKEN が設定されていません');
+    return;
+  }
+
+  // 1. リッチメニュー構造を作成
+  var menuBody = {
+    size: { width: 1200, height: 405 },
+    selected: true,
+    name: 'ハピネッツ家族チケット',
+    chatBarText: 'チケットメニュー',
+    areas: [
+      {
+        bounds: { x: 0, y: 0, width: 600, height: 405 },
+        action: {
+          type: 'uri',
+          uri: 'https://app-five-pi-50.vercel.app/p/hnts-player-form',
+          label: 'チケット申込'
+        }
+      },
+      {
+        bounds: { x: 600, y: 0, width: 600, height: 405 },
+        action: {
+          type: 'uri',
+          uri: 'https://app-five-pi-50.vercel.app/p/hnts-player-dashboard',
+          label: '申込確認'
+        }
+      }
+    ]
+  };
+
+  try {
+    var createRes = UrlFetchApp.fetch('https://api.line.me/v2/bot/richmenu', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      payload: JSON.stringify(menuBody),
+      muteHttpExceptions: true
+    });
+
+    var statusCode = createRes.getResponseCode();
+    var responseText = createRes.getContentText();
+
+    if (statusCode !== 200) {
+      Logger.log('❌ リッチメニュー作成エラー: ' + statusCode);
+      Logger.log(responseText);
+      return;
+    }
+
+    var richMenuId = JSON.parse(responseText).richMenuId;
+    Logger.log('✅ リッチメニュー作成成功。ID: ' + richMenuId);
+
+    // 2. デフォルトリッチメニューとして設定
+    var setDefaultRes = UrlFetchApp.fetch('https://api.line.me/v2/bot/user/all/richmenu/' + richMenuId, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      muteHttpExceptions: true
+    });
+
+    var setDefaultStatusCode = setDefaultRes.getResponseCode();
+    if (setDefaultStatusCode === 200) {
+      Logger.log('✅ デフォルトリッチメニューとして設定完了');
+      // 設定を永続化（再実行時に誤操作を防ぐため）
+      PropertiesService.getScriptProperties().setProperty('LINE_RICH_MENU_ID', richMenuId);
+    } else {
+      Logger.log('⚠️ デフォルト設定に失敗: ' + setDefaultStatusCode);
+      Logger.log(setDefaultRes.getContentText());
+    }
+
+  } catch (err) {
+    Logger.log('❌ エラー: ' + err.message);
+  }
+}
+
+function uploadRichMenuImage_RUNONCE(richMenuId) {
+  var token = PropertiesService.getScriptProperties().getProperty('LINE_CHANNEL_ACCESS_TOKEN');
+  if (!token) {
+    Logger.log('❌ LINE_CHANNEL_ACCESS_TOKEN が設定されていません');
+    return;
+  }
+
+  if (!richMenuId) {
+    richMenuId = PropertiesService.getScriptProperties().getProperty('LINE_RICH_MENU_ID');
+  }
+
+  if (!richMenuId) {
+    Logger.log('❌ richMenuId が指定されていません。先に createRichMenu_RUNONCE() を実行してください');
+    return;
+  }
+
+  // 注: GAS からファイルシステムの画像を直接読み込むことは難しいため、
+  // 以下の方法のいずれかを使用してください:
+  // 1. Google Drive に rich-menu.png をアップロード → DriveApp で読み込み
+  // 2. Base64文字列をPropertiesServiceに分割保存（5KB制限あり）
+  // 3. LINE Official Account Manager のUI から手動でアップロード
+  var base64 = PropertiesService.getScriptProperties().getProperty('RICH_MENU_IMAGE_BASE64');
+  if (!base64) {
+    Logger.log('❌ RICH_MENU_IMAGE_BASE64 が未設定。setRichMenuImageBase64_RUNONCE() を先に実行してください');
+    return;
+  }
+  var blob = Utilities.newBlob(Utilities.base64Decode(base64), 'image/png', 'rich-menu.png');
+  var uploadRes = UrlFetchApp.fetch(
+    'https://api-data.line.me/v2/bot/richmenu/' + richMenuId + '/content',
+    {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'image/png' },
+      payload: blob.getBytes(),
+      muteHttpExceptions: true
+    }
+  );
+  Logger.log(uploadRes.getResponseCode() === 200 ? '✅ 画像アップロード完了' : '❌ 画像アップロード失敗: ' + uploadRes.getContentText());
+}
+
+function setRichMenuImageBase64_RUNONCE() {
+  // scripts/rich-menu-base64.txt の内容をここに貼り付けて実行する
+  var base64 = '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';
+  PropertiesService.getScriptProperties().setProperty('RICH_MENU_IMAGE_BASE64', base64);
+  Logger.log('✅ RICH_MENU_IMAGE_BASE64 を保存しました');
+}
+
+// =====================================================
+// 朝10時 当日試合チケット通知
+// =====================================================
+function sendMorningNotifications() {
+  var token = getLineToken();
+  if (!token) return;
+
+  var today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
+  var games = getGames();
+  var todayGames = games.filter(function(g) {
+    var gDate = Utilities.formatDate(new Date(g.date), 'Asia/Tokyo', 'yyyy-MM-dd');
+    return gDate === today;
+  });
+
+  if (todayGames.length === 0) return;
+
+  var players = getPlayers();
+  var playerMap = {};
+  players.forEach(function(p) { playerMap[String(p.playerId)] = p; });
+
+  var allApps = getAllApplicationsInternal();
+  var sent = 0;
+
+  todayGames.forEach(function(game) {
+    var gameLabel = buildGameLabel(game);
+    var gameApps = allApps.filter(function(a) {
+      return String(a.gameId) === String(game.gameId) && a.status === 'confirmed';
+    });
+
+    var byPlayer = {};
+    gameApps.forEach(function(a) {
+      if (!byPlayer[a.playerId]) byPlayer[a.playerId] = [];
+      byPlayer[a.playerId].push(a);
+    });
+
+    Object.keys(byPlayer).forEach(function(pid) {
+      var player = playerMap[String(pid)];
+      if (!player || !player.lineUserId) return;
+
+      var apps = byPlayer[pid];
+      var lines = ['🏀 本日の試合チケット情報', '', '試合: ' + gameLabel, ''];
+      apps.forEach(function(a) {
+        var typeLabel = { invite: '招待', family: '家族席', paid: '有料' }[a.ticketType] || a.ticketType;
+        lines.push('【' + typeLabel + '】大人' + (a.quantityAdult || 0) + '枚' +
+          (a.quantityChild ? ' 子ども' + a.quantityChild + '枚' : '') +
+          (a.receiverName ? ' 受取: ' + a.receiverName : ''));
+      });
+      lines.push('', '会場でお楽しみください！');
+
+      UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        payload: JSON.stringify({
+          to: player.lineUserId,
+          messages: [{ type: 'text', text: lines.join('\n') }]
+        }),
+        muteHttpExceptions: true
+      });
+      sent++;
+    });
+  });
+
+  Logger.log('✅ 朝10時通知送信完了: ' + sent + '件');
+}
+
+function getAllApplicationsInternal() {
+  var apps = [];
+  for (var type in TICKET_SHEET) {
+    var sheet = getSheet(TICKET_SHEET[type]);
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      apps.push(rowToApplication(data[i], type));
+    }
+  }
+  return apps;
+}
+
+function setupDailyTrigger_RUNONCE() {
+  // 既存トリガーを削除してから再登録
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'sendMorningNotifications') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger('sendMorningNotifications')
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .inTimezone('Asia/Tokyo')
+    .create();
+  Logger.log('✅ 毎朝10時の通知トリガーを設定しました');
 }

@@ -29,7 +29,7 @@
     --radius: 6px;
   }
   body {
-    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
     background: var(--bg);
     font-size: 14px;
     min-height: 100vh;
@@ -140,7 +140,7 @@
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     margin-bottom: 20px;
     overflow: hidden;
   }
@@ -559,6 +559,10 @@
       gap: 14px;
     }
   }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 </style>
 </head>
 <body>
@@ -638,7 +642,7 @@
       <div id="pending-panel-invite" class="pending-panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">申込日時</th><th scope="col">操作</th></tr></thead>
+            <thead><tr><th scope="col" aria-sort="none">申込ID</th><th scope="col" aria-sort="none">選手</th><th scope="col" aria-sort="none">試合</th><th scope="col" aria-sort="none">種別</th><th scope="col" aria-sort="none">枚数</th><th scope="col" aria-sort="none">受取者</th><th scope="col" aria-sort="none">受取方法</th><th scope="col" aria-sort="none">申込日時</th><th scope="col" aria-sort="none">操作</th></tr></thead>
             <tbody id="pending-tbody-invite"><tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
@@ -646,7 +650,7 @@
       <div id="pending-panel-family" class="pending-panel" style="display:none;">
         <div class="table-wrap">
           <table>
-            <thead><tr><th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">申込日時</th><th scope="col">操作</th></tr></thead>
+            <thead><tr><th scope="col" aria-sort="none">申込ID</th><th scope="col" aria-sort="none">選手</th><th scope="col" aria-sort="none">試合</th><th scope="col" aria-sort="none">種別</th><th scope="col" aria-sort="none">枚数</th><th scope="col" aria-sort="none">受取者</th><th scope="col" aria-sort="none">受取方法</th><th scope="col" aria-sort="none">申込日時</th><th scope="col" aria-sort="none">操作</th></tr></thead>
             <tbody id="pending-tbody-family"><tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
@@ -654,7 +658,7 @@
       <div id="pending-panel-paid" class="pending-panel" style="display:none;">
         <div class="table-wrap">
           <table>
-            <thead><tr><th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">申込日時</th><th scope="col">操作</th></tr></thead>
+            <thead><tr><th scope="col" aria-sort="none">申込ID</th><th scope="col" aria-sort="none">選手</th><th scope="col" aria-sort="none">試合</th><th scope="col" aria-sort="none">種別</th><th scope="col" aria-sort="none">枚数</th><th scope="col" aria-sort="none">受取者</th><th scope="col" aria-sort="none">受取方法</th><th scope="col" aria-sort="none">申込日時</th><th scope="col" aria-sort="none">操作</th></tr></thead>
             <tbody id="pending-tbody-paid"><tr><td colspan="9" class="empty-msg"><span class="spinner"></span></td></tr></tbody>
           </table>
         </div>
@@ -688,7 +692,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr id="app-thead-row">
-            <th scope="col">申込ID</th><th scope="col">選手</th><th scope="col">試合</th><th scope="col">種別</th><th scope="col">枚数</th><th scope="col">受取者</th><th scope="col">受取方法</th><th scope="col">備考</th><th scope="col">申込日時</th><th scope="col">ステータス</th>
+            <th scope="col" aria-sort="none">申込ID</th><th scope="col" aria-sort="none">選手</th><th scope="col" aria-sort="none">試合</th><th scope="col" aria-sort="none">種別</th><th scope="col" aria-sort="none">枚数</th><th scope="col" aria-sort="none">受取者</th><th scope="col" aria-sort="none">受取方法</th><th scope="col" aria-sort="none">備考</th><th scope="col" aria-sort="none">申込日時</th><th scope="col" aria-sort="none">ステータス</th>
           </tr></thead>
           <tbody id="app-tbody">
             <tr><td colspan="10" class="empty-msg"><span class="spinner"></span></td></tr>
@@ -746,7 +750,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th scope="col">試合ID</th><th scope="col">日付</th><th scope="col">曜日</th><th scope="col">対戦相手</th><th scope="col">申込期限</th><th scope="col">状態</th><th scope="col">操作</th>
+            <th scope="col" aria-sort="none">試合ID</th><th scope="col" aria-sort="none">日付</th><th scope="col" aria-sort="none">曜日</th><th scope="col" aria-sort="none">対戦相手</th><th scope="col" aria-sort="none">申込期限</th><th scope="col" aria-sort="none">状態</th><th scope="col" aria-sort="none">操作</th>
           </tr></thead>
           <tbody id="deadline-tbody">
             <tr><td colspan="7" class="empty-msg"><span class="spinner"></span></td></tr>
@@ -775,6 +779,7 @@ function esc(s) {
 }
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
+// ※ private リポジトリ前提。公開リポジトリ化する場合は環境設定へ移すこと
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/18b-W0vAu9fIZDb9mvEDcTUw-zPTxnVTa78T5vJI1qY8/edit';
 let games = [], applications = [], players = [];
 const TICKET_LABELS = { invite: '招待', family: '家族席', paid: '有料' };
@@ -806,11 +811,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAll() {
   try {
+    const adminToken = sessionStorage.getItem('adminToken') || '';
     const [gr, ar, pr, lr] = await Promise.all([
       callGAS('GET', { action: 'getGames' }),
-      callGAS('GET', { action: 'getAllApplications' }),
-      callGAS('GET', { action: 'getPlayers' }),
-      callGAS('GET', { action: 'getLineStats' }),
+      callGAS('GET', { action: 'getAllApplications', adminToken }),
+      callGAS('GET', { action: 'getPlayers', adminToken }),
+      callGAS('GET', { action: 'getLineStats', adminToken }),
     ]);
     games = gr.data || [];
     applications = ar.data || [];
@@ -953,27 +959,27 @@ function buildAppRow(a, compact) {
   </tr>`;
   if (compact) {
     return `<tr>
-      <td style="font-size:12px">${a.applicationId}</td>
-      <td>${getPlayerName(a.playerId)}</td>
-      <td>${getGameLabel(a.gameId)}</td>
+      <td style="font-size:12px">${esc(a.applicationId)}</td>
+      <td>${esc(getPlayerName(a.playerId))}</td>
+      <td>${esc(getGameLabel(a.gameId))}</td>
       <td>${typeBadge}</td>
-      <td>${getQtyText(a)}</td>
+      <td>${esc(getQtyText(a))}</td>
       <td>${esc(a.receiverName) || '—'}</td>
-      <td>${pickup}</td>
-      <td style="font-size:12px">${a.createdAt || '—'}</td>
+      <td>${esc(pickup)}</td>
+      <td style="font-size:12px">${esc(a.createdAt) || '—'}</td>
       <td>${statusSel}${mobileToggle}</td>
     </tr>${detailsHtml}`;
   }
   return `<tr>
-    <td style="font-size:12px">${a.applicationId}</td>
-    <td>${getPlayerName(a.playerId)}</td>
-    <td>${getGameLabel(a.gameId)}</td>
+    <td style="font-size:12px">${esc(a.applicationId)}</td>
+    <td>${esc(getPlayerName(a.playerId))}</td>
+    <td>${esc(getGameLabel(a.gameId))}</td>
     <td>${typeBadge}</td>
-    <td>${getQtyText(a)}</td>
+    <td>${esc(getQtyText(a))}</td>
     <td>${esc(a.receiverName) || '—'}</td>
-    <td>${pickup}</td>
+    <td>${esc(pickup)}</td>
     <td style="font-size:12px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
-    <td style="font-size:12px">${a.createdAt || '—'}</td>
+    <td style="font-size:12px">${esc(a.createdAt) || '—'}</td>
     <td>${statusSel}${mobileToggle}</td>
   </tr>${detailsHtml}`;
 }
@@ -1026,12 +1032,12 @@ function renderMatrix() {
 
   let html = '<thead><tr><th scope="col">選手</th>';
   games.forEach(g => {
-    html += `<th scope="col" title="${formatDate(g.date)} vs ${g.opponent}">${formatDate(g.date)}<br>${g.opponent}</th>`;
+    html += `<th scope="col" title="${esc(formatDate(g.date))} vs ${esc(g.opponent)}">${esc(formatDate(g.date))}<br>${esc(g.opponent)}</th>`;
   });
   html += '</tr></thead><tbody>';
 
   players.forEach(p => {
-    html += `<tr><td>${p.name}</td>`;
+    html += `<tr><td>${esc(p.name)}</td>`;
     games.forEach(g => {
       const apps = appMap[`${p.playerId}_${g.gameId}`];
       const past = new Date(g.date) < today;
@@ -1064,10 +1070,10 @@ function renderDeadlines() {
         ? `<span class="badge badge-confirmed">受付中</span>`
         : `<span class="badge badge-cancelled">未設定</span>`;
     return `<tr>
-      <td>${g.gameId}</td>
-      <td>${formatDate(g.date)}</td>
-      <td>${g.dayOfWeek}</td>
-      <td>${g.opponent}</td>
+      <td>${esc(g.gameId)}</td>
+      <td>${esc(formatDate(g.date))}</td>
+      <td>${esc(g.dayOfWeek)}</td>
+      <td>${esc(g.opponent)}</td>
       <td>
         <input type="date" class="deadline-input" id="dl-${g.gameId}" value="${g.deadline || ''}"
           ${past || adminRole === 'manager' ? 'disabled' : ''}>

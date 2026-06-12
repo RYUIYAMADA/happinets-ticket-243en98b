@@ -1,0 +1,5 @@
+# シークレット登録: wrangler secret put LINE_CHANNEL_SECRET / WEBHOOK_SECRET / GAS_URL
+
+name = "family-tickets-line-proxy"
+main = "worker.js"
+compatibility_date = "2026-06-01"

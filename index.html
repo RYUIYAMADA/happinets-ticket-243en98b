@@ -43,7 +43,8 @@
   .card {
     background: var(--card);
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    position: relative;
     width: 100%;
     max-width: 420px;
     padding: 32px 20px;
@@ -393,6 +394,7 @@ async function loginPlayer() {
     const result = await callGAS('POST', { action: 'login', playerId });
     if (!result.ok) throw new Error(result.error);
     sessionStorage.setItem('auth', JSON.stringify(result.data));
+    if (result.data.sessionToken) sessionStorage.setItem('sessionToken', result.data.sessionToken);
     window.location.href = 'player-dashboard.html';
   } catch (e) {
     errEl.textContent = getLoginErrorMessage(e) || '番号が見つかりません';
