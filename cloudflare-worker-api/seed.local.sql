@@ -16,3 +16,7 @@ VALUES
   ('G01', '2026-10-08', NULL, '川崎ブレイブサンダース', '木', '2026-10-01', '2026-27', 1),
   ('G02', '2026-10-15', '19:05', '宇都宮ブレックス', '木', '2026-10-08', '2026-27', 1),
   ('G03', '2026-09-20', NULL, '群馬クレインサンダーズ', '日', '2026-09-10', '2026-27', 0);
+
+-- admin ローカル検証用 (password=admin-local-pass, salt=local-salt, PBKDF2/SHA-256/100000)
+INSERT OR REPLACE INTO admins (role, pw_hash)
+VALUES ('ticket', '5e480829ce06b0575567cc34f0e78546be19a5a722b4ecc0bb5de7829af124ea');
