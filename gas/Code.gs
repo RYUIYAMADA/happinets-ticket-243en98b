@@ -1841,3 +1841,135 @@ function updatePlayer(playerId, fields) {
   }
   throw new Error('選手が見つかりません: ' + playerId);
 }
+
+// =====================================================
+// D1 移行用エクスポート
+// =====================================================
+
+const MIGRATION_SEASON = '2026-27';
+const HOME_TIPOFF_BY_GAME_NO = {
+  G01: '19:00', G02: '14:00', G03: '14:00', G04: '19:00', G05: '14:00',
+  G06: '14:00', G07: '19:00', G08: '19:00', G09: '14:00', G10: '14:00',
+  G11: '14:00', G12: '14:00', G13: '14:00', G14: '14:00', G15: '19:00',
+  G16: '19:00', G17: '19:00', G18: '19:00', G19: '14:00', G20: '14:00',
+  G21: '19:00', G22: '19:00', G23: '14:00', G24: '19:00', G25: '14:00',
+  G26: '14:00', G27: '14:00', G28: '14:00', G29: '19:00', G30: '14:00'
+};
+
+function exportMigrationData() {
+  const payload = {
+    exportedAt: Utilities.formatDate(new Date(), 'Asia/Tokyo', "yyyy-MM-dd'T'HH:mm:ssXXX"),
+    season: MIGRATION_SEASON,
+    players: exportPlayersForMigration(),
+    admins: exportAdminsForMigration(),
+    games: exportGamesForMigration(),
+    applications: exportApplicationsForMigration()
+  };
+  const json = JSON.stringify(payload, null, 2);
+  Logger.log(json);
+  return json;
+}
+
+function exportPlayersForMigration() {
+  const sheet = getSheet(SHEET_PLAYERS);
+  const data = sheet.getDataRange().getValues();
+  const players = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+    players.push({
+      playerNo: String(parseInt(row[0], 10)),
+      name: String(row[1] || ''),
+      nameEn: '',
+      lineUserId: row[2] ? String(row[2]) : null,
+      isActive: 1
+    });
+  }
+  return players;
+}
+
+function exportAdminsForMigration() {
+  const props = PropertiesService.getScriptProperties();
+  return [
+    { role: 'ticket', apiToken: props.getProperty('ADMIN_API_TOKEN') || null },
+    { role: 'manager', apiToken: null }
+  ];
+}
+
+function exportGamesForMigration() {
+  const sheet = getSheet(SHEET_GAMES);
+  const data = sheet.getDataRange().getValues();
+  const games = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+    const gameNo = String(row[0]);
+    games.push({
+      gameNo: gameNo,
+      date: formatMigrationDate(row[1]),
+      dayOfWeek: String(row[2] || ''),
+      tipoff: HOME_TIPOFF_BY_GAME_NO[gameNo] || null,
+      opponent: String(row[3] || ''),
+      deadline: row[4] ? formatMigrationDate(row[4]) : null,
+      isActive: 1
+    });
+  }
+  return games;
+}
+
+function exportApplicationsForMigration() {
+  const applications = [];
+  Object.keys(TICKET_SHEET).forEach(function(ticketType) {
+    const sheet = getSheet(TICKET_SHEET[ticketType]);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue;
+      const appId = String(row[0]);
+      if (appId.indexOf('APP-T') === 0) continue;
+      applications.push({
+        appId: appId,
+        playerNo: String(parseInt(row[1], 10)),
+        gameNo: String(row[16] || ''),
+        category: ticketType,
+        quantityAdult: Number(row[4] || 0),
+        quantityChild: Number(row[5] || 0),
+        quantityInfant: Number(row[6] || 0),
+        seatType: String(row[7] || ''),
+        seatRequest: String(row[8] || ''),
+        receivers: row[9] ? [{ name: String(row[9]) }] : [],
+        pickupMethod: normalizePickupMethodForMigration(row[10]),
+        paymentMethod: normalizePaymentMethodForMigration(row[11], ticketType),
+        parking: Number(row[12] || 0),
+        note: String(row[13] || ''),
+        status: STATUS_JP_TO_EN[row[15]] || String(row[15] || 'pending'),
+        lang: 'ja',
+        source: String(row[13] || '').indexOf('LINE申込') >= 0 ? 'line' : 'web',
+        createdAt: formatMigrationDateTime(row[14]),
+        updatedAt: formatMigrationDateTime(row[14])
+      });
+    }
+  });
+  return applications;
+}
+
+function formatMigrationDate(value) {
+  return Utilities.formatDate(new Date(value), 'Asia/Tokyo', 'yyyy-MM-dd');
+}
+
+function formatMigrationDateTime(value) {
+  return Utilities.formatDate(new Date(value), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+}
+
+function normalizePickupMethodForMigration(value) {
+  if (value === '事前受取' || value === 'pre') return 'pre';
+  if (value === '当日受取' || value === 'day') return 'day';
+  return '';
+}
+
+function normalizePaymentMethodForMigration(value, ticketType) {
+  if (value === '給与天引き' || value === 'salary') return 'salary';
+  if (value === '当日現金' || value === 'cash') return 'cash';
+  if (value === 'FREE' || value === 'free') return 'free';
+  return ticketType === 'invite' ? '' : '';
+}

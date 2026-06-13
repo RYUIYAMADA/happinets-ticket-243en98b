@@ -1,0 +1,60 @@
+{
+  "exportedAt": "2026-06-13T16:30:00+09:00",
+  "season": "2026-27",
+  "admins": [
+    { "role": "ticket", "apiToken": "sample-ticket-token" },
+    { "role": "manager", "apiToken": null }
+  ],
+  "players": [
+    { "playerNo": "006", "name": "#6 赤穂雷太", "nameEn": "Raita Ako", "lineUserId": "U-sample-006", "isActive": 1 },
+    { "playerNo": "101", "name": "HC Mick Downer", "nameEn": "Mick Downer", "lineUserId": null, "isActive": 1 }
+  ],
+  "games": [
+    { "gameNo": "G01", "date": "2026/10/08", "dayOfWeek": "木", "tipoff": "19:00", "opponent": "川崎ブレイブサンダース", "deadline": "2026/10/01", "isActive": 1 },
+    { "gameNo": "G02", "date": "2026/10/17", "dayOfWeek": "土", "tipoff": "14:00", "opponent": "信州ブレイブウォリアーズ", "deadline": "2026/10/10", "isActive": 1 }
+  ],
+  "applications": [
+    {
+      "appId": "APP-1748770000000",
+      "playerNo": "006",
+      "gameNo": "G01",
+      "category": "family",
+      "quantityAdult": 2,
+      "quantityChild": 1,
+      "quantityInfant": 0,
+      "seatType": "",
+      "seatRequest": "",
+      "receivers": [{ "name": "赤穂 由美" }],
+      "pickupMethod": "pre",
+      "paymentMethod": "",
+      "parking": 1,
+      "note": "sample family application",
+      "status": "confirmed",
+      "lang": "ja",
+      "source": "web",
+      "createdAt": "2026-10-01 09:00:00",
+      "updatedAt": "2026-10-01 09:00:00"
+    },
+    {
+      "appId": "APP-1748770000001",
+      "playerNo": "101",
+      "gameNo": "G02",
+      "category": "invite",
+      "quantityAdult": 3,
+      "quantityChild": 0,
+      "quantityInfant": 0,
+      "seatType": "",
+      "seatRequest": "",
+      "receivers": [{ "name": "Downer Sarah" }],
+      "pickupMethod": "day",
+      "paymentMethod": "",
+      "parking": 0,
+      "note": "sample invite application",
+      "status": "pending",
+      "lang": "en",
+      "source": "line",
+      "createdAt": "2026-10-02 10:30:00",
+      "updatedAt": "2026-10-02 10:30:00"
+    }
+  ]
+}
