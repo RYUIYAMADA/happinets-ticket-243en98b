@@ -89,6 +89,12 @@
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
+    transition: color 0.15s, opacity 0.15s;
+  }
+  header .back:disabled {
+    color: var(--text-muted);
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   header h1 { font-size: 18px; font-weight: 700; line-height: 1.4; }
   .header-title { flex: 1; min-width: 0; text-align: center; }
@@ -1070,7 +1076,7 @@ window.LIFF_CONFIG = {
   <p class="liff-loading-text" data-i18n="loadingText">LINEアカウントを確認中...</p>
 </div>
 <header>
-  <button class="back" onclick="handleBackButton()" data-i18n="backBtn">← 戻る</button>
+  <button id="back-btn" class="back" onclick="handleBackButton()" disabled data-i18n="backBtn">← 戻る</button>
   <div class="header-title">
     <h1 data-i18n="title">チケット申込フォーム</h1>
     <div id="header-name" class="header-player"></div>
@@ -2184,13 +2190,16 @@ async function handleFallbackLogin() {
 
 /** 戻るボタン: LIFF内なら closeWindow、外なら index.html へ */
 function handleBackButton() {
-  if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
-    // LIFF コンテキスト内: LIFF を閉じる
-    liff.closeWindow();
-  } else {
-    // ブラウザ: index.html へ遷移
-    location.href = 'index.html';
-  }
+  // ページ内ナビのみ: STEP2からSTEP1に戻る
+  // 種別選択をすべてクリア（最初の状態に戻す）
+  const inputs = document.querySelectorAll('input[name="ticketType"]');
+  inputs.forEach(input => { input.checked = false; });
+
+  // 種別選択時のイベント発火
+  onTypeChange();
+
+  // スクロールを先頭に
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /** セッション クリアして再ログイン */
@@ -2614,6 +2623,16 @@ function onTypeChange() {
   document.querySelectorAll('input[name="ticketTypeMirror"]').forEach(input => { input.checked = input.value === type; });
   if (type) document.getElementById(`section-${type === 'paid' ? 'paid' : type === 'family' ? 'family' : 'invite'}`).classList.add('active');
 
+  // 戻るボタン: 種別選択時に有効化、未選択で無効化
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) {
+    if (type) {
+      backBtn.disabled = false;
+    } else {
+      backBtn.disabled = true;
+    }
+  }
+
   // bottom bar: ボタン表示制御
   document.getElementById('inv-submit').classList.remove('active-section');
   document.getElementById('fam-submit').classList.remove('active-section');
@@ -2878,7 +2897,7 @@ function clearAlert() { document.getElementById('alert-area').innerHTML = ''; }
 <script>
 // Version hash from build time
 const BUILD_DATE = new Date().toISOString().slice(0, 13).replace(/[:-]/g, '');
-const VERSION = 'v0.3.3-' + BUILD_DATE;
+const VERSION = 'v0.3.4-' + BUILD_DATE;
 const verEl = document.getElementById('app-version');
 if (verEl) {
   verEl.textContent = VERSION;
