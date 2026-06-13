@@ -16,8 +16,10 @@ import {
   createPlayerSession,
   deleteGame,
   findAdminByRole,
+  findPlayerByLineUserId,
   findPlayerByPlayerNo,
   getLineStats,
+  linkLineUserIdToPlayer,
   listAdminApplications,
   listApplicationsByPlayer,
   listGames,
@@ -59,6 +61,12 @@ export function createApp(options = {}) {
 
         if (request.method === "POST" && url.pathname === "/api/auth/login") {
           return await handlePlayerLogin(request, env, origin, nowIso, randomToken);
+        }
+        if (request.method === "POST" && url.pathname === "/api/auth/liff-login") {
+          return await handleLiffLogin(request, env, origin, nowIso, randomToken);
+        }
+        if (request.method === "POST" && url.pathname === "/api/auth/link-liff") {
+          return await handleLinkLiff(request, env, origin, nowIso, randomToken);
         }
         if (request.method === "POST" && url.pathname === "/line/webhook") {
           return await handleLineWebhook(request, env, origin, nowIso, randomToken);
@@ -158,6 +166,134 @@ async function handlePlayerLogin(request, env, origin, nowIso, randomToken) {
     role: "player",
     expiresAt,
   }, origin);
+}
+
+/**
+ * POST /api/auth/liff-login
+ * LIFFのIDトークンをLINE verify APIで検証し、player特定 → セッション発行。
+ * 未連携の場合は 409 UNLINKED を返す。
+ */
+async function handleLiffLogin(request, env, origin, nowIso, randomToken) {
+  const body = await readJson(request);
+  const idToken = body?.idToken;
+  if (!idToken || typeof idToken !== "string" || idToken.split(".").length !== 3) {
+    throw new HttpError(400, "BAD_REQUEST", "idToken is required");
+  }
+  const channelId = env.LINE_LOGIN_CHANNEL_ID;
+  if (!channelId) {
+    throw new HttpError(503, "CONFIGURATION_ERROR", "LINE_LOGIN_CHANNEL_ID is not configured");
+  }
+  const lineUserId = await verifyLineIdToken(idToken, channelId);
+  const player = await findPlayerByLineUserId(env.DB, lineUserId);
+  if (!player) {
+    return new Response(JSON.stringify({ ok: false, error: { code: "UNLINKED", message: "Player not linked" } }), {
+      status: 409,
+      headers: {
+        "Content-Type": "application/json; charset=UTF-8",
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  }
+  const token = randomToken();
+  const expiresAt = addSeconds(nowIso, PLAYER_SESSION_TTL_SECONDS);
+  await createPlayerSession(env.DB, token, player.id, expiresAt);
+  return ok({
+    token,
+    playerId: String(player.player_no),
+    playerNo: String(player.player_no).padStart(3, "0"),
+    name: player.name,
+    role: "player",
+    expiresAt,
+  }, origin);
+}
+
+/**
+ * POST /api/auth/link-liff
+ * 初回連携: IDトークン検証 → line_user_id を players に紐付け → セッション発行。
+ * body: { idToken, playerId }  playerId は背番号 (例: "006")
+ */
+async function handleLinkLiff(request, env, origin, nowIso, randomToken) {
+  const body = await readJson(request);
+  const idToken = body?.idToken;
+  const rawPlayerId = body?.playerId;
+  if (!idToken || typeof idToken !== "string" || idToken.split(".").length !== 3) {
+    throw new HttpError(400, "BAD_REQUEST", "idToken is required");
+  }
+  if (!rawPlayerId) {
+    throw new HttpError(400, "BAD_REQUEST", "playerId is required");
+  }
+  const channelId = env.LINE_LOGIN_CHANNEL_ID;
+  if (!channelId) {
+    throw new HttpError(503, "CONFIGURATION_ERROR", "LINE_LOGIN_CHANNEL_ID is not configured");
+  }
+  // IDトークン再検証（lineUserIdをフロントから受け取らずWorker側で取得する = 改ざん防止）
+  const lineUserId = await verifyLineIdToken(idToken, channelId);
+  // 既に連携済みのアカウントが存在するか確認
+  const alreadyLinked = await findPlayerByLineUserId(env.DB, lineUserId);
+  if (alreadyLinked) {
+    // 既連携ならそのままセッション発行（再連携操作として扱う）
+    const token = randomToken();
+    const expiresAt = addSeconds(nowIso, PLAYER_SESSION_TTL_SECONDS);
+    await createPlayerSession(env.DB, token, alreadyLinked.id, expiresAt);
+    return ok({
+      token,
+      playerId: String(alreadyLinked.player_no),
+      playerNo: String(alreadyLinked.player_no).padStart(3, "0"),
+      name: alreadyLinked.name,
+      role: "player",
+      expiresAt,
+    }, origin);
+  }
+  // 背番号で選手を検索して line_user_id を登録
+  const player = await linkLineUserIdToPlayer(env.DB, rawPlayerId, lineUserId);
+  if (!player) {
+    throw new HttpError(401, "UNAUTHORIZED", "Player not found");
+  }
+  const token = randomToken();
+  const expiresAt = addSeconds(nowIso, PLAYER_SESSION_TTL_SECONDS);
+  await createPlayerSession(env.DB, token, player.id, expiresAt);
+  return ok({
+    token,
+    playerId: String(player.player_no),
+    playerNo: String(player.player_no).padStart(3, "0"),
+    name: player.name,
+    role: "player",
+    expiresAt,
+  }, origin, 201);
+}
+
+/**
+ * LINE verify API でIDトークンを検証し line_user_id (sub) を返す。
+ * iss / aud / exp の必須チェックを含む。
+ */
+async function verifyLineIdToken(idToken, channelId) {
+  const verifyRes = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ id_token: idToken, client_id: channelId }),
+  });
+  if (!verifyRes.ok) {
+    // LINEが検証エラーを返した場合（期限切れ・不正トークン等）
+    throw new HttpError(401, "INVALID_ID_TOKEN", "ID token verification failed");
+  }
+  const payload = await verifyRes.json();
+  // 必須フィールド検証
+  if (payload.iss !== "https://access.line.me") {
+    throw new HttpError(401, "INVALID_ID_TOKEN", "Invalid issuer");
+  }
+  if (String(payload.aud) !== String(channelId)) {
+    throw new HttpError(401, "INVALID_ID_TOKEN", "Invalid audience");
+  }
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (!payload.exp || payload.exp <= nowSec) {
+    throw new HttpError(401, "INVALID_ID_TOKEN", "ID token expired");
+  }
+  if (!payload.sub) {
+    throw new HttpError(401, "INVALID_ID_TOKEN", "Missing sub claim");
+  }
+  return String(payload.sub);
 }
 
 async function handleAdminLogin(request, env, origin, nowIso, randomToken, checkAdminPassword) {

@@ -807,8 +807,34 @@
     to { transform: rotate(360deg); }
   }
 </style>
+<!-- LIFF SDK -->
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<!-- LIFF設定: 龍偉はここに実際のLIFF IDを入れる -->
+<script>
+window.LIFF_CONFIG = {
+  formLiffId:      "XXXXXXXXXXXX-XXXXXXXX",  // player-form用 LIFF ID (LINE DevelopersコンソールのLIFF IDを入れる)
+  dashboardLiffId: "XXXXXXXXXXXX-XXXXXXXX",  // player-dashboard用 LIFF ID
+};
+</script>
 </head>
 <body>
+<!-- 初回連携モーダル（LIFF未連携時に表示） -->
+<div id="liff-link-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:min(90vw,360px);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">初回登録</h2>
+    <p style="font-size:14px;color:#64748b;margin-bottom:16px;">背番号を入力してLINEアカウントと連携してください。</p>
+    <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 6）" maxlength="3"
+      style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:16px;margin-bottom:8px;"/>
+    <div id="liff-link-error" style="color:#dc2626;font-size:13px;min-height:20px;margin-bottom:8px;"></div>
+    <button id="liff-link-btn" onclick="handleLiffLink()"
+      style="width:100%;padding:12px;background:#2456e6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">連携する</button>
+  </div>
+</div>
+<!-- 認証中スピナー -->
+<div id="liff-loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.9);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div style="width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#2456e6;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <p style="color:#64748b;font-size:14px;">LINEアカウントを確認中...</p>
+</div>
 <header>
   <button class="back" onclick="history.back()" data-i18n="backBtn">← 戻る</button>
   <div class="header-title">
@@ -1090,9 +1116,7 @@
   </div>
 </div>
 
-<script>
-window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.dev";
-</script>
+<script src="./api-config.js"></script>
 <script>
 (function () {
   const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:8787";
@@ -1210,6 +1234,20 @@ window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.
     return request("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ playerId }),
+    });
+  }
+
+  function loginWithLiff(idToken) {
+    return request("/api/auth/liff-login", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+  }
+
+  function linkLiff(idToken, playerId) {
+    return request("/api/auth/link-liff", {
+      method: "POST",
+      body: JSON.stringify({ idToken, playerId }),
     });
   }
 
@@ -1345,12 +1383,66 @@ window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.
     replaceSeason2627,
     getLineStats,
     loginPlayer,
+    loginWithLiff,
+    linkLiff,
     loginAdmin,
     logout,
     isUnauthorizedResult,
   };
 })();
 
+</script>
+<!-- liff-auth: LIFF認証共通処理 -->
+<script>
+(function () {
+  async function initAndAuthWithLiff(liffId) {
+    if (!liffId || liffId.includes("XXXXXXXXXXXX")) {
+      throw new Error("LIFF IDが未設定です。管理者にお問い合わせください。");
+    }
+    if (typeof liff === "undefined") {
+      throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
+    }
+    await liff.init({ liffId, withLoginOnExternalBrowser: true });
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return null;
+    }
+    const idToken = liff.getIDToken();
+    if (!idToken) throw new Error("IDトークンの取得に失敗しました。");
+    // sessionStorage に有効なトークンがあれば再認証スキップ
+    const storedToken = sessionStorage.getItem("sessionToken");
+    if (storedToken) {
+      const storedAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
+      if (storedAuth && storedAuth.role === "player") return storedAuth;
+    }
+    const result = await workerApiClient.loginWithLiff(idToken);
+    if (result.ok) {
+      const authData = { ...result.data, role: "player" };
+      sessionStorage.setItem("auth", JSON.stringify(authData));
+      sessionStorage.setItem("sessionToken", result.data.token);
+      return authData;
+    }
+    if (result.error && result.error.code === "UNLINKED") return { unlinked: true };
+    throw new Error(result.error && result.error.message ? result.error.message : "LIFF認証に失敗しました。");
+  }
+  async function linkWithPlayerNo(playerId) {
+    if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
+    const idToken = liff.getIDToken();
+    if (!idToken) throw new Error("IDトークンの取得に失敗しました。再度LINEからアクセスしてください。");
+    const result = await workerApiClient.linkLiff(idToken, playerId);
+    if (result.ok) {
+      const authData = { ...result.data, role: "player" };
+      sessionStorage.setItem("auth", JSON.stringify(authData));
+      sessionStorage.setItem("sessionToken", result.data.token);
+      return authData;
+    }
+    if (result.error && result.error.code === "UNAUTHORIZED") {
+      throw new Error("背番号が見つかりません。正しい背番号を入力してください。");
+    }
+    throw new Error(result.error && result.error.message ? result.error.message : "連携に失敗しました。");
+  }
+  window.liffAuth = { initAndAuthWithLiff, linkWithPlayerNo };
+})();
 </script>
 <script>
 // ─── i18n ───────────────────────────────────────────
@@ -1444,10 +1536,9 @@ function esc(s) {
 let games = [];
 let auth = null;
 
-window.addEventListener('DOMContentLoaded', async () => {
-  applyI18n();
-  auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
-  if (!auth || auth.role !== 'player') { location.href = 'index.html'; return; }
+/** LIFF認証完了後にフォームを初期化する */
+async function initFormAfterAuth(authData) {
+  auth = authData;
   if (auth.token && !sessionStorage.getItem('sessionToken')) {
     sessionStorage.setItem('sessionToken', auth.token);
   }
@@ -1470,6 +1561,55 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('paid-game').value = preGame;
     onPaidGameChange();
   }
+}
+
+/** 初回連携ボタンのハンドラ */
+async function handleLiffLink() {
+  const input = document.getElementById('liff-player-no-input');
+  const errEl = document.getElementById('liff-link-error');
+  const btn = document.getElementById('liff-link-btn');
+  const playerId = (input.value || '').trim();
+  if (!playerId) { errEl.textContent = '背番号を入力してください。'; return; }
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = '連携中...';
+  try {
+    const authData = await window.liffAuth.linkWithPlayerNo(playerId);
+    document.getElementById('liff-link-overlay').style.display = 'none';
+    await initFormAfterAuth(authData);
+  } catch (e) {
+    errEl.textContent = e.message || '連携に失敗しました。';
+    btn.disabled = false;
+    btn.textContent = '連携する';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  applyI18n();
+  const loadingEl = document.getElementById('liff-loading-overlay');
+  loadingEl.style.display = 'flex';
+  try {
+    const liffId = (window.LIFF_CONFIG || {}).formLiffId || '';
+    const result = await window.liffAuth.initAndAuthWithLiff(liffId);
+    if (!result) {
+      // liff.login() がリダイレクト中 → 何もしない
+      return;
+    }
+    if (result.unlinked) {
+      // 未連携 → 初回連携モーダルを表示
+      loadingEl.style.display = 'none';
+      const overlay = document.getElementById('liff-link-overlay');
+      overlay.style.display = 'flex';
+      return;
+    }
+    loadingEl.style.display = 'none';
+    await initFormAfterAuth(result);
+  } catch (e) {
+    loadingEl.style.display = 'none';
+    document.getElementById('alert-area').innerHTML =
+      `<div class="alert alert-error">認証エラー: ${esc(e.message || 'LINEアプリ内で開いてください。')}</div>`;
+  }
+
 });
 
 async function loadApplications() {

@@ -117,6 +117,29 @@
     });
   }
 
+  /**
+   * LIFF IDトークンでログイン。
+   * 成功: { ok: true, data: { token, playerId, ... } }
+   * 未連携: { ok: false, error: { code: "UNLINKED", ... } }
+   */
+  function loginWithLiff(idToken) {
+    return request("/api/auth/liff-login", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+  }
+
+  /**
+   * 初回連携: IDトークン + 背番号 でアカウントを紐づけてトークンを発行。
+   * playerId: 背番号文字列 (例: "006" or "6")
+   */
+  function linkLiff(idToken, playerId) {
+    return request("/api/auth/link-liff", {
+      method: "POST",
+      body: JSON.stringify({ idToken, playerId }),
+    });
+  }
+
   function loginAdmin(password) {
     return request("/api/auth/admin-login", {
       method: "POST",
@@ -249,6 +272,8 @@
     replaceSeason2627,
     getLineStats,
     loginPlayer,
+    loginWithLiff,
+    linkLiff,
     loginAdmin,
     logout,
     isUnauthorizedResult,
