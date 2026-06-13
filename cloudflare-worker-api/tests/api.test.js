@@ -39,6 +39,17 @@ function createDbMock(config = {}) {
   };
 }
 
+async function deriveAdminHash(password, salt) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const derived = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: 100000 },
+    key,
+    256
+  );
+  return Buffer.from(derived).toString("hex");
+}
+
 test("normalizePlayerNo strips zero padding like GAS", () => {
   assert.equal(normalizePlayerNo("006"), "6");
   assert.equal(normalizePlayerNo("101"), "101");
@@ -166,10 +177,11 @@ test("POST /api/auth/login returns token payload for an active player", async ()
 });
 
 test("POST /api/auth/admin-login returns token for valid password", async () => {
+  const adminSalt = "salt";
+  const storedHash = await deriveAdminHash("secret", adminSalt);
   const app = createApp({
     now: () => "2026-06-13T00:00:00.000Z",
     randomToken: () => "admin-token",
-    verifyAdminPassword: async (password, salt, hash) => password === "secret" && salt === "salt" && hash === "stored-hash",
   });
   const request = new Request("https://example.com/api/auth/admin-login", {
     method: "POST",
@@ -179,14 +191,14 @@ test("POST /api/auth/admin-login returns token for valid password", async () => 
   const mock = createDbMock({
     first(sql) {
       if (sql.includes("FROM admins")) {
-        return { id: 1, role: "ticket", pw_hash: "stored-hash", failed_count: 0, locked_until: null };
+        return { id: 1, role: "ticket", pw_hash: storedHash, failed_count: 0, locked_until: null };
       }
       return null;
     },
   });
   const env = {
     DB: mock.DB,
-    ADMIN_SALT: "salt",
+    ADMIN_SALT: adminSalt,
     ALLOWED_ORIGIN: "http://127.0.0.1:8787",
   };
 

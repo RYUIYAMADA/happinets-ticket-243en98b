@@ -990,7 +990,9 @@ function formatDate(dateStr) {
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s ?? '';
-  return d.innerHTML;
+  return d.innerHTML
+    .replace(/'/g, '&#39;')
+    .replace(/"/g, '&quot;');
 }
 
 // ※ private リポジトリ前提。公開リポジトリ化する場合は環境設定へ移すこと
@@ -1163,10 +1165,10 @@ function buildAppRow(a, compact) {
   const typeBadge = `<span class="badge badge-${a.ticketType}">${TICKET_LABELS[a.ticketType] || a.ticketType}</span>`;
   const pickup = PICKUP_LABELS[a.pickupMethod] || a.pickupMethod;
   const detailId = `details-${String(a.applicationId).replace(/[^a-zA-Z0-9_-]/g, '-')}-${compact ? 'pending' : 'all'}`;
-  const mobileToggle = `<button type="button" class="mobile-detail-toggle" onclick="toggleMobileDetails('${detailId}', this)">詳細</button>`;
+  const mobileToggle = `<button type="button" class="mobile-detail-toggle" onclick="toggleMobileDetails('${esc(detailId)}', this)">詳細</button>`;
   const statusSel = adminRole === 'manager'
     ? `<span class="badge badge-${a.status}">${STATUS_LABELS[a.status] || a.status}</span>`
-    : `<select class="status-select" onchange="changeStatus('${a.applicationId}', this.value)">
+    : `<select class="status-select" onchange="changeStatus('${esc(a.applicationId)}', this.value)">
       <option value="pending"   ${a.status==='pending'   ? 'selected' : ''}>確認中</option>
       <option value="confirmed" ${a.status==='confirmed' ? 'selected' : ''}>確保済み</option>
       <option value="rejected"  ${a.status==='rejected'  ? 'selected' : ''}>対応不可</option>
@@ -1303,12 +1305,12 @@ function renderDeadlines() {
       <td>${esc(g.dayOfWeek)}</td>
       <td>${esc(g.opponent)}</td>
       <td>
-        <input type="date" class="deadline-input" id="dl-${g.gameId}" value="${g.deadline || ''}"
+        <input type="date" class="deadline-input" id="dl-${esc(g.gameId)}" value="${esc(g.deadline || '')}"
           ${past || adminRole === 'manager' ? 'disabled' : ''}>
       </td>
       <td>${statusBadge}</td>
       <td>
-        ${(!past && adminRole !== 'manager') ? `<button class="btn-set" onclick="saveDeadline('${g.gameId}')">保存</button>` : '—'}
+        ${(!past && adminRole !== 'manager') ? `<button class="btn-set" onclick="saveDeadline('${esc(g.gameId)}')">保存</button>` : '—'}
       </td>
     </tr>`;
   }).join('');

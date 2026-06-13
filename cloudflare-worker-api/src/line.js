@@ -15,6 +15,8 @@ import {
 } from "./repo.js";
 
 const LINE_STATE_TTL_SECONDS = 10 * 60;
+const LINE_LINK_FAILURE_LIMIT = 5;
+const LINE_LINK_LOCK_SECONDS = 10 * 60;
 
 export async function handleLineWebhook(request, env, origin, nowIso, randomToken) {
   const secret = env.LINE_CHANNEL_SECRET || "";
@@ -116,12 +118,22 @@ async function processLineEvent(event, env, nowIso, randomToken) {
 async function handleTextMessage(env, replyToken, userId, linkedPlayer, text, nowIso) {
   if (!linkedPlayer) {
     if (/^\d{1,4}$/.test(text)) {
+      const linkState = await getConversationState(env.DB, userId, nowIso) || {};
+      if (isLineLinkLocked(linkState, nowIso)) {
+        await replyToLine(env, replyToken, [{
+          type: "text",
+          text: "連携試行が上限に達したため、一時的に受付を停止しています。\n10分ほど待ってから再度お試しください。\n\nToo many attempts. Please wait about 10 minutes and try again.",
+        }]);
+        return;
+      }
       const saved = await linkLineUserIdToPlayer(env.DB, text, userId);
       if (saved) {
+        await clearConversationState(env.DB, userId);
         await replyToLine(env, replyToken, [buildMainMenuMessage(
           "Registration complete! / 登録完了しました！\nUse the menu to apply for tickets or check your applications.\nチケット申込や確認はメニューから操作できます。"
         )]);
       } else {
+        await persistLineLinkFailure(env, userId, linkState, nowIso);
         await replyToLine(env, replyToken, [{
           type: "text",
           text: "Player number not found. / 選手番号が見つかりませんでした。\nPlease enter the correct number.\n正しい番号を入力してください（例：006 / 101）",
@@ -133,6 +145,14 @@ async function handleTextMessage(env, replyToken, userId, linkedPlayer, text, no
     await replyToLine(env, replyToken, [{
       type: "text",
       text: "個別のご連絡は本アカウントでは承っておりません。\nチームマネージャーまたはチケットチームまでお願いします。\n\nThis account cannot respond to individual messages.\nPlease contact your team manager or the ticket team.",
+    }]);
+    return;
+  }
+
+  if (/^\d{1,4}$/.test(text)) {
+    await replyToLine(env, replyToken, [{
+      type: "text",
+      text: "このLINEアカウントは既に選手連携済みのため、番号の再登録はできません。\n\nThis LINE account is already linked to a player.",
     }]);
     return;
   }
@@ -327,6 +347,25 @@ async function submitLineApplication(env, player, state, nowIso, randomToken) {
 
 async function persistState(env, userId, state, nowIso) {
   await saveConversationState(env.DB, userId, state, addSeconds(nowIso, LINE_STATE_TTL_SECONDS));
+}
+
+async function persistLineLinkFailure(env, userId, currentState, nowIso) {
+  const failures = Number(currentState?.linkFailures || 0) + 1;
+  const lockedUntil = failures >= LINE_LINK_FAILURE_LIMIT ? addSeconds(nowIso, LINE_LINK_LOCK_SECONDS) : null;
+  await saveConversationState(
+    env.DB,
+    userId,
+    {
+      ...currentState,
+      linkFailures: failures,
+      linkLockedUntil: lockedUntil,
+    },
+    lockedUntil || addSeconds(nowIso, LINE_STATE_TTL_SECONDS)
+  );
+}
+
+function isLineLinkLocked(state, nowIso) {
+  return Boolean(state?.linkLockedUntil && state.linkLockedUntil > nowIso);
 }
 
 async function buildConfirmMessage(env, state) {

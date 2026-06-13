@@ -51,7 +51,30 @@ export function requireTicketAdmin(adminSession) {
   }
 }
 
+function hexToBytes(hex) {
+  if (typeof hex !== "string" || hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) {
+    return null;
+  }
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+function timingSafeEqual(left, right) {
+  if (!(left instanceof Uint8Array) || !(right instanceof Uint8Array)) return false;
+  if (left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i += 1) {
+    diff |= left[i] ^ right[i];
+  }
+  return diff === 0;
+}
+
 export async function verifyAdminPassword(password, salt, expectedHash) {
+  const expectedBytes = hexToBytes(String(expectedHash || "").toLowerCase());
+  if (!expectedBytes) return false;
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const derived = await crypto.subtle.deriveBits(
@@ -59,6 +82,5 @@ export async function verifyAdminPassword(password, salt, expectedHash) {
     key,
     256
   );
-  const actual = [...new Uint8Array(derived)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  return actual === expectedHash;
+  return timingSafeEqual(new Uint8Array(derived), expectedBytes);
 }
