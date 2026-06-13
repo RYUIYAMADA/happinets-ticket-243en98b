@@ -927,6 +927,17 @@ window.LIFF_CONFIG = {
     <button id="liff-link-btn" onclick="handleLiffLink()" class="liff-modal-btn">連携する</button>
   </div>
 </div>
+<!-- 番号ログイン（LIFF失敗時フォールバック）モーダル -->
+<div id="fallback-login-overlay" class="liff-overlay-backdrop">
+  <div class="liff-modal-box">
+    <h2 class="liff-modal-title">選手家族チケット申込</h2>
+    <p class="liff-modal-desc">背番号3桁を入力してログインしてください。</p>
+    <input id="fallback-player-no-input" type="tel" placeholder="背番号（例: 6）" maxlength="3"
+      class="liff-modal-input" inputmode="numeric"/>
+    <div id="fallback-login-error" class="liff-modal-error"></div>
+    <button id="fallback-login-btn" onclick="handleFallbackLogin()" class="liff-modal-btn">ログイン</button>
+  </div>
+</div>
 <!-- 認証中スピナー -->
 <div id="liff-loading-overlay" class="liff-loading-backdrop">
   <div class="liff-spinner"></div>
@@ -1681,8 +1692,8 @@ async function handleLiffLink() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
-  applyI18n();
+/** LIFF認証トライ→フォールバック分岐 */
+async function tryLiffAuthOrFallback() {
   const loadingEl = document.getElementById('liff-loading-overlay');
   loadingEl.style.display = 'flex';
   try {
@@ -1701,12 +1712,50 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     loadingEl.style.display = 'none';
     await initFormAfterAuth(result);
-  } catch (e) {
+  } catch (liffErr) {
+    // LIFF 失敗 → フォールバック番号ログイン
     loadingEl.style.display = 'none';
-    document.getElementById('alert-area').innerHTML =
-      `<div class="alert alert-error">認証エラー: ${esc(e.message || 'LINEアプリ内で開いてください。')}</div>`;
+    const fallbackOverlay = document.getElementById('fallback-login-overlay');
+    fallbackOverlay.style.display = 'flex';
+  }
+}
+
+/** 番号ログイン（フォールバック）ハンドラ */
+async function handleFallbackLogin() {
+  const input = document.getElementById('fallback-player-no-input');
+  const errEl = document.getElementById('fallback-login-error');
+  const btn = document.getElementById('fallback-login-btn');
+  const playerId = (input.value || '').trim();
+
+  if (!playerId || playerId.length !== 3) {
+    errEl.textContent = '3桁の背番号を入力してください';
+    return;
   }
 
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
+
+  try {
+    const result = await workerApiClient.loginPlayer(playerId);
+    if (!result.ok) {
+      throw new Error(result.error?.message || result.error || '背番号が見つかりません');
+    }
+    const authData = { ...result.data, role: 'player' };
+    sessionStorage.setItem('auth', JSON.stringify(authData));
+    sessionStorage.setItem('sessionToken', result.data.token);
+    document.getElementById('fallback-login-overlay').style.display = 'none';
+    await initFormAfterAuth(authData);
+  } catch (e) {
+    errEl.textContent = e.message || 'ログインに失敗しました';
+    btn.disabled = false;
+    btn.textContent = 'ログイン';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  applyI18n();
+  await tryLiffAuthOrFallback();
 });
 
 async function loadApplications() {
