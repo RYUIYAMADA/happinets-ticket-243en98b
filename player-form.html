@@ -15,6 +15,7 @@
     --primary-weak: #eaf0ff;
     --accent-line: #2563eb;
     --accent-cta: #EA580C;
+    --accent-cta-dark: #D64B00;
     --text: #0f172a;
     --text-sub: #64748b;
     --text-faint: #94a3b8;
@@ -321,14 +322,15 @@
     background: var(--inverse-soft);
     border-color: var(--inverse-border);
   }
-  .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+  .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1; }
   .step-pill-number {
     font-size: 13px;
     letter-spacing: 0.08em;
     font-weight: 700;
     color: var(--text-sub);
+    flex-shrink: 0;
   }
-  .step-pill-label { min-width: 0; }
+  .step-pill-label { min-width: 0; flex: 1; overflow-wrap: anywhere; word-break: break-word; }
 
   .game-card-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-1); }
   .game-card-row {
@@ -711,7 +713,7 @@
     color: var(--bg);
   }
   .submit-bottom-bar .btn-primary:hover {
-    background: #D64B00;
+    background: var(--accent-cta-dark);
   }
   .submit-bottom-bar .btn-primary:disabled {
     background: var(--disabled);
@@ -1598,7 +1600,7 @@ window.LIFF_CONFIG = {
       const idToken = liff.getIDToken();
       const tokenDisplay = idToken
         ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
-        : 'null ⚠️';
+        : 'null (IDトークン未取得)';
       if (!idToken) {
         // openid scope 未同意 or scope 未設定の可能性
         throw new Error(t('mustBeInLineApp'));
@@ -1646,7 +1648,7 @@ window.LIFF_CONFIG = {
       const idToken = liff.getIDToken();
       const tokenDisplay = idToken
         ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
-        : 'null ⚠️';
+        : 'null (IDトークン未取得)';
       if (!idToken) {
         throw new Error(t('mustBeInLineApp'));
       }

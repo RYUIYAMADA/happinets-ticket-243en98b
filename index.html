@@ -16,6 +16,8 @@
     --primary-strong: #1d4fd7;
     --primary-weak: #eaf0ff;
     --accent-line: #2563eb;
+    --accent-cta: #EA580C;
+    --accent-cta-dark: #D64B00;
     --text: #0f172a;
     --text-sub: #64748b;
     --text-faint: #94a3b8;
@@ -43,6 +45,7 @@
     --space-8: 32px;
     --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
     --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.16);
+    accent-color: var(--primary);
   }
   body {
     font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
@@ -220,8 +223,9 @@
     padding: var(--space-3) var(--space-4);
     font-size: 16px;
     font-weight: 700;
-    color: var(--bg);
+    color: #ffffff;
     background: var(--primary);
+    background-color: var(--primary);
     border: none;
     border-radius: var(--radius-control);
     cursor: pointer;
@@ -229,6 +233,8 @@
     min-height: 48px;
     min-width: 44px;
     font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .btn:hover { background: var(--primary-strong); }
   .btn:disabled {
@@ -343,7 +349,7 @@
           </div>
           <div class="form-group">
             <label for="playerId" data-i18n="numberLabel">番号（3桁）</label>
-            <input type="text" id="playerId" data-i18n="numberPlaceholder" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
+            <input type="text" id="playerId" data-i18n="numberPlaceholder" placeholder="" maxlength="3" inputmode="numeric" pattern="[0-9]{3}">
           </div>
           <div class="id-hint" data-i18n="loginHint">
             選手: 背番号3桁　／　スタッフ: 101〜
