@@ -62,10 +62,10 @@ progress_pct: 0
 - ✅ Gate2 サインオフ（engineer/security 並列）→ 両者 concern・Block無し。承認条件6件を c65abe9 で反映 → **Gate2 approve 確定**
 
 ### フェーズ2: 実装（垂直スライス先行 → 並列）
-- 🔄 スライス1本目: 「選手ログイン→試合一覧表示」を D1+Worker+FE で貫通（手戻り検出）— Codex ft-slice1 でローカルD1着手
-- ⬜ Worker API 残り（申込・キャンセル・管理CRUD・一括入替）
-- ⬜ FE 4画面の API 層切替
-- ⬜ LINE bot を Worker 内に移植（署名検証は実装済み流用）
+- ✅ スライス1本目: 「選手ログイン→試合一覧表示」を D1+Worker+FE で貫通（a760cc1）。実機 wrangler+curl 検証 approve・手戻りなし
+- 🔄 Worker API 残り（申込・キャンセル・管理CRUD・一括入替・admin-login・logout・取得系）— Job A（router seam を1本で完成）
+- ⬜ FE 4画面の API 層切替 — Job C（A 完了後・B と並列）
+- ⬜ LINE bot を Worker 内に移植（署名検証 crypto.subtle.verify）— Job B（A 完了後・C と並列）
 
 ### フェーズ3: データ移行・検証
 - ⬜ 移行スクリプト（GAS シート → D1。選手・LINE紐づけ・試合30件・既存申込）
