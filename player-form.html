@@ -299,18 +299,30 @@
     border-radius: var(--radius-card);
     padding: var(--space-4);
     background: var(--bg);
-    min-height: 72px;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .ticket-tabs .radio-card input[type="radio"] {
+    margin-top: var(--space-1);
+    flex-shrink: 0;
+  }
+  .ticket-tabs .radio-card .rc-main {
+    width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: var(--space-3);
+    min-width: 0;
   }
   .ticket-tabs .radio-card .rc-sub { display: none; }
-  .ticket-tabs .radio-card .rc-avail { display: block; margin-left: auto; }
+  .ticket-tabs .radio-card .rc-avail { display: block; width: 100%; }
   .ticket-tabs .radio-card .rc-check { display: none; }
   .ticket-tabs .radio-card .rc-text { font-size: 15px; white-space: normal; font-weight: 700; word-break: break-word; }
   .ticket-tabs .radio-card .en-sub { white-space: normal; }
-  .ticket-tabs .radio-card .rc-main { flex: 1; min-width: 0; }
+  .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); flex: 1; min-width: 0; }
   .ticket-tabs .radio-card:has(input:checked) {
     background: var(--primary);
     border-color: var(--primary);
@@ -323,7 +335,6 @@
     background: var(--inverse-soft);
     border-color: var(--inverse-border);
   }
-  .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1; }
   .step-pill-number {
     font-size: 13px;
     letter-spacing: 0.08em;
