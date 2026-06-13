@@ -1519,7 +1519,11 @@ window.LIFF_CONFIG = {
 <!-- liff-auth: LIFF認証共通処理 -->
 <script>
 (function () {
-  async function initAndAuthWithLiff(liffId) {
+  let liffInitialized = false;
+  let cachedLiffId = null;
+
+  async function ensureLiffInitialized(liffId) {
+    if (liffInitialized && cachedLiffId === liffId) return;
     if (!liffId || liffId.includes("XXXXXXXXXXXX")) {
       throw new Error("LIFF IDが未設定です。管理者にお問い合わせください。");
     }
@@ -1527,6 +1531,12 @@ window.LIFF_CONFIG = {
       throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
     }
     await liff.init({ liffId, withLoginOnExternalBrowser: true });
+    liffInitialized = true;
+    cachedLiffId = liffId;
+  }
+
+  async function initAndAuthWithLiff(liffId) {
+    await ensureLiffInitialized(liffId);
     if (!liff.isLoggedIn()) {
       liff.login();
       return null;
@@ -1549,8 +1559,12 @@ window.LIFF_CONFIG = {
     if (result.error && result.error.code === "UNLINKED") return { unlinked: true };
     throw new Error(result.error && result.error.message ? result.error.message : "LIFF認証に失敗しました。");
   }
+
   async function linkWithPlayerNo(playerId) {
     if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
+    // liff.init が呼ばれていない場合は、LIFF IDから初期化
+    const liffId = (window.LIFF_CONFIG || {}).formLiffId || '';
+    await ensureLiffInitialized(liffId);
     const idToken = liff.getIDToken();
     if (!idToken) throw new Error("IDトークンの取得に失敗しました。再度LINEからアクセスしてください。");
     const result = await workerApiClient.linkLiff(idToken, playerId);
