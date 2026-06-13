@@ -63,9 +63,9 @@ progress_pct: 0
 
 ### フェーズ2: 実装（垂直スライス先行 → 並列）
 - ✅ スライス1本目: 「選手ログイン→試合一覧表示」を D1+Worker+FE で貫通（a760cc1）。実機 wrangler+curl 検証 approve・手戻りなし
-- 🔄 Worker API 残り（申込・キャンセル・管理CRUD・一括入替・admin-login・logout・取得系）— Job A（router seam を1本で完成）
-- ⬜ FE 4画面の API 層切替 — Job C（A 完了後・B と並列）
-- ⬜ LINE bot を Worker 内に移植（署名検証 crypto.subtle.verify）— Job B（A 完了後・C と並列）
+- ✅ Worker API 残り16ルート（申込・キャンセル・管理CRUD・一括入替・admin-login・logout・取得系）— Job A（57377c8・npm test 16/16）
+- 🔄 FE 4画面の API 層切替 — Job C（ft-fe-switch・B と並列実行中）
+- 🔄 LINE bot を Worker 内に移植（webhook会話フロー・署名 crypto.subtle.verify・push・朝通知quotaガード）— Job B（ft-line-bot・C と並列実行中）
 
 ### フェーズ3: データ移行・検証
 - ⬜ 移行スクリプト（GAS シート → D1。選手・LINE紐づけ・試合30件・既存申込）
