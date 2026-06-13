@@ -19,6 +19,25 @@ export async function findPlayerByPlayerNo(db, playerId) {
   ).bind(playerNo).first();
 }
 
+export async function findPlayerByLineUserId(db, lineUserId) {
+  if (!lineUserId) return null;
+  return db.prepare(
+    `SELECT id, player_no, name, name_en, line_user_id
+     FROM players
+     WHERE line_user_id = ?1 AND is_active = 1`
+  ).bind(lineUserId).first();
+}
+
+export async function linkLineUserIdToPlayer(db, playerId, lineUserId) {
+  const player = await findPlayerByPlayerNo(db, playerId);
+  if (!player) return null;
+  await db.batch([
+    db.prepare(`UPDATE players SET line_user_id = ?1 WHERE id = ?2`).bind(lineUserId, player.id),
+    audit(db, `player:${player.id}`, "line_link", `player:${player.player_no}`, { linked: true }),
+  ]);
+  return player;
+}
+
 export async function createPlayerSession(db, token, playerId, expiresAt) {
   await db.batch([
     db.prepare(`INSERT INTO sessions (token, player_id, expires_at) VALUES (?1, ?2, ?3)`).bind(token, playerId, expiresAt),
@@ -195,9 +214,29 @@ export async function updateApplicationStatus(db, appId, status, adminSession, n
   await db.batch([
     db.prepare(`UPDATE applications SET status = ?1, updated_at = ?2 WHERE app_id = ?3`).bind(status, nowIso, appId),
     audit(db, `admin:${adminSession.admin_role}`, "status_update", `application:${appId}`, { status }),
-    // TODO: LINEジョブで実装
   ]);
   return { applicationId: appId, status, updated: true };
+}
+
+export async function findApplicationForNotification(db, appId) {
+  const row = await db.prepare(
+    `SELECT
+       a.app_id,
+       a.category,
+       p.line_user_id,
+       g.date,
+       g.day_of_week,
+       g.opponent
+     FROM applications a
+     INNER JOIN players p ON p.id = a.player_id
+     INNER JOIN games g ON g.id = a.game_id
+     WHERE a.app_id = ?1`
+  ).bind(appId).first();
+  if (!row) return null;
+  return {
+    ...row,
+    game_label: buildGameLabel({ date: row.date, day_of_week: row.day_of_week, opponent: row.opponent }),
+  };
 }
 
 export async function listPlayers(db) {
@@ -368,9 +407,116 @@ export async function replaceSeason(db, season, games) {
   };
 }
 
-export async function getLineStats() {
-  // TODO: LINEジョブで実装
-  return { quota: 200, used: 0, remaining: 200, note: "LINE stats stub" };
+export async function getLineStats(env) {
+  const token = env?.LINE_CHANNEL_ACCESS_TOKEN || "";
+  if (!token) {
+    return { quota: 200, used: 0, remaining: 200, note: "LINE未設定" };
+  }
+  const headers = { Authorization: `Bearer ${token}` };
+  const [quotaRes, usedRes] = await Promise.all([
+    fetch("https://api.line.me/v2/bot/message/quota", { headers }),
+    fetch("https://api.line.me/v2/bot/message/quota/consumption", { headers }),
+  ]);
+  if (!quotaRes.ok || !usedRes.ok) {
+    return { quota: 0, used: 0, remaining: 0, note: "LINE quota fetch failed" };
+  }
+  const quotaJson = await quotaRes.json();
+  const usedJson = await usedRes.json();
+  const quota = Number(quotaJson?.value || 0);
+  const used = Number(usedJson?.totalUsage || 0);
+  return { quota, used, remaining: Math.max(0, quota - used) };
+}
+
+export async function saveConversationState(db, lineUserId, state, expiresAt) {
+  await db.batch([
+    db.prepare(
+      `INSERT INTO line_conv_state (line_user_id, state, expires_at)
+       VALUES (?1, ?2, ?3)
+       ON CONFLICT(line_user_id) DO UPDATE SET state = excluded.state, expires_at = excluded.expires_at`
+    ).bind(lineUserId, JSON.stringify(state || {}), expiresAt),
+  ]);
+}
+
+export async function getConversationState(db, lineUserId, nowIso) {
+  const row = await db.prepare(
+    `SELECT state, expires_at
+     FROM line_conv_state
+     WHERE line_user_id = ?1`
+  ).bind(lineUserId).first();
+  if (!row || row.expires_at <= nowIso) return null;
+  try {
+    return JSON.parse(row.state || "{}");
+  } catch {
+    return null;
+  }
+}
+
+export async function clearConversationState(db, lineUserId) {
+  await db.batch([
+    db.prepare(`DELETE FROM line_conv_state WHERE line_user_id = ?1`).bind(lineUserId),
+  ]);
+}
+
+export async function listUpcomingGamesForLine(db, nowIso, limit = 20) {
+  const result = await db.prepare(
+    `SELECT game_no, date, day_of_week, tipoff, opponent, deadline, season, is_active
+     FROM games
+     WHERE is_active = 1
+       AND deadline IS NOT NULL
+       AND deadline >= ?1
+     ORDER BY date ASC, game_no ASC
+     LIMIT ?2`
+  ).bind(nowIso.slice(0, 10), limit).all();
+  return (result.results || []).map((row) => mapGameRow(row, nowIso));
+}
+
+export async function listConfirmedApplicationsForDate(db, date) {
+  const result = await db.prepare(
+    `SELECT
+       p.line_user_id,
+       g.date,
+       g.day_of_week,
+       g.opponent,
+       a.category,
+       a.quantity_adult,
+       a.quantity_child,
+       a.quantity_infant,
+       a.receivers
+     FROM applications a
+     INNER JOIN players p ON p.id = a.player_id
+     INNER JOIN games g ON g.id = a.game_id
+     WHERE g.date = ?1
+       AND a.status = 'confirmed'
+       AND p.line_user_id IS NOT NULL
+     ORDER BY p.player_no ASC, a.app_id ASC`
+  ).bind(date).all();
+  const grouped = new Map();
+  for (const row of result.results || []) {
+    if (!grouped.has(row.line_user_id)) {
+      grouped.set(row.line_user_id, {
+        lineUserId: row.line_user_id,
+        gameLabel: buildGameLabel({ date: row.date, day_of_week: row.day_of_week, opponent: row.opponent }),
+        applications: [],
+      });
+    }
+    const receivers = safeParseReceivers(row.receivers);
+    grouped.get(row.line_user_id).applications.push({
+      ticketType: row.category,
+      quantityAdult: row.quantity_adult,
+      quantityChild: row.quantity_child,
+      quantityInfant: row.quantity_infant,
+      receiverName: receivers[0]?.name || "",
+    });
+  }
+  return [...grouped.values()];
+}
+
+export async function deleteExpiredSessions(db, nowIso) {
+  await db.batch([
+    db.prepare(`DELETE FROM sessions WHERE expires_at <= ?1`).bind(nowIso),
+    db.prepare(`DELETE FROM admin_sessions WHERE expires_at <= ?1`).bind(nowIso),
+    db.prepare(`DELETE FROM line_conv_state WHERE expires_at <= ?1`).bind(nowIso),
+  ]);
 }
 
 function audit(db, actor, action, target, detail) {
@@ -421,4 +567,13 @@ function applicationQuery(whereClause) {
     ${whereClause}
     ORDER BY a.created_at DESC, a.app_id DESC
   `;
+}
+
+function safeParseReceivers(receivers) {
+  try {
+    const parsed = JSON.parse(receivers || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }

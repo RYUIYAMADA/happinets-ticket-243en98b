@@ -6,6 +6,7 @@ import {
 } from "./domain.js";
 import { requireAdminSession, requirePlayerSession, requireTicketAdmin, verifyAdminPassword } from "./auth.js";
 import { error, HttpError, ok } from "./http.js";
+import { handleLineWebhook, handleScheduledLineJobs, sendStatusUpdatePush } from "./line.js";
 import {
   cancelApplication,
   createAdminSession,
@@ -58,6 +59,9 @@ export function createApp(options = {}) {
 
         if (request.method === "POST" && url.pathname === "/api/auth/login") {
           return await handlePlayerLogin(request, env, origin, nowIso, randomToken);
+        }
+        if (request.method === "POST" && url.pathname === "/line/webhook") {
+          return await handleLineWebhook(request, env, origin, nowIso, randomToken);
         }
         if (request.method === "POST" && url.pathname === "/api/auth/admin-login") {
           return await handleAdminLogin(request, env, origin, nowIso, randomToken, checkAdminPassword);
@@ -229,7 +233,9 @@ async function handleAdminUpdateStatus(request, env, origin, nowIso, appId) {
   if (!auth.ok) return auth.response;
   requireTicketAdmin(auth.session);
   const status = parseStatusInput(await readJson(request));
-  return ok(await updateApplicationStatus(env.DB, appId, status, auth.session, nowIso), origin);
+  const result = await updateApplicationStatus(env.DB, appId, status, auth.session, nowIso);
+  await sendStatusUpdatePush(env, appId, status);
+  return ok(result, origin);
 }
 
 async function handleAdminPlayers(request, env, origin, nowIso) {
@@ -314,5 +320,8 @@ const app = createApp();
 export default {
   fetch(request, env, ctx) {
     return app.fetch(request, env, ctx);
+  },
+  scheduled(controller, env, ctx) {
+    return handleScheduledLineJobs(controller, env, ctx);
   },
 };
