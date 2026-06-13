@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 2500px; height: 843px; background: #ffffff; font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif; overflow: hidden; }
+  .container { display: flex; width: 2500px; height: 843px; }
+  .btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+  }
+  .btn + .btn { border-left: 2px solid #e8edf5; }
+  .btn-primary {
+    background: #2456E6;
+  }
+  .btn-secondary {
+    background: #ffffff;
+  }
+  .btn-light {
+    background: #f5f8ff;
+  }
+  .icon-wrap {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .icon-wrap-primary {
+    background: rgba(255,255,255,0.18);
+  }
+  .icon-wrap-secondary {
+    background: #e8f0ff;
+  }
+  .icon-wrap-light {
+    background: #dce8ff;
+  }
+  .icon { font-size: 56px; }
+  .label {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .label-primary { color: #ffffff; }
+  .label-secondary { color: #2456E6; }
+  .label-light { color: #1a3fa0; }
+  .sublabel {
+    font-size: 26px;
+    font-weight: 500;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .sublabel-primary { color: rgba(255,255,255,0.75); }
+  .sublabel-secondary { color: #6b8fd8; }
+  .sublabel-light { color: #5a78bf; }
+  .tap-hint {
+    position: absolute;
+    bottom: 36px;
+    font-size: 22px;
+    font-weight: 500;
+    padding: 8px 24px;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+  }
+  .tap-hint-primary {
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.85);
+  }
+  .tap-hint-secondary {
+    background: #e8f0ff;
+    color: #2456E6;
+  }
+  .tap-hint-light {
+    background: #dce8ff;
+    color: #1a3fa0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- ボタン1: 予約する（メイン・ブルー） -->
+  <div class="btn btn-primary">
+    <div class="icon-wrap icon-wrap-primary">
+      <span class="icon">🎟</span>
+    </div>
+    <div class="label label-primary">予約する</div>
+    <div class="sublabel sublabel-primary">チケット申込フォーム</div>
+    <div class="tap-hint tap-hint-primary">タップして申込</div>
+  </div>
+
+  <!-- ボタン2: マイ申込状況（ホワイト） -->
+  <div class="btn btn-secondary">
+    <div class="icon-wrap icon-wrap-secondary">
+      <span class="icon">📋</span>
+    </div>
+    <div class="label label-secondary">マイ申込状況</div>
+    <div class="sublabel sublabel-secondary">申込履歴・確認</div>
+    <div class="tap-hint tap-hint-secondary">タップして確認</div>
+  </div>
+
+  <!-- ボタン3: トップ（ライトブルー） -->
+  <div class="btn btn-light">
+    <div class="icon-wrap icon-wrap-light">
+      <span class="icon">🏠</span>
+    </div>
+    <div class="label label-light">トップ</div>
+    <div class="sublabel sublabel-light">ホームページ</div>
+    <div class="tap-hint tap-hint-light">タップしてトップへ</div>
+  </div>
+</div>
+</body>
+</html>
