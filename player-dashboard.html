@@ -241,24 +241,25 @@
   }
   .summary-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
   }
   .summary-card {
     background: var(--card);
     border-radius: var(--radius-card);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-card);
-    padding: var(--space-4);
+    padding: var(--space-3);
+    text-align: center;
   }
   .summary-card .num {
-    font-size: 28px;
+    font-size: 18px;
     line-height: 1.15;
     font-weight: 700;
     color: var(--text);
   }
   .summary-card .lbl {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--text-sub);
     margin-top: var(--space-2);
     line-height: 1.5;
@@ -671,7 +672,10 @@
   @media (max-width: 420px) {
     body { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
     .container { padding: var(--space-4) var(--space-4) var(--space-8); }
-    .summary-grid { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1); }
+    .summary-card { padding: var(--space-2); }
+    .summary-card .num { font-size: 16px; }
+    .summary-card .lbl { font-size: 10px; }
   }
   /* VERSION DISPLAY */
   #app-version {
@@ -735,7 +739,6 @@ window.LIFF_CONFIG = {
     <section class="card">
       <div class="section-eyebrow">Player Dashboard</div>
       <h2 class="section-title" data-i18n="heroTitle">申込状況をまとめて確認</h2>
-      <p class="section-description" data-i18n="heroDescription">試合ごとの申込状況と受付締切を上から順に確認できます。必要な試合だけ開いて内容を見てください。</p>
     </section>
 
     <div class="summary-grid">
@@ -761,7 +764,6 @@ window.LIFF_CONFIG = {
   <section class="card">
     <div class="section-eyebrow">Filters</div>
     <h2 class="section-title" data-i18n="listTitle">試合一覧</h2>
-    <p class="section-description" data-i18n="listDescription">表示したい試合だけを切り替えられます。各行を開くと、申込内容と現在の状態を確認できます。</p>
 
     <div class="filter-bar">
       <button class="filter-btn active" onclick="setFilter('all', this)" data-i18n="filterAll">全試合</button>
