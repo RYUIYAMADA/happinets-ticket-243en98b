@@ -1634,14 +1634,14 @@ function buildGameCard(g) {
   // ヘッダーの3種別ピル
   const pillsHtml = `
     <div class="ticket-status-row">
-      ${types.map(t => buildTicketPill(appByType[t], t, g.isDeadlinePassed)).join('')}
+      ${types.map(typ => buildTicketPill(appByType[typ], typ, g.isDeadlinePassed)).join('')}
     </div>`;
 
   // 詳細エリア: 申込済みの種別 + 未申込なら申込ボタン
   let detailHtml = '';
-  types.forEach(t => {
-    if (appByType[t]) {
-      detailHtml += buildTicketSection(appByType[t], t, g.gameId, g.isDeadlinePassed);
+  types.forEach(typ => {
+    if (appByType[typ]) {
+      detailHtml += buildTicketSection(appByType[typ], typ, g.gameId, g.isDeadlinePassed);
     }
   });
   if (!g.isDeadlinePassed) {
