@@ -7,56 +7,70 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --primary: #000000;
-    --primary-hover: #1a1a1a;
-    --accent: #EC008C;
-    --accent-hover: #c4006e;
-    --gold: #E6B422;
-    --gold-hover: #c9971b;
     --bg: #ffffff;
-    --card: #fff;
-    --border: #e5e7eb;
-    --text: #1a202c;
-    --text-sub: #4a5568;
+    --bg-subtle: #f5f6f8;
+    --card: var(--bg);
+    --primary: #2456e6;
+    --primary-strong: #1d4fd7;
+    --primary-weak: #eaf0ff;
+    --accent-line: #2563eb;
+    --text: #0f172a;
+    --text-sub: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --disabled: #cbd5e1;
+    --required: #e5384d;
     --success: #16a34a;
     --success-bg: #dcfce7;
-    --warning-bg: #FEF3C7;
-    --warning-text: #1A1A2E;
+    --warning-bg: #fef3c7;
+    --warning-text: var(--text);
     --error: #dc2626;
     --error-bg: #fee2e2;
-    --muted: #6b7280;
-    --muted-bg: #f3f4f6;
-    --radius: 6px;
+    --radius-card: 14px;
+    --radius-control: 10px;
+    --radius-pill: 999px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.16);
   }
   body {
     font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
-    background: var(--bg);
-    font-size: 14px;
+    background: var(--bg-subtle);
+    color: var(--text);
+    font-size: 15px;
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
     line-break: strict;
+    overflow-wrap: anywhere;
+    word-break: keep-all;
   }
   button, label, input, select, textarea, a { touch-action: manipulation; }
   header {
-    background: var(--primary);
-    color: #fff;
-    padding: 12px 16px;
+    background: var(--bg);
+    color: var(--text);
+    padding: var(--space-4);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--space-3);
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: 1px solid var(--border);
   }
   header h1 {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.4;
   }
   .header-right {
     display: flex;
@@ -70,49 +84,61 @@
   #admin-role-badge {
     flex-shrink: 0;
     white-space: nowrap;
+    background: var(--primary-weak);
+    color: var(--primary);
+    border: 1px solid var(--primary);
   }
   .btn-sm {
-    padding: 8px 12px;
+    padding: 0 var(--space-4);
     font-size: 14px;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: var(--radius-pill);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
-    border: none;
+    border: 1px solid var(--border);
+    font-family: inherit;
   }
-  .btn-outline { background: rgba(255,255,255,0.15); color: #fff; }
-  .btn-success { background: var(--accent); color: #fff; }
+  .btn-outline { background: var(--bg); color: var(--text); }
+  .btn-success { background: var(--primary); color: var(--bg); border-color: var(--primary); }
+  .btn-success:hover,
+  .btn-set:hover,
+  .btn-save:hover,
+  .btn-season:hover { background: var(--primary-strong); }
+  .header-right .btn-sm { flex-shrink: 0; }
 
   /* タブ */
   .tabs {
     background: var(--card);
-    border-bottom: 1px solid var(--border);
     display: flex;
-    gap: 0;
-    padding: 0 16px;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4) 0;
     overflow-x: auto;
     scrollbar-width: none;
+    max-width: 1200px;
+    margin: 0 auto;
   }
   .tabs::-webkit-scrollbar { display: none; }
   .tab {
-    padding: 14px 20px;
+    padding: var(--space-3) var(--space-4);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-sub);
     cursor: pointer;
-    border-bottom: 3px solid transparent;
+    border: 1px solid transparent;
     white-space: nowrap;
-    background: none;
-    border-left: none;
-    border-right: none;
-    border-top: none;
+    background: transparent;
     min-height: 44px;
     min-width: 44px;
+    border-radius: var(--radius-pill);
   }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab.active {
+    color: var(--bg);
+    background: var(--primary);
+    border-color: var(--primary);
+  }
 
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: var(--space-5) var(--space-4) var(--space-8); }
   .panel { display: none; }
   .panel.active { display: block; }
 
@@ -120,47 +146,50 @@
   .kpi-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 24px;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
   }
   .kpi-card {
     background: var(--card);
-    border-radius: 6px;
-    padding: 18px 16px;
+    border-radius: var(--radius-card);
+    padding: var(--space-5);
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
   }
   .kpi-num { font-size: 32px; font-weight: 700; }
-  .kpi-lbl { font-size: 14px; color: var(--text-sub); margin-top: 4px; }
-  .kpi-num.blue { color: var(--accent); }
-  .kpi-num.yellow { color: #d97706; }
+  .kpi-lbl { font-size: 13px; color: var(--text-sub); margin-top: var(--space-1); font-weight: 600; }
+  .kpi-num.blue { color: var(--primary); }
+  .kpi-num.yellow { color: var(--text); }
   .kpi-num.green { color: var(--success); }
   .kpi-num.red { color: var(--error); }
 
   /* カード */
   .card {
     background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    margin-bottom: var(--space-5);
     overflow: hidden;
   }
   .card-header {
-    padding: 16px 20px;
+    padding: var(--space-4) var(--space-5);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--space-3);
     flex-wrap: wrap;
+    background: var(--bg);
   }
-  .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--text); }
 
   /* テーブル */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; }
   th {
-    padding: 10px 14px;
-    background: #f8fafc;
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-subtle);
     font-weight: 700;
     color: var(--text-sub);
     text-align: left;
@@ -168,65 +197,67 @@
     white-space: nowrap;
   }
   td {
-    padding: 10px 14px;
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
+    line-height: 1.6;
   }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #f8fafc; }
+  tbody tr:nth-child(even) td { background: var(--bg-subtle); }
+  tr:hover td { background: var(--primary-weak); }
 
   /* バッジ */
   .badge {
     display: inline-block;
     font-size: 12px;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 10px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-pill);
     white-space: nowrap;
+    border: 1px solid transparent;
   }
   .badge-pending  { background: var(--warning-bg); color: var(--warning-text); }
   .badge-confirmed{ background: var(--success-bg); color: var(--success); }
   .badge-rejected { background: var(--error-bg); color: var(--error); }
-  .badge-cancelled{ background: var(--muted-bg); color: var(--muted); }
-  .badge-invite   { background: #e0e7ff; color: #3730a3; }
-  .badge-family   { background: #fce7f3; color: #9d174d; }
-  .badge-paid     { background: #d1fae5; color: #065f46; }
+  .badge-cancelled{ background: var(--bg-subtle); color: var(--text-sub); border-color: var(--border); }
+  .badge-invite,
+  .badge-family,
+  .badge-paid { background: var(--primary-weak); color: var(--primary); border-color: var(--primary); }
 
   /* 期限設定 */
   .deadline-input {
-    padding: 6px 10px;
+    padding: var(--space-3) var(--space-4);
     font-size: 16px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     color: var(--text);
-    background: #fff;
-    transition: border-color 0.15s;
+    background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s;
     min-height: 44px;
     min-width: 44px;
   }
-  .deadline-input:focus { outline: none; border-color: var(--accent); }
+  .deadline-input:focus { outline: none; border-color: var(--primary); box-shadow: var(--shadow-focus); }
   .btn-set {
-    padding: 6px 12px;
+    padding: 0 var(--space-4);
     font-size: 14px;
     font-weight: 700;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
+    background: var(--primary);
+    color: var(--bg);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-pill);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
   }
-  .btn-set:hover { background: var(--accent-hover); }
 
   /* ステータス変更 */
   .status-select {
-    padding: 5px 8px;
+    padding: var(--space-3) var(--space-4);
     font-size: 16px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     color: var(--text);
-    background: #fff;
+    background: var(--bg);
     cursor: pointer;
     min-width: 90px;
     min-height: 44px;
@@ -237,10 +268,10 @@
     padding: 8px 10px;
     font-size: 12px;
     font-weight: 700;
-    background: var(--muted-bg);
+    background: var(--bg-subtle);
     color: var(--text);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
@@ -277,14 +308,14 @@
     white-space: nowrap;
   }
   .matrix-table thead th {
-    background: #f8fafc;
+    background: var(--bg-subtle);
     font-weight: 700;
     position: sticky;
     top: 0;
     z-index: 5;
   }
   .matrix-table tbody tr td:first-child {
-    background: #f8fafc;
+    background: var(--bg-subtle);
     font-weight: 700;
     position: sticky;
     left: 0;
@@ -294,71 +325,70 @@
   .cell-confirmed { background: var(--success-bg); color: var(--success); font-weight: 700; text-align: center; }
   .cell-pending   { background: var(--warning-bg); color: var(--warning-text); text-align: center; }
   .cell-rejected  { background: var(--error-bg); color: var(--error); text-align: center; }
-  .cell-none      { background: #fff; text-align: center; color: var(--muted); font-size: 12px; }
-  .cell-closed    { background: #f9fafb; color: #d1d5db; text-align: center; }
+  .cell-none      { background: var(--bg); text-align: center; color: var(--text-muted); font-size: 12px; }
+  .cell-closed    { background: var(--bg-subtle); color: var(--disabled); text-align: center; }
   .matrix-cell-list { display: flex; flex-direction: column; gap: 3px; align-items: center; line-height: 1.2; }
   .matrix-entry { display: block; font-size: 12px; font-weight: 700; }
 
   /* 検索・フィルター */
-  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .toolbar { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
   .search-input {
-    padding: 8px 12px;
+    padding: var(--space-3) var(--space-4);
     font-size: 16px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
     color: var(--text);
+    background: var(--bg);
     width: 100%;
     min-height: 44px;
     min-width: 44px;
   }
-  .search-input:focus { outline: none; border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus { outline: none; border-color: var(--primary); box-shadow: var(--shadow-focus); }
   select.filter-sel {
-    padding: 8px 12px;
+    padding: var(--space-3) var(--space-4);
     font-size: 16px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
     color: var(--text);
-    background: #fff;
+    background: var(--bg);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
   }
+  select.filter-sel:focus { outline: none; border-color: var(--primary); box-shadow: var(--shadow-focus); }
   .type-tabs-wrap {
     display: flex;
-    gap: 0;
-    background: var(--card);
-    border-radius: var(--radius) var(--radius) 0 0;
-    border: 1px solid var(--border);
-    border-bottom: none;
+    gap: var(--space-2);
+    background: transparent;
+    border: none;
     overflow-x: auto;
-    margin-bottom: 0;
+    margin-bottom: var(--space-3);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .type-tabs-wrap::-webkit-scrollbar { display: none; }
 
   .type-tab {
-    flex: 1;
-    padding: 12px 8px;
+    flex: 0 0 auto;
+    padding: var(--space-3) var(--space-4);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-sub);
-    background: #f8fafc;
-    border: none;
-    border-right: 1px solid var(--border);
+    background: var(--bg);
+    border: 1px solid var(--border);
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
     min-height: 44px;
     min-width: 44px;
-    flex: 0 0 auto;
+    border-radius: var(--radius-pill);
   }
-  .type-tab:last-child { border-right: none; }
-  .type-tab.active { background: var(--card); color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
-  .type-tab:hover:not(.active) { background: var(--bg); }
+  .type-tab.active { background: var(--primary); color: var(--bg); border-color: var(--primary); }
+  .type-tab:hover:not(.active) { background: var(--primary-weak); border-color: var(--primary); color: var(--primary); }
 
-  .empty-msg { text-align: center; padding: 40px; color: var(--text-sub); font-size: 14px; }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(244,121,32,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  .empty-msg { text-align: center; padding: var(--space-8); color: var(--text-sub); font-size: 14px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .toast {
@@ -366,10 +396,10 @@
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    background: #1a202c;
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 8px;
+    background: var(--text);
+    color: var(--bg);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-control);
     font-size: 14px;
     font-weight: 600;
     z-index: 999;
@@ -379,13 +409,13 @@
   }
   .toast.show { opacity: 1; }
   @media (min-width: 481px) {
-    header { padding: 14px 20px; }
+    header { padding: var(--space-4) var(--space-5); }
     header h1 { font-size: 16px; }
     .search-input { width: 200px; }
   }
   @media (max-width: 480px) {
     header {
-      padding: 10px 16px;
+      padding: var(--space-3) var(--space-4);
       align-items: flex-start;
       flex-direction: column;
     }
@@ -396,22 +426,22 @@
     }
     .header-right {
       width: 100%;
-      gap: 6px;
+      gap: var(--space-2);
     }
     .header-right .btn-sm {
       flex: 1;
-      padding: 8px;
+      padding: 0 var(--space-3);
       font-size: 12px;
     }
     .tabs {
-      padding: 0 8px;
+      padding: var(--space-3) var(--space-4) 0;
     }
     .tab {
-      padding: 12px 10px;
+      padding: var(--space-3) var(--space-4);
       font-size: 13px;
     }
     .container {
-      padding: 16px;
+      padding: var(--space-4);
     }
     .kpi-grid {
       gap: 8px;
@@ -422,16 +452,16 @@
     }
     .kpi-num { font-size: 26px; }
     .kpi-lbl { font-size: 12px; line-height: 1.35; }
-    .card { margin-bottom: 16px; border-radius: 10px; }
+    .card { margin-bottom: var(--space-4); }
     .card-header {
-      padding: 14px 16px;
+      padding: var(--space-4);
       align-items: stretch;
     }
     .toolbar {
       width: 100%;
       flex-direction: column;
       align-items: stretch;
-      gap: 8px;
+      gap: var(--space-2);
     }
     .search-input,
     select.filter-sel {
@@ -523,7 +553,7 @@
     .mobile-details-row td {
       display: table-cell !important;
       padding: 10px 8px;
-      background: #f8fafc;
+      background: var(--bg-subtle);
     }
     .matrix-wrap { max-height: 70vh; }
     .matrix-table {
@@ -552,15 +582,15 @@
     }
   }
   @media (min-width: 769px) {
-    header { padding: 14px 24px; }
-    .tabs { padding: 0 24px; }
+    header { padding: var(--space-4) var(--space-6); }
+    .tabs { padding: var(--space-3) var(--space-6) 0; }
     .kpi-grid {
       grid-template-columns: repeat(4, 1fr);
       gap: 14px;
     }
   }
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 
@@ -578,12 +608,12 @@
   /* インライン編集行 */
   tr.editing-row td { background: #fffbf0; }
   .inline-edit-input {
-    padding: 5px 8px;
+    padding: var(--space-2) var(--space-3);
     font-size: 14px;
-    border: 1.5px solid var(--accent);
-    border-radius: 6px;
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-control);
     color: var(--text);
-    background: #fff;
+    background: var(--bg);
     min-height: 36px;
     width: 100%;
   }
@@ -594,11 +624,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 10px;
+    padding: var(--space-2) var(--space-3);
     font-size: 13px;
     font-weight: 600;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     cursor: pointer;
     min-height: 36px;
     min-width: 44px;
@@ -606,40 +636,41 @@
     transition: opacity 0.15s;
   }
   .btn-icon:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-edit   { background: var(--muted-bg); color: var(--text); }
+  .btn-edit   { background: var(--bg-subtle); color: var(--text); }
   .btn-delete { background: var(--error-bg); color: var(--error); }
-  .btn-save   { background: var(--accent); color: #fff; }
-  .btn-cancel-edit { background: var(--muted-bg); color: var(--text-sub); }
+  .btn-save   { background: var(--primary); color: var(--bg); }
+  .btn-cancel-edit { background: var(--bg-subtle); color: var(--text-sub); }
   .btn-action-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
   /* 新規追加フォーム行 */
   .add-form-row {
-    background: #f8fafc;
+    background: var(--bg-subtle);
     border-top: 2px dashed var(--border);
   }
   .add-form-row td { padding: 12px 10px; }
 
   /* シーズン入替ボタン */
   .season-replace-section {
-    padding: 20px;
+    padding: var(--space-5);
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: var(--space-4);
     flex-wrap: wrap;
   }
   .btn-season {
-    padding: 12px 24px;
+    padding: 0 var(--space-5);
     font-size: 14px;
     font-weight: 700;
-    background: var(--gold);
-    color: #1a202c;
-    border: none;
-    border-radius: 8px;
+    background: var(--error-bg);
+    color: var(--required);
+    border: 1px solid var(--required);
+    border-radius: var(--radius-pill);
     cursor: pointer;
     min-height: 44px;
     transition: background 0.15s;
   }
-  .btn-season:hover { background: var(--gold-hover); }
+  .btn-delete:hover,
+  .btn-season:hover { background: var(--required); color: var(--bg); }
   .btn-season:disabled { opacity: 0.45; cursor: not-allowed; }
   .season-note {
     font-size: 13px;
@@ -651,12 +682,144 @@
 
   /* ローディングオーバーレイ（処理中） */
   .btn-loading { position: relative; pointer-events: none; opacity: 0.7; }
+  .card-note {
+    font-size: 12px;
+    color: var(--text-sub);
+    font-weight: 500;
+  }
+  .card-body {
+    padding: var(--space-4) var(--space-5);
+  }
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+  .stats-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .stats-progress {
+    flex: 1;
+    min-width: 160px;
+  }
+  .stats-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-bottom: var(--space-1);
+  }
+  .stats-progress-track {
+    background: var(--border);
+    border-radius: var(--radius-pill);
+    height: 8px;
+    overflow: hidden;
+  }
+  .stats-progress-bar {
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--primary);
+    width: 0%;
+    transition: width 0.4s;
+  }
+  .stats-meta {
+    text-align: right;
+  }
+  .stats-meta-label {
+    font-size: 13px;
+    color: var(--text-sub);
+  }
+  .stats-meta-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--success);
+  }
+  .pending-tabs {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pending-tabs::-webkit-scrollbar { display: none; }
+  .pending-tab {
+    flex: 0 0 auto;
+    min-width: 120px;
+    padding: var(--space-3) var(--space-4);
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--bg);
+    color: var(--text-sub);
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .pending-tab.active {
+    background: var(--primary);
+    color: var(--bg);
+    border-color: var(--primary);
+  }
+  .pending-cnt {
+    display: inline-block;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border-radius: var(--radius-pill);
+    padding: 1px 7px;
+    font-size: 11px;
+    margin-left: var(--space-1);
+  }
+  .inline-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  .field-stack label {
+    display: block;
+    margin-bottom: var(--space-1);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-sub);
+  }
+  .field-stack .required-mark {
+    color: var(--required);
+  }
+  .field-inline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+  .field-inline-text {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .btn-subtle {
+    background: var(--bg-subtle);
+    color: var(--text);
+  }
+  .danger-note {
+    font-size: 12px;
+    color: var(--required);
+    font-weight: 700;
+  }
 
   @media (max-width: 480px) {
     .btn-action-group { gap: 4px; }
     .btn-icon { padding: 5px 8px; font-size: 12px; }
     .season-replace-section { flex-direction: column; align-items: stretch; }
     .btn-season { width: 100%; }
+    .card-body { padding: var(--space-4); }
+    .stats-meta { text-align: left; }
+    .pending-tabs { padding: var(--space-3); }
+    .inline-form-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -665,9 +828,9 @@
 <header>
   <h1>チケット管理 — 管理者画面</h1>
   <div class="header-right">
-    <span id="admin-role-badge" style="font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;color:#fff;"></span>
-<button class="btn-sm btn-success" onclick="openSheet()">スプレッドシートで確認</button>
-<button class="btn-sm btn-outline" onclick="logout()">ログアウト</button>
+    <span id="admin-role-badge" class="card-note" style="padding:5px 10px;"></span>
+    <button class="btn-sm btn-success" onclick="openSheet()">スプレッドシートで確認</button>
+    <button class="btn-sm btn-outline" onclick="logout()">ログアウト</button>
   </div>
 </header>
 
@@ -690,25 +853,25 @@
       <div class="kpi-card"><div class="kpi-num red" id="kpi-rejected">—</div><div class="kpi-lbl">対応不可</div></div>
     </div>
     <!-- LINE送信数 -->
-    <div class="card" style="margin-bottom:20px;">
+    <div class="card">
       <div class="card-header">
         <span class="card-title">LINE通知 — 今月の送信数</span>
-        <span id="line-note" style="font-size:12px;color:var(--text-sub);"></span>
+        <span id="line-note" class="card-note"></span>
       </div>
-      <div style="padding:16px 20px;">
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <div style="font-size:28px;font-weight:700;" id="line-used">—</div>
-          <div style="flex:1;min-width:160px;">
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:4px;">
+      <div class="card-body">
+        <div class="stats-row">
+          <div class="stats-value" id="line-used">—</div>
+          <div class="stats-progress">
+            <div class="stats-progress-label">
               <span>送信済み</span><span id="line-quota-label">上限 —</span>
             </div>
-            <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden;">
-              <div id="line-bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width 0.4s;"></div>
+            <div class="stats-progress-track">
+              <div id="line-bar" class="stats-progress-bar"></div>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:13px;color:var(--text-sub);">残り</div>
-            <div style="font-size:20px;font-weight:700;color:var(--success);" id="line-remaining">—</div>
+          <div class="stats-meta">
+            <div class="stats-meta-label">残り</div>
+            <div class="stats-meta-value" id="line-remaining">—</div>
           </div>
         </div>
       </div>
@@ -720,18 +883,15 @@
         <span class="card-title">要対応 — 確認中の申込</span>
       </div>
       <!-- サブタブ -->
-      <div style="display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;">
-        <button class="pending-tab active" data-ptype="invite" onclick="switchPendingTab(this,'invite')"
-          style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
-          招待チケット <span class="pending-cnt" id="pcnt-invite" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+      <div class="pending-tabs">
+        <button class="pending-tab active" data-ptype="invite" onclick="switchPendingTab(this,'invite')">
+          招待チケット <span class="pending-cnt" id="pcnt-invite">0</span>
         </button>
-        <button class="pending-tab" data-ptype="family" onclick="switchPendingTab(this,'family')"
-          style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
-          家族席 <span class="pending-cnt" id="pcnt-family" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+        <button class="pending-tab" data-ptype="family" onclick="switchPendingTab(this,'family')">
+          家族席 <span class="pending-cnt" id="pcnt-family">0</span>
         </button>
-        <button class="pending-tab" data-ptype="paid" onclick="switchPendingTab(this,'paid')"
-          style="flex:1;min-width:120px;padding:12px 8px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-sub);white-space:nowrap;min-height:44px;">
-          有料チケット <span class="pending-cnt" id="pcnt-paid" style="display:inline-block;background:var(--warning-bg);color:var(--warning-text);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;">0</span>
+        <button class="pending-tab" data-ptype="paid" onclick="switchPendingTab(this,'paid')">
+          有料チケット <span class="pending-cnt" id="pcnt-paid">0</span>
         </button>
       </div>
       <!-- 各種別テーブル -->
@@ -818,21 +978,21 @@
 
     <!-- 一括設定バナー（チケット担当のみ） -->
     <div class="card" id="bulk-deadline-card" style="margin-bottom:16px;display:none;">
-      <div class="card-header" style="flex-wrap:wrap;gap:12px;">
+      <div class="card-header">
         <span class="card-title">一括設定</span>
-        <span style="font-size:12px;color:var(--text-sub)">試合日の N 日前を期限として未設定の試合にまとめて適用</span>
+        <span class="card-note">試合日の N 日前を期限として未設定の試合にまとめて適用</span>
       </div>
-      <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span style="font-size:14px;font-weight:600;white-space:nowrap;">試合日の</span>
+      <div class="card-body field-inline">
+        <span class="field-inline-text">試合日の</span>
         <input type="number" id="bulk-days" value="3" min="1" max="30"
-          style="width:72px;padding:8px 10px;font-size:16px;border:1.5px solid var(--border);border-radius:8px;text-align:center;min-height:44px;">
-        <span style="font-size:14px;font-weight:600;white-space:nowrap;">日前を期限に設定</span>
+          class="deadline-input" style="width:72px;text-align:center;">
+        <span class="field-inline-text">日前を期限に設定</span>
         <button class="btn-success btn-sm" onclick="bulkSetDeadlines()"
-          style="padding:10px 20px;font-size:14px;min-height:44px;border-radius:8px;">
+          style="padding:0 20px;font-size:14px;">
           未設定の試合に一括適用
         </button>
-        <button class="btn-sm" onclick="bulkSetDeadlines(true)"
-          style="padding:10px 20px;font-size:14px;min-height:44px;border-radius:8px;background:var(--muted-bg);color:var(--text);">
+        <button class="btn-sm btn-subtle" onclick="bulkSetDeadlines(true)"
+          style="padding:0 20px;font-size:14px;">
           全試合に上書き適用
         </button>
       </div>
@@ -865,7 +1025,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">試合一覧・編集・削除</span>
-        <span style="font-size:12px;color:var(--text-sub)">チケット担当のみ操作可</span>
+        <span class="card-note">チケット担当のみ操作可</span>
       </div>
       <div class="table-wrap">
         <table id="data-games-table" style="min-width:680px;">
@@ -888,18 +1048,18 @@
       <div class="card-header">
         <span class="card-title">試合を追加</span>
       </div>
-      <div style="padding:16px 20px;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:12px;">
-          <div>
-            <label style="font-size:12px;font-weight:700;color:var(--text-sub);display:block;margin-bottom:4px;">日付 <span style="color:var(--error)">*</span></label>
+      <div class="card-body">
+        <div class="inline-form-grid">
+          <div class="field-stack">
+            <label>日付 <span class="required-mark">*</span></label>
             <input type="date" id="new-game-date" class="deadline-input" style="width:100%;">
           </div>
-          <div>
-            <label style="font-size:12px;font-weight:700;color:var(--text-sub);display:block;margin-bottom:4px;">対戦相手 <span style="color:var(--error)">*</span></label>
+          <div class="field-stack">
+            <label>対戦相手 <span class="required-mark">*</span></label>
             <input type="text" id="new-game-opponent" class="search-input" placeholder="例: 琉球" style="width:100%;">
           </div>
-          <div>
-            <label style="font-size:12px;font-weight:700;color:var(--text-sub);display:block;margin-bottom:4px;">申込締切（空欄=7日前自動）</label>
+          <div class="field-stack">
+            <label>申込締切（空欄=7日前自動）</label>
             <input type="date" id="new-game-deadline" class="deadline-input" style="width:100%;">
           </div>
         </div>
@@ -914,7 +1074,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">選手一覧・編集</span>
-        <span style="font-size:12px;color:var(--text-sub)">チケット担当のみ操作可</span>
+        <span class="card-note">チケット担当のみ操作可</span>
       </div>
       <div class="table-wrap">
         <table id="data-players-table" style="min-width:480px;">
@@ -936,14 +1096,14 @@
       <div class="card-header">
         <span class="card-title">選手を追加</span>
       </div>
-      <div style="padding:16px 20px;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:12px;">
-          <div>
-            <label style="font-size:12px;font-weight:700;color:var(--text-sub);display:block;margin-bottom:4px;">選手ID / 背番号 <span style="color:var(--error)">*</span></label>
+      <div class="card-body">
+        <div class="inline-form-grid">
+          <div class="field-stack">
+            <label>選手ID / 背番号 <span class="required-mark">*</span></label>
             <input type="text" id="new-player-id" class="search-input" placeholder="例: 032" style="width:100%;">
           </div>
-          <div>
-            <label style="font-size:12px;font-weight:700;color:var(--text-sub);display:block;margin-bottom:4px;">名前 <span style="color:var(--error)">*</span></label>
+          <div class="field-stack">
+            <label>名前 <span class="required-mark">*</span></label>
             <input type="text" id="new-player-name" class="search-input" placeholder="例: #32 山田 太郎" style="width:100%;">
           </div>
         </div>
@@ -958,7 +1118,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">2026-27シーズン一括入替</span>
-        <span style="font-size:12px;color:var(--error);font-weight:700;">⚠ 取消不可操作</span>
+        <span class="danger-note">⚠ 取消不可操作</span>
       </div>
       <div class="season-replace-section">
         <button class="btn-season" id="btn-season-replace" onclick="replaceSeason2627()">
@@ -1018,7 +1178,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   const roleEl = document.getElementById('admin-role-badge');
   if (roleEl) {
     roleEl.textContent = adminRole === 'manager' ? 'チームマネージャー（閲覧のみ）' : 'チケット担当';
-    roleEl.style.background = adminRole === 'manager' ? 'rgba(255,255,255,0.15)' : 'rgba(244,121,32,0.25)';
+    roleEl.style.background = adminRole === 'manager' ? 'var(--bg-subtle)' : 'var(--primary-weak)';
+    roleEl.style.color = adminRole === 'manager' ? 'var(--text-sub)' : 'var(--primary)';
+    roleEl.style.borderColor = adminRole === 'manager' ? 'var(--border)' : 'var(--primary)';
   }
   if (adminRole === 'ticket') {
     const bulk = document.getElementById('bulk-deadline-card');
@@ -1066,7 +1228,7 @@ function renderLineStats(s) {
   document.getElementById('line-remaining').textContent = remaining + '通';
   document.getElementById('line-quota-label').textContent = '上限 ' + quota.toLocaleString() + '通/月';
   document.getElementById('line-bar').style.width       = pct + '%';
-  document.getElementById('line-bar').style.background  = pct >= 90 ? 'var(--error)' : pct >= 70 ? '#d97706' : 'var(--accent)';
+  document.getElementById('line-bar').style.background  = pct >= 90 ? 'var(--error)' : pct >= 70 ? 'var(--warning-text)' : 'var(--primary)';
   if (s.note) document.getElementById('line-note').textContent = s.note;
 }
 
@@ -1119,14 +1281,8 @@ function renderPending() {
 }
 
 function switchPendingTab(el, type) {
-  document.querySelectorAll('.pending-tab').forEach(t => {
-    t.classList.remove('active');
-    t.style.color = 'var(--text-sub)';
-    t.style.borderBottomColor = 'transparent';
-  });
+  document.querySelectorAll('.pending-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  el.style.color = 'var(--accent)';
-  el.style.borderBottomColor = 'var(--accent)';
   document.querySelectorAll('.pending-panel').forEach(p => p.style.display = 'none');
   const panel = document.getElementById('pending-panel-' + type);
   if (panel) panel.style.display = '';
@@ -1416,7 +1572,7 @@ function buildGameRow(g, editing = false) {
       </td>
     </tr>`;
   }
-  const deadlineLabel = g.deadline ? esc(formatDate(g.deadline)) : '<span style="color:var(--muted)">未設定</span>';
+  const deadlineLabel = g.deadline ? esc(formatDate(g.deadline)) : '<span style="color:var(--text-sub)">未設定</span>';
   const canEdit = adminRole === 'ticket';
   return `<tr id="game-row-${esc(g.gameId)}">
     <td style="font-size:12px">${esc(g.gameId)}</td>
