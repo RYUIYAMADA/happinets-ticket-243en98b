@@ -1841,7 +1841,8 @@ STRINGS.ja = {
   accountConnectError: '上部のデバッグ情報を確認してください',
   unsetLiffId: 'LIFF IDが未設定です。管理者にお問い合わせください。',
   liffSdkError: 'LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。',
-  mustBeInLineApp: 'LINEアプリ内で開いてください。'
+  mustBeInLineApp: 'LINEアプリ内で開いてください。',
+  applicationClosed: '申し込み終了'
 };
 STRINGS.en = {
   title: 'Ticket Request Form',
@@ -1983,7 +1984,8 @@ STRINGS.en = {
   accountConnectError: 'Check the debug information shown above.',
   unsetLiffId: 'LIFF ID is not set. Contact the administrator.',
   liffSdkError: 'LIFF SDK is not loaded. Open this page inside the LINE app.',
-  mustBeInLineApp: 'Open this page inside the LINE app.'
+  mustBeInLineApp: 'Open this page inside the LINE app.',
+  applicationClosed: 'Closed'
 };
 // ────────────────────────────────────────────────────
 
@@ -2341,101 +2343,142 @@ function getExistingQty(gameId, ticketType) {
 function buildInviteGrid() {
   const list = document.getElementById('invite-list');
   const active = games.filter(g => !g.isDeadlinePassed);
-  if (!active.length) { list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`; return; }
-  list.innerHTML = active.map(g => {
-    const past = false;
-    const dl = g.deadline
-      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: g.deadline })}</span>`
-      : '';
-    const sid = 'inv-' + g.gameId;
-    const invExisting = getExistingQty(g.gameId, 'invite');
-    return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
-      <div class="game-card-top">
-        <div class="game-card-info">
-          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
-          <div class="game-name">vs ${esc(g.opponent)}</div>
+  const closed = games.filter(g => g.isDeadlinePassed);
+
+  if (!active.length && !closed.length) {
+    list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`;
+    return;
+  }
+
+  const html = [
+    ...active.map(g => {
+      const past = false;
+      const dl = g.deadline
+        ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
+        : '';
+      const sid = 'inv-' + g.gameId;
+      const invExisting = getExistingQty(g.gameId, 'invite');
+      return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
+        <div class="game-card-top">
+          <div class="game-card-info">
+            <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
+            <div class="game-name">vs ${esc(g.opponent)}</div>
+          </div>
+          ${dl}
         </div>
-        ${dl}
-      </div>
-      <div class="game-card-controls">
-        ${stepperHtml(sid, 10)}
-        <label class="inv-day-label">
-          <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">${esc(t('invitePickup'))}
-        </label>
-      </div>
-      <div class="receiver-field">
-        <label>${esc(t('receiverRequired'))}</label>
-        <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('paidReceiverNamePlaceholder'))}">
-      </div>
-      <div class="receiver-field">
-        <label>${esc(t('inviteSpecialNote'))}</label>
-        <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('inviteSpecialNotePlaceholder'))}"></textarea>
-      </div>
-      <div class="qty-summary" data-existing="${invExisting}">
-        <span class="qty-current">${esc(tf('inviteTicketsApplied', { count: invExisting }))}</span>
-        <span class="qty-new">
-          <span class="qty-arrow">→</span>
-          <span class="qty-total"></span>
-        </span>
-      </div>
-    </div>`;
-  }).join('');
+        <div class="game-card-controls">
+          ${stepperHtml(sid, 10)}
+          <label class="inv-day-label">
+            <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">${esc(t('invitePickup'))}
+          </label>
+        </div>
+        <div class="receiver-field">
+          <label>${esc(t('receiverRequired'))}</label>
+          <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('paidReceiverNamePlaceholder'))}">
+        </div>
+        <div class="receiver-field">
+          <label>${esc(t('inviteSpecialNote'))}</label>
+          <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('inviteSpecialNotePlaceholder'))}"></textarea>
+        </div>
+        <div class="qty-summary" data-existing="${invExisting}">
+          <span class="qty-current">${esc(tf('inviteTicketsApplied', { count: invExisting }))}</span>
+          <span class="qty-new">
+            <span class="qty-arrow">→</span>
+            <span class="qty-total"></span>
+          </span>
+        </div>`;
+    }),
+    ...closed.map(g => {
+      return `<div class="game-card-row row-closed" data-game="${esc(g.gameId)}" style="opacity: 0.6; pointer-events: none;">
+        <div class="game-card-top">
+          <div class="game-card-info">
+            <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
+            <div class="game-name">vs ${esc(g.opponent)}</div>
+          </div>
+          <span class="deadline-badge deadline-ng">${lang === 'ja' ? '申し込み終了' : 'Closed'}</span>
+        </div>
+      </div>`;
+    })
+  ];
+
+  list.innerHTML = html.join('');
 }
 
 function buildFamilyGrid() {
   const list = document.getElementById('family-list');
   const active = games.filter(g => !g.isDeadlinePassed);
-  if (!active.length) { list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`; return; }
-  list.innerHTML = active.map(g => {
-    const past = false;
-    const dl = g.deadline
-      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: g.deadline })}</span>`
-      : '';
-    const famSid = 'fam-' + g.gameId;
-    const famExisting = getExistingQty(g.gameId, 'family');
-    return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
-      <div class="game-card-top">
-        <div class="game-card-info">
-          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
-          <div class="game-name">vs ${esc(g.opponent)}</div>
+  const closed = games.filter(g => g.isDeadlinePassed);
+
+  if (!active.length && !closed.length) {
+    list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`;
+    return;
+  }
+
+  const html = [
+    ...active.map(g => {
+      const past = false;
+      const dl = g.deadline
+        ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
+        : '';
+      const famSid = 'fam-' + g.gameId;
+      const famExisting = getExistingQty(g.gameId, 'family');
+      return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
+        <div class="game-card-top">
+          <div class="game-card-info">
+            <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
+            <div class="game-name">vs ${esc(g.opponent)}</div>
+          </div>
+          ${dl}
         </div>
-        ${dl}
-      </div>
-      <div class="game-card-controls">
-        ${stepperHtml(famSid, 10)}
-        <div class="sel-wrap">
-          <span class="sel-label">${esc(t('familyPickupMethod'))}</span>
-          <select class="game-card-sel fam-pickup" data-game="${esc(g.gameId)}">
-            <option value="pre">${esc(t('familyPickupPre'))}</option>
-            <option value="day" selected>${esc(t('familyPickupDay'))}</option>
-          </select>
+        <div class="game-card-controls">
+          ${stepperHtml(famSid, 10)}
+          <div class="sel-wrap">
+            <span class="sel-label">${esc(t('familyPickupMethod'))}</span>
+            <select class="game-card-sel fam-pickup" data-game="${esc(g.gameId)}">
+              <option value="pre">${esc(t('familyPickupPre'))}</option>
+              <option value="day" selected>${esc(t('familyPickupDay'))}</option>
+            </select>
+          </div>
+          <div class="sel-wrap sel-wrap-narrow">
+            <span class="sel-label">${esc(t('familyParking'))}</span>
+            <select class="game-card-sel fam-parking" data-game="${esc(g.gameId)}">
+              <option value="0">${esc(t('familyParkingCountZero'))}</option>
+              <option value="1">${esc(t('familyParkingCountOne'))}</option>
+              <option value="2">${esc(t('familyParkingCountTwo'))}</option>
+            </select>
+          </div>
         </div>
-        <div class="sel-wrap sel-wrap-narrow">
-          <span class="sel-label">${esc(t('familyParking'))}</span>
-          <select class="game-card-sel fam-parking" data-game="${esc(g.gameId)}">
-            <option value="0">${esc(t('familyParkingCountZero'))}</option>
-            <option value="1">${esc(t('familyParkingCountOne'))}</option>
-            <option value="2">${esc(t('familyParkingCountTwo'))}</option>
-          </select>
+        <div class="receiver-field">
+          <label>${esc(t('receiverRequired'))}</label>
+          <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="${esc(t('familyReceiverSelectPlaceholder'))}">
         </div>
-      </div>
-      <div class="receiver-field">
-        <label>${esc(t('receiverRequired'))}</label>
-        <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="${esc(t('familyReceiverSelectPlaceholder'))}">
-      </div>
-      <div class="receiver-field">
-        <label>${esc(t('familySpecialNote'))}</label>
-        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('familySpecialNotePlaceholder'))}"></textarea>
-      </div>
-      <div class="qty-summary" data-existing="${famExisting}">
-        <span class="qty-current">${esc(tf('familyTicketsApplied', { count: famExisting }))}</span>
-        <span class="qty-new">
-          <span class="qty-arrow">→</span>
-          <span class="qty-total"></span>
-        </span>
-      </div>
-    </div>`;
-  }).join('');
+        <div class="receiver-field">
+          <label>${esc(t('familySpecialNote'))}</label>
+          <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('familySpecialNotePlaceholder'))}"></textarea>
+        </div>
+        <div class="qty-summary" data-existing="${famExisting}">
+          <span class="qty-current">${esc(tf('familyTicketsApplied', { count: famExisting }))}</span>
+          <span class="qty-new">
+            <span class="qty-arrow">→</span>
+            <span class="qty-total"></span>
+          </span>
+        </div>
+      </div>`;
+    }),
+    ...closed.map(g => {
+      return `<div class="game-card-row row-closed" data-game="${esc(g.gameId)}" style="opacity: 0.6; pointer-events: none;">
+        <div class="game-card-top">
+          <div class="game-card-info">
+            <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
+            <div class="game-name">vs ${esc(g.opponent)}</div>
+          </div>
+          <span class="deadline-badge deadline-ng">${lang === 'ja' ? '申し込み終了' : 'Closed'}</span>
+        </div>
+      </div>`;
+    })
+  ];
+
+  list.innerHTML = html.join('');
 }
 
 function toggleSeatMap(wrap) {
