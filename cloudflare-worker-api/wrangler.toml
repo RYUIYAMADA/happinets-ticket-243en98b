@@ -8,7 +8,7 @@ compatibility_date = "2026-06-01"
 [[d1_databases]]
 binding       = "DB"
 database_name = "family-tickets-db"
-database_id   = "TBD-after-d1-create"   # wrangler d1 create family-tickets-db 後に転記
+database_id   = "e0012711-4846-4727-8bc9-2a44d3d66de6"
 # D1 リージョン（日本ユーザー向け）
 # location_hint は wrangler.toml では設定不可。wrangler d1 create 時に --location=apac を指定する
 # wrangler d1 create family-tickets-db --location=apac
