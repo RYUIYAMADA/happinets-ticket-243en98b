@@ -745,6 +745,7 @@ window.LIFF_CONFIG = {
 <script src="./api-config.js"></script>
 <script>
 (function () {
+  const DEFAULT_PRODUCTION_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.dev";
   const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:8787";
   const BASE_URL_STORAGE_KEY = "workerApiBaseUrl";
 
@@ -753,14 +754,14 @@ window.LIFF_CONFIG = {
   }
 
   function resolveBaseUrl() {
+    // localStorage に明示的に設定されていれば それを使う（ローカル開発時）
     const stored = normalizeBaseUrl(localStorage.getItem(BASE_URL_STORAGE_KEY));
     if (stored) return stored;
+    // グローバル変数（HTML head で inject）があればそれを使う
     const globalBaseUrl = normalizeBaseUrl(window.WORKER_API_BASE_URL);
     if (globalBaseUrl) return globalBaseUrl;
-    if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-      return normalizeBaseUrl(window.location.origin);
-    }
-    return DEFAULT_LOCAL_BASE_URL;
+    // デフォルト: 本番 Worker URL
+    return DEFAULT_PRODUCTION_BASE_URL;
   }
 
   function getStoredAuth() {
