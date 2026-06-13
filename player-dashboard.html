@@ -115,14 +115,7 @@
     color: var(--text-sub);
     font-size: 14px;
   }
-  .en-sub {
-    font-size: 12px;
-    color: var(--text-sub);
-    display: block;
-    font-weight: 500;
-    margin-top: var(--space-1);
-    overflow-wrap: anywhere;
-  }
+
   body {
     font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
     background: var(--bg-subtle);
@@ -1213,6 +1206,25 @@ STRINGS.ja = {
   noMatch: '該当する試合はありません',
   expiredLabel: '終了した試合',
   monthFormat: '{month}月の試合',
+  notRequested: '未申込',
+  detailQty: '枚数',
+  detailReceiver: '受取者',
+  detailPickup: '受取方法',
+  detailNote: '備考',
+  detailDate: '申込日時',
+  qtyAdult: '大人{n}枚',
+  qtyChild: '子供{n}枚',
+  qtyInfant: '未就学児{n}枚',
+  qtySep: '・',
+  qtyZero: '0枚',
+  qtyTickets: '{n}枚',
+  seatTypeFmt: '（{seat}席）',
+  deadlineFormat: '申込期限: {date}',
+  deadlineEnded: '（終了）',
+  deadlineUnset: '期限未設定',
+  addRequest: '追加で申込む',
+  applyGame: 'この試合に申込む',
+  deadlineExpired: '申込期限が終了しています',
 };
 STRINGS.en = {
   title: 'Request Status Dashboard',
@@ -1234,6 +1246,25 @@ STRINGS.en = {
   noMatch: 'No matching games',
   expiredLabel: 'Completed Games',
   monthFormat: '{month} Games',
+  notRequested: 'Not Requested',
+  detailQty: 'Quantity',
+  detailReceiver: 'Receiver',
+  detailPickup: 'Pickup Method',
+  detailNote: 'Note',
+  detailDate: 'Submitted',
+  qtyAdult: 'Adult ×{n}',
+  qtyChild: 'Child ×{n}',
+  qtyInfant: 'Infant ×{n}',
+  qtySep: ' / ',
+  qtyZero: '0 tickets',
+  qtyTickets: '{n} ticket(s)',
+  seatTypeFmt: ' ({seat})',
+  deadlineFormat: 'Deadline: {date}',
+  deadlineEnded: ' (Closed)',
+  deadlineUnset: 'No deadline set',
+  addRequest: 'Add Another Request',
+  applyGame: 'Apply for This Game',
+  deadlineExpired: 'The request deadline has passed.',
 };
 // ────────────────────────────────────────────────────
 
@@ -1264,12 +1295,15 @@ const TICKET_LABELS = {
   family: { ja: '家族席', en: 'Family' },
   paid: { ja: '有料', en: 'Paid' },
 };
-const PICKUP_LABELS = { pre: '事前受取', day: '当日受取' };
+const PICKUP_LABELS = {
+  pre: { ja: '事前受取', en: 'Pre-game Pickup' },
+  day: { ja: '当日受取', en: 'Game-day Pickup' },
+};
 const STATUS_CONFIG = {
-  pending:   { label: '確認中', en: 'Pending', cls: 'badge-pending' },
-  confirmed: { label: '確保済み', en: 'Confirmed', cls: 'badge-confirmed' },
-  rejected:  { label: '対応不可', en: 'Unavailable', cls: 'badge-rejected' },
-  cancelled: { label: 'キャンセル', en: 'Cancelled', cls: 'badge-none' },
+  pending:   { label: { ja: '確認中', en: 'Pending' }, cls: 'badge-pending' },
+  confirmed: { label: { ja: '確保済み', en: 'Confirmed' }, cls: 'badge-confirmed' },
+  rejected:  { label: { ja: '対応不可', en: 'Unavailable' }, cls: 'badge-rejected' },
+  cancelled: { label: { ja: 'キャンセル', en: 'Cancelled' }, cls: 'badge-none' },
 };
 
 /** LIFF認証完了後にダッシュボードを初期化する */
@@ -1476,13 +1510,13 @@ function getApps(gameId) {
 function ticketLabelHtml(type) {
   const label = TICKET_LABELS[type];
   if (!label) return esc(type);
-  return `<span>${label.ja}<span class="en-sub">${label.en}</span></span>`;
+  return esc(label[lang] || label.ja);
 }
 
 function statusLabelHtml(status) {
   const cfg = STATUS_CONFIG[status];
   if (!cfg) return esc(status);
-  return `<span>${cfg.label}<span class="en-sub">${cfg.en}</span></span>`;
+  return esc(cfg.label[lang] || cfg.label.ja);
 }
 
 function renderList() {
@@ -1546,7 +1580,7 @@ function buildTicketPill(app, type, isPassed) {
   const label = ticketLabelHtml(type);
   if (!app) {
     if (isPassed) return `<span class="ticket-pill pill-none">${label}<span>—</span></span>`;
-    return `<span class="ticket-pill pill-none">${label}<span>未申込<span class="en-sub">Not Requested</span></span></span>`;
+    return `<span class="ticket-pill pill-none">${label}<span>${t('notRequested')}</span></span>`;
   }
   const pillCls = app.status === 'confirmed' ? 'pill-confirmed'
     : app.status === 'pending' ? 'pill-pending'
@@ -1557,19 +1591,20 @@ function buildTicketPill(app, type, isPassed) {
 
 function buildTicketSection(app, type, gameId, isPassed) {
   const label = ticketLabelHtml(type);
-  const pickupLabel = PICKUP_LABELS[app.pickupMethod] || app.pickupMethod;
+  const pickupEntry = PICKUP_LABELS[app.pickupMethod];
+  const pickupLabel = pickupEntry ? (pickupEntry[lang] || pickupEntry.ja) : app.pickupMethod;
   let qtyText = '';
   if (type === 'family') {
     const parts = [];
-    if (app.quantityAdult > 0) parts.push(`大人${app.quantityAdult}枚`);
-    if (app.quantityChild > 0) parts.push(`子供${app.quantityChild}枚`);
-    if (app.quantityInfant > 0) parts.push(`未就学児${app.quantityInfant}枚`);
-    qtyText = parts.join('・') || '0枚';
+    if (app.quantityAdult > 0) parts.push(tf('qtyAdult', { n: app.quantityAdult }));
+    if (app.quantityChild > 0) parts.push(tf('qtyChild', { n: app.quantityChild }));
+    if (app.quantityInfant > 0) parts.push(tf('qtyInfant', { n: app.quantityInfant }));
+    qtyText = parts.join(t('qtySep')) || tf('qtyZero');
   } else {
-    qtyText = `${app.quantityAdult || 0}枚`;
+    qtyText = tf('qtyTickets', { n: app.quantityAdult || 0 });
   }
-  const seatText = app.seatType ? `（${app.seatType}席）` : '';
-  const cfg = STATUS_CONFIG[app.status] || { label: app.status, cls: 'badge-none' };
+  const seatText = app.seatType ? tf('seatTypeFmt', { seat: app.seatType }) : '';
+  const cfg = STATUS_CONFIG[app.status] || { label: { ja: app.status, en: app.status }, cls: 'badge-none' };
 
   return `
     <div class="ticket-section">
@@ -1577,11 +1612,11 @@ function buildTicketSection(app, type, gameId, isPassed) {
         <span class="ticket-section-title">${label}</span>
         <span class="badge ${cfg.cls}">${statusLabelHtml(app.status)}</span>
       </div>
-      <div class="detail-row"><span class="detail-label">枚数</span><span class="detail-value">${qtyText}${seatText}</span></div>
-      <div class="detail-row"><span class="detail-label">受取者</span><span class="detail-value">${esc(app.receiverName) || '—'}</span></div>
-      <div class="detail-row"><span class="detail-label">受取方法</span><span class="detail-value">${pickupLabel}</span></div>
-      ${app.note ? `<div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${esc(app.note)}</span></div>` : ''}
-      <div class="detail-row"><span class="detail-label">申込日時</span><span class="detail-value detail-value-muted">${app.createdAt}</span></div>
+      <div class="detail-row"><span class="detail-label">${t('detailQty')}</span><span class="detail-value">${qtyText}${seatText}</span></div>
+      <div class="detail-row"><span class="detail-label">${t('detailReceiver')}</span><span class="detail-value">${esc(app.receiverName) || '—'}</span></div>
+      <div class="detail-row"><span class="detail-label">${t('detailPickup')}</span><span class="detail-value">${pickupLabel}</span></div>
+      ${app.note ? `<div class="detail-row"><span class="detail-label">${t('detailNote')}</span><span class="detail-value">${esc(app.note)}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-label">${t('detailDate')}</span><span class="detail-value detail-value-muted">${app.createdAt}</span></div>
     </div>`;
 }
 
@@ -1593,8 +1628,8 @@ function buildGameCard(g) {
   const hasAny = appList.length > 0;
 
   const deadlineText = g.deadline
-    ? `申込期限: ${g.deadline}${g.isDeadlinePassed ? '（終了）' : ''}`
-    : '期限未設定';
+    ? tf('deadlineFormat', { date: g.deadline }) + (g.isDeadlinePassed ? t('deadlineEnded') : '')
+    : t('deadlineUnset');
 
   // ヘッダーの3種別ピル
   const pillsHtml = `
@@ -1613,11 +1648,11 @@ function buildGameCard(g) {
     detailHtml += `
       <div class="detail-actions${hasAny ? '' : ' is-standalone'}">
         <button class="btn-apply" onclick="location.href='player-form.html?gameId=${g.gameId}'">
-          ${hasAny ? '追加で申込む' : 'この試合に申込む'}
+          ${hasAny ? t('addRequest') : t('applyGame')}
         </button>
       </div>`;
   } else if (!hasAny) {
-    detailHtml = `<div class="detail-value detail-value-muted">申込期限が終了しています</div>`;
+    detailHtml = `<div class="detail-value detail-value-muted">${t('deadlineExpired')}</div>`;
   }
 
   return `

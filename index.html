@@ -683,6 +683,14 @@ STRINGS.ja = {
   pwLabel: 'パスワード',
   pwPlaceholder: 'パスワードを入力',
   adminLoginBtn: '管理者ログイン',
+  errTimeout: '通信がタイムアウトしました。再度お試しください',
+  errNetwork: 'ネットワークエラーが発生しました。再度お試しください',
+  errRequire3digit: '3桁の番号を入力してください',
+  errRequirePw: 'パスワードを入力してください',
+  errLoginFailed: 'ログインに失敗しました',
+  errNotFound: '番号が見つかりません',
+  errNotFoundDemo: '番号が見つかりません（例: 006, 101）',
+  loggingIn: 'ログイン中...',
 };
 STRINGS.en = {
   pageTitle: 'Player Family Ticket Request System',
@@ -698,6 +706,14 @@ STRINGS.en = {
   pwLabel: 'Password',
   pwPlaceholder: 'Enter password',
   adminLoginBtn: 'Admin Login',
+  errTimeout: 'Connection timed out. Please try again.',
+  errNetwork: 'Network error. Please try again.',
+  errRequire3digit: 'Enter a 3-digit ID number.',
+  errRequirePw: 'Enter your password.',
+  errLoginFailed: 'Login failed.',
+  errNotFound: 'ID number not found.',
+  errNotFoundDemo: 'ID number not found (e.g. 006, 101)',
+  loggingIn: 'Logging in...',
 };
 // ────────────────────────────────────────────────────
 
@@ -710,8 +726,8 @@ function switchTab(type) {
 }
 
 function getLoginErrorMessage(e) {
-  if (e.name === 'AbortError') return '通信がタイムアウトしました。再度お試しください';
-  if (e.name === 'TypeError') return 'ネットワークエラーが発生しました。再度お試しください';
+  if (e.name === 'AbortError') return t('errTimeout');
+  if (e.name === 'TypeError') return t('errNetwork');
   return e.message;
 }
 
@@ -720,19 +736,19 @@ async function loginPlayer() {
   const errEl = document.getElementById('player-error');
   errEl.textContent = '';
 
-  if (!playerId || playerId.length !== 3) { errEl.textContent = '3桁の番号を入力してください'; return; }
+  if (!playerId || playerId.length !== 3) { errEl.textContent = t('errRequire3digit'); return; }
 
   const btn = document.querySelector('#panel-player .btn');
   const originalBtnHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = 'ログイン中...';
+  btn.textContent = t('loggingIn');
   try {
     const result = await workerApiClient.loginPlayer(playerId);
-    if (!result.ok) throw new Error(result.error?.message || result.error || 'ログインに失敗しました');
+    if (!result.ok) throw new Error(result.error?.message || result.error || t('errLoginFailed'));
     sessionStorage.setItem('auth', JSON.stringify(result.data));
     window.location.href = 'player-dashboard.html';
   } catch (e) {
-    errEl.textContent = getLoginErrorMessage(e) || '番号が見つかりません';
+    errEl.textContent = getLoginErrorMessage(e) || t('errNotFound');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalBtnHtml;
@@ -750,19 +766,19 @@ async function loginAdmin() {
   const pw = document.getElementById('adminPw').value;
   const errEl = document.getElementById('admin-error');
   errEl.textContent = '';
-  if (!pw) { errEl.textContent = 'パスワードを入力してください'; return; }
+  if (!pw) { errEl.textContent = t('errRequirePw'); return; }
 
   const btn = document.querySelector('#panel-admin .btn');
   const originalBtnHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = 'ログイン中...';
+  btn.textContent = t('loggingIn');
   try {
     const result = await workerApiClient.loginAdmin(pw);
-    if (!result.ok) throw new Error(result.error?.message || result.error || 'ログインに失敗しました');
+    if (!result.ok) throw new Error(result.error?.message || result.error || t('errLoginFailed'));
     sessionStorage.setItem('auth', JSON.stringify(result.data));
     window.location.href = 'admin.html';
   } catch (e) {
-    errEl.textContent = getLoginErrorMessage(e) || 'ログインに失敗しました';
+    errEl.textContent = getLoginErrorMessage(e) || t('errLoginFailed');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalBtnHtml;
@@ -776,7 +792,7 @@ function demoMode(method, params) {
   if (params.action === 'login') {
     const p = DEMO_MEMBERS.find(p => String(p.playerId) === String(params.playerId));
     if (p) return { ok: true, data: { playerId: p.playerId, name: p.name, role: 'player' } };
-    return { ok: false, error: '番号が見つかりません（例: 006, 101）' };
+    return { ok: false, error: t('errNotFoundDemo') };
   }
   if (params.action === 'adminLogin') {
     const adminRole = document.querySelector('input[name="adminRole"]:checked').value;

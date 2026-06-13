@@ -51,14 +51,7 @@
     --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
     --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.16);
   }
-  .en-sub {
-    font-size: 12px;
-    color: var(--text-sub);
-    display: block;
-    font-weight: 500;
-    margin-top: var(--space-1);
-    overflow-wrap: anywhere;
-  }
+
   body {
     font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
     background: var(--bg-subtle);
@@ -327,14 +320,13 @@
   }
   .ticket-tabs .radio-card .rc-check { display: none; }
   .ticket-tabs .radio-card .rc-text { font-size: 15px; white-space: normal; font-weight: 700; word-break: break-word; }
-  .ticket-tabs .radio-card .en-sub { white-space: normal; }
+
   .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); flex: 1; min-width: 0; }
   .ticket-tabs .radio-card:has(input:checked) {
     background: var(--primary);
     border-color: var(--primary);
   }
   .ticket-tabs .radio-card:has(input:checked) .rc-text,
-  .ticket-tabs .radio-card:has(input:checked) .en-sub,
   .ticket-tabs .radio-card:has(input:checked) .step-pill-label,
   .ticket-tabs .radio-card:has(input:checked) .step-pill-number { color: var(--bg); }
   .ticket-tabs .radio-card:has(input:checked) .rc-check {
