@@ -124,6 +124,14 @@
   .lang-btn {
     color: var(--accent-line);
   }
+  .btn-relogin {
+    background: var(--primary-weak);
+    color: var(--primary);
+  }
+  .btn-relogin:hover {
+    background: var(--primary);
+    color: var(--bg);
+  }
   .btn-logout {
     background: var(--bg-subtle);
   }
@@ -636,6 +644,7 @@ window.LIFF_CONFIG = {
       <div class="header-sub" id="player-name-display"></div>
     </div>
     <div class="header-actions">
+      <button id="relogin-btn" class="btn-relogin" onclick="handleRelogin()" style="display:none;" data-i18n="reloginBtn">接続し直す</button>
       <button id="lang-toggle" class="lang-btn" onclick="toggleLang()">JA / en</button>
       <button class="btn-logout" onclick="logout()" data-i18n="logout">ログアウト</button>
     </div>
@@ -1073,6 +1082,7 @@ STRINGS.ja = {
   heroDescription: '試合ごとの申込状況と受付締切を上から順に確認できます。必要な試合だけ開いて内容を見てください。',
   listTitle: '試合一覧',
   listDescription: '表示したい試合だけを切り替えられます。各行を開くと、申込内容と現在の状態を確認できます。',
+  reloginBtn: '接続し直す',
   logout: 'ログアウト',
   cntTotal: '申込済み',
   cntPending: '確認中',
@@ -1092,6 +1102,7 @@ STRINGS.en = {
   heroDescription: 'Review each game request and deadline from top to bottom. Open only the games you need to inspect.',
   listTitle: 'Game List',
   listDescription: 'Switch the view to the games you want to see. Open each row to confirm the request details and current status.',
+  reloginBtn: 'Reconnect',
   logout: 'Logout',
   cntTotal: 'Requested',
   cntPending: 'Pending',
@@ -1149,6 +1160,17 @@ async function initDashboardAfterAuth(authData) {
     sessionStorage.setItem('sessionToken', auth.token);
   }
   document.getElementById('player-name-display').textContent = auth.name + '（' + auth.playerId + '）';
+
+  // 「接続し直す」ボタン表示
+  const reloginBtn = document.getElementById('relogin-btn');
+  if (reloginBtn) {
+    reloginBtn.style.display = 'inline-block';
+  }
+
+  // ダッシュボード本体表示
+  const container = document.querySelector('.container');
+  if (container) container.style.display = 'block';
+
   await loadData();
 }
 
@@ -1170,6 +1192,39 @@ async function handleLiffLink() {
     errEl.textContent = e.message || '連携に失敗しました。';
     btn.disabled = false;
     btn.textContent = '連携する';
+  }
+}
+
+/** セッション クリアして再ログイン */
+function handleRelogin() {
+  // トークンをクリア
+  sessionStorage.removeItem('sessionToken');
+  sessionStorage.removeItem('adminToken');
+  sessionStorage.removeItem('auth');
+
+  // 「接続し直す」ボタンを隠す
+  const reloginBtn = document.getElementById('relogin-btn');
+  if (reloginBtn) reloginBtn.style.display = 'none';
+
+  // ダッシュボード本体を隠す
+  const container = document.querySelector('.container');
+  if (container) container.style.display = 'none';
+
+  // LIFF 再連携モーダルを表示
+  const liffOverlay = document.getElementById('liff-link-overlay');
+  const input = document.getElementById('liff-player-no-input');
+  const errEl = document.getElementById('liff-link-error');
+  const btn = document.getElementById('liff-link-btn');
+
+  if (liffOverlay) {
+    liffOverlay.style.display = 'flex';
+    if (input) input.value = '';
+    if (errEl) errEl.textContent = '';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '連携する';
+    }
+    input?.focus();
   }
 }
 

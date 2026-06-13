@@ -31,10 +31,17 @@ export async function findPlayerByLineUserId(db, lineUserId) {
 export async function linkLineUserIdToPlayer(db, playerId, lineUserId) {
   const player = await findPlayerByPlayerNo(db, playerId);
   if (!player) return null;
-  await db.batch([
+
+  // 既存の line_user_id が別 player に紐付いている場合は解除（再連携対応）
+  const operations = [
+    // 旧 player の line_user_id を解除
+    db.prepare(`UPDATE players SET line_user_id = NULL WHERE line_user_id = ?1 AND id != ?2`).bind(lineUserId, player.id),
+    // 新 player に line_user_id を付与
     db.prepare(`UPDATE players SET line_user_id = ?1 WHERE id = ?2`).bind(lineUserId, player.id),
-    audit(db, `player:${player.id}`, "line_link", `player:${player.player_no}`, { linked: true }),
-  ]);
+    audit(db, `player:${player.id}`, "line_link", `player:${player.player_no}`, { linked: true, lineUserId }),
+  ];
+
+  await db.batch(operations);
   return player;
 }
 

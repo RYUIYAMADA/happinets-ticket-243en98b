@@ -104,6 +104,21 @@
     margin-top: var(--space-1);
     overflow-wrap: anywhere;
   }
+  .header-relogin-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-subtle);
+    color: var(--primary);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    min-height: auto;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+  }
+  .header-relogin-btn:hover { background: var(--primary-weak); color: var(--primary-strong); }
   .lang-btn {
     border: 1px solid var(--border);
     background: var(--bg);
@@ -948,6 +963,7 @@ window.LIFF_CONFIG = {
   <div class="header-title">
     <h1 data-i18n="title">チケット申込フォーム</h1>
     <div id="header-name" class="header-player"></div>
+    <button id="relogin-btn" class="header-relogin-btn" onclick="handleRelogin()" style="display:none; margin-top: 6px;" data-i18n="reloginBtn">接続し直す</button>
   </div>
   <button id="lang-toggle" class="lang-btn" onclick="toggleLang()">JA / en</button>
 </header>
@@ -1575,6 +1591,7 @@ function toggleLang() {
 STRINGS.ja = {
   title: 'チケット申込フォーム',
   backBtn: '← 戻る',
+  reloginBtn: '接続し直す',
   ticketType: 'チケット種別',
   inviteTicket: '招待チケット',
   familyTicket: '家族席チケット',
@@ -1605,6 +1622,7 @@ STRINGS.ja = {
 STRINGS.en = {
   title: 'Ticket Request Form',
   backBtn: '← Back',
+  reloginBtn: 'Reconnect',
   ticketType: 'Ticket Type',
   inviteTicket: 'Complimentary Tickets',
   familyTicket: 'Family Seats',
@@ -1651,6 +1669,16 @@ async function initFormAfterAuth(authData) {
     sessionStorage.setItem('sessionToken', auth.token);
   }
   document.getElementById('header-name').textContent = auth.name + '（' + auth.playerId + '）';
+
+  // 「接続し直す」ボタン表示（フォールバック番号ログイン時のみ）
+  const reloginBtn = document.getElementById('relogin-btn');
+  if (reloginBtn) {
+    reloginBtn.style.display = 'inline-block';
+  }
+
+  // コンテナ表示
+  const container = document.querySelector('.container');
+  if (container) container.style.display = 'block';
 
   const params = new URLSearchParams(location.search);
   const preType = params.get('type');
@@ -1750,6 +1778,40 @@ async function handleFallbackLogin() {
     errEl.textContent = e.message || 'ログインに失敗しました';
     btn.disabled = false;
     btn.textContent = 'ログイン';
+  }
+}
+
+/** セッション クリアして再ログイン */
+function handleRelogin() {
+  // トークンをクリア
+  sessionStorage.removeItem('sessionToken');
+  sessionStorage.removeItem('adminToken');
+  sessionStorage.removeItem('auth');
+  sessionStorage.removeItem('myApplications');
+
+  // 「接続し直す」ボタンを隠す
+  const reloginBtn = document.getElementById('relogin-btn');
+  if (reloginBtn) reloginBtn.style.display = 'none';
+
+  // フォームコンテナを隠す
+  const container = document.querySelector('.container');
+  if (container) container.style.display = 'none';
+
+  // フォールバック番号ログイン画面を表示
+  const fallbackOverlay = document.getElementById('fallback-login-overlay');
+  const input = document.getElementById('fallback-player-no-input');
+  const errEl = document.getElementById('fallback-login-error');
+  const btn = document.getElementById('fallback-login-btn');
+
+  if (fallbackOverlay) {
+    fallbackOverlay.style.display = 'flex';
+    if (input) input.value = '';
+    if (errEl) errEl.textContent = '';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '接続';
+    }
+    input?.focus();
   }
 }
 
