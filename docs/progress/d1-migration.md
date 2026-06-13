@@ -67,7 +67,13 @@ progress_pct: 0
 - ✅ FE 4画面の API 層切替 — Job C（1832905・callGAS全除去・admin平文化・lineLinked追従）
 - ✅ LINE bot を Worker 内に移植 — Job B（4ab4381・webhook署名/会話/push/朝通知quota・npm test 19/19）
 - ✅ 実装後検証: E2E実機curl 18ケース approve / セキュリティ監査 concern（HIGH1+MED3）
-- 🔄 セキュリティ修正（HIGH-1 admin比較timing-safe / MED-1 LINE番号連携レート制限 / MED-2 esc）— ft-sec-fix
+- ✅ セキュリティ修正（HIGH-1 admin比較timing-safe / MED-1 LINE番号連携レート制限 / MED-2 esc）— 66092d1・npm test 19/19
+
+### フェーズ3: データ移行・検証
+- 🔄 移行ツール一式（GASエクスポート / scripts/migrate-to-d1.js / verify / サンプル投入）— ft-migrate（ローカルD1まで）
+- ⬜ 本番D1作成・実データ移行 — ★龍偉の `wrangler login`（ブラウザ Allow 1クリック）が必要
+- ⬜ 並行稼働テスト（GAS/D1 結果突合）— ★本番D1 + 現行データ必要
+- ⬜ E2E（LINE実機・全画面）— ★本番デプロイ必要
 
 ### フェーズ3: データ移行・検証
 - ⬜ 移行スクリプト（GAS シート → D1。選手・LINE紐づけ・試合30件・既存申込）
