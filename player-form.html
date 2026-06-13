@@ -919,6 +919,28 @@
     font-size: 14px;
     font-weight: 500;
   }
+  /* DEBUG PANEL */
+  #liff-debug-panel {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: var(--error-bg);
+    border-bottom: 1px solid var(--error);
+    padding: var(--space-3);
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: var(--error);
+    z-index: 999;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.4;
+  }
+  #liff-debug-panel.hidden { display: none; }
+  .debug-row { margin: var(--space-1) 0; }
+  .debug-row strong { font-weight: 700; }
+  .debug-row .success { color: var(--success); }
+  .debug-row .error { color: var(--error); }
 </style>
 <!-- LIFF SDK -->
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -931,6 +953,9 @@ window.LIFF_CONFIG = {
 </script>
 </head>
 <body>
+<!-- DEBUG PANEL -->
+<div id="liff-debug-panel" class="hidden"></div>
+
 <!-- 初回連携モーダル（LIFF未連携時に表示） -->
 <div id="liff-link-overlay" class="liff-overlay-backdrop">
   <div class="liff-modal-box">
@@ -1516,6 +1541,41 @@ window.LIFF_CONFIG = {
 })();
 
 </script>
+<!-- Debug Utilities -->
+<script>
+window.liffDebug = (function() {
+  const panel = document.getElementById('liff-debug-panel');
+  return {
+    show: function() {
+      if (panel) panel.classList.remove('hidden');
+    },
+    hide: function() {
+      if (panel) panel.classList.add('hidden');
+    },
+    log: function(label, value) {
+      if (!panel) return;
+      const status = value === null ? '❌' : value === false ? '⚠️' : '✅';
+      const displayVal = typeof value === 'string' && value.length > 20
+        ? `${value.substring(0, 10)}...（長さ: ${value.length}）`
+        : value;
+      const row = document.createElement('div');
+      row.className = 'debug-row';
+      row.innerHTML = `<strong>${label}:</strong> ${status} ${displayVal}`;
+      panel.appendChild(row);
+    },
+    clear: function() {
+      if (panel) panel.innerHTML = '';
+    },
+    error: function(label, errorMsg) {
+      if (!panel) return;
+      const row = document.createElement('div');
+      row.className = 'debug-row';
+      row.innerHTML = `<strong>${label}:</strong> <span class="error">❌ ${errorMsg}</span>`;
+      panel.appendChild(row);
+    },
+  };
+})();
+</script>
 <!-- liff-auth: LIFF認証共通処理 -->
 <script>
 (function () {
@@ -1530,54 +1590,90 @@ window.LIFF_CONFIG = {
     if (typeof liff === "undefined") {
       throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
     }
-    await liff.init({ liffId, withLoginOnExternalBrowser: true });
+    window.liffDebug.log('liff.isInClient', liff.isInClient ? liff.isInClient() : false);
+    try {
+      await liff.init({ liffId, withLoginOnExternalBrowser: true });
+      window.liffDebug.log('liff.init', 'OK');
+    } catch (e) {
+      window.liffDebug.error('liff.init', e.message);
+      throw e;
+    }
     liffInitialized = true;
     cachedLiffId = liffId;
+    window.liffDebug.log('使用中のLIFF ID', liffId.substring(0, 15) + '...');
   }
 
   async function initAndAuthWithLiff(liffId) {
-    await ensureLiffInitialized(liffId);
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return null;
+    window.liffDebug.show();
+    window.liffDebug.clear();
+    try {
+      await ensureLiffInitialized(liffId);
+      const isLoggedIn = liff.isLoggedIn();
+      window.liffDebug.log('liff.isLoggedIn', isLoggedIn);
+      if (!isLoggedIn) {
+        window.liffDebug.log('Calling liff.login()', 'redirecting...');
+        liff.login();
+        return null;
+      }
+      const idToken = liff.getIDToken();
+      window.liffDebug.log('liff.getIDToken', idToken ? idToken.substring(0, 10) + '... (長さ: ' + idToken.length + ')' : null);
+      if (!idToken) throw new Error("IDトークンの取得に失敗しました。");
+      // sessionStorage に有効なトークンがあれば再認証スキップ
+      const storedToken = sessionStorage.getItem("sessionToken");
+      if (storedToken) {
+        const storedAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        if (storedAuth && storedAuth.role === "player") return storedAuth;
+      }
+      const result = await workerApiClient.loginWithLiff(idToken);
+      window.liffDebug.log('loginWithLiff API status', result.ok ? 'OK' : (result.status || 'unknown'));
+      if (result.ok) {
+        const authData = { ...result.data, role: "player" };
+        sessionStorage.setItem("auth", JSON.stringify(authData));
+        sessionStorage.setItem("sessionToken", result.data.token);
+        window.liffDebug.log('認証成功', '✓ ダッシュボードへ');
+        return authData;
+      }
+      if (result.error && result.error.code === "UNLINKED") return { unlinked: true };
+      window.liffDebug.error('API Error', result.error?.message || 'LIFF認証に失敗しました。');
+      throw new Error(result.error && result.error.message ? result.error.message : "LIFF認証に失敗しました。");
+    } catch (e) {
+      window.liffDebug.error('initAndAuthWithLiff', e.message);
+      throw e;
     }
-    const idToken = liff.getIDToken();
-    if (!idToken) throw new Error("IDトークンの取得に失敗しました。");
-    // sessionStorage に有効なトークンがあれば再認証スキップ
-    const storedToken = sessionStorage.getItem("sessionToken");
-    if (storedToken) {
-      const storedAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
-      if (storedAuth && storedAuth.role === "player") return storedAuth;
-    }
-    const result = await workerApiClient.loginWithLiff(idToken);
-    if (result.ok) {
-      const authData = { ...result.data, role: "player" };
-      sessionStorage.setItem("auth", JSON.stringify(authData));
-      sessionStorage.setItem("sessionToken", result.data.token);
-      return authData;
-    }
-    if (result.error && result.error.code === "UNLINKED") return { unlinked: true };
-    throw new Error(result.error && result.error.message ? result.error.message : "LIFF認証に失敗しました。");
   }
 
   async function linkWithPlayerNo(playerId) {
-    if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
-    // liff.init が呼ばれていない場合は、LIFF IDから初期化
-    const liffId = (window.LIFF_CONFIG || {}).formLiffId || '';
-    await ensureLiffInitialized(liffId);
-    const idToken = liff.getIDToken();
-    if (!idToken) throw new Error("IDトークンの取得に失敗しました。再度LINEからアクセスしてください。");
-    const result = await workerApiClient.linkLiff(idToken, playerId);
-    if (result.ok) {
-      const authData = { ...result.data, role: "player" };
-      sessionStorage.setItem("auth", JSON.stringify(authData));
-      sessionStorage.setItem("sessionToken", result.data.token);
-      return authData;
+    window.liffDebug.show();
+    window.liffDebug.clear();
+    try {
+      if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
+      // liff.init が呼ばれていない場合は、LIFF IDから初期化
+      const liffId = (window.LIFF_CONFIG || {}).formLiffId || '';
+      window.liffDebug.log('使用中のLIFF ID（link）', liffId.substring(0, 15) + '...');
+      await ensureLiffInitialized(liffId);
+      const idToken = liff.getIDToken();
+      window.liffDebug.log('liff.getIDToken（link）', idToken ? idToken.substring(0, 10) + '... (長さ: ' + idToken.length + ')' : null);
+      if (!idToken) throw new Error("IDトークンの取得に失敗しました。再度LINEからアクセスしてください。");
+      const result = await workerApiClient.linkLiff(idToken, playerId);
+      window.liffDebug.log('linkLiff API status', result.ok ? 'OK' : (result.status || 'unknown'));
+      window.liffDebug.log('背番号', playerId);
+      if (result.ok) {
+        const authData = { ...result.data, role: "player" };
+        sessionStorage.setItem("auth", JSON.stringify(authData));
+        sessionStorage.setItem("sessionToken", result.data.token);
+        window.liffDebug.log('連携成功', '✓ リロード中...');
+        return authData;
+      }
+      if (result.error && result.error.code === "UNAUTHORIZED") {
+        window.liffDebug.error('API Error', '背番号が見つかりません');
+        throw new Error("背番号が見つかりません。正しい背番号を入力してください。");
+      }
+      window.liffDebug.error('API Error', result.error?.message || '連携に失敗しました。');
+      throw new Error(result.error && result.error.message ? result.error.message : "連携に失敗しました。");
+    } catch (e) {
+      window.liffDebug.error('linkWithPlayerNo', e.message);
+      throw e;
     }
-    if (result.error && result.error.code === "UNAUTHORIZED") {
-      throw new Error("背番号が見つかりません。正しい背番号を入力してください。");
-    }
-    throw new Error(result.error && result.error.message ? result.error.message : "連携に失敗しました。");
   }
   window.liffAuth = { initAndAuthWithLiff, linkWithPlayerNo };
 })();
@@ -1728,7 +1824,8 @@ async function handleLiffLink() {
     document.getElementById('liff-link-overlay').style.display = 'none';
     await initFormAfterAuth(authData);
   } catch (e) {
-    errEl.textContent = e.message || '連携に失敗しました。';
+    // エラーメッセージをモーダルの下に表示。デバッグパネルもあわせて表示
+    errEl.innerHTML = e.message || '連携に失敗しました。<br><small style="font-size:11px;color:var(--text-sub)">上部のデバッグ情報を確認してください</small>';
     btn.disabled = false;
     btn.textContent = '連携する';
   }

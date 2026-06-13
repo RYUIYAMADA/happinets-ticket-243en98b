@@ -2,6 +2,10 @@ name            = "family-tickets-api"
 main            = "src/index.js"
 compatibility_date = "2026-06-01"
 
+# Observability (デバッグログ出力)
+[observability]
+enabled = true
+
 # D1 データベース
 [[d1_databases]]
 binding       = "DB"
