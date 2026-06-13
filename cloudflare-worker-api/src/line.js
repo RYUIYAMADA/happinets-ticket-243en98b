@@ -174,12 +174,17 @@ export async function sendApplicationConfirmPush(env, appId) {
     }
 
     const message = buildApplicationConfirmMessage(record);
-    await pushToLine(env, record.lineUserId, [message]);
-    console.log("confirm_push_sent", { appId, gameNo: record.gameNo, lang: record.lang });
-    return { pushed: true };
+    const pushResult = await pushToLine(env, record.lineUserId, [message]);
+    if (pushResult?.ok) {
+      console.log("confirm_push_sent", { appId, gameNo: record.gameNo, lang: record.lang, status: pushResult.status });
+      return { pushed: true };
+    } else {
+      console.error("confirm_push_failed", { appId, gameNo: record.gameNo, status: pushResult?.status, message: pushResult?.message });
+      return { pushed: false, reason: "api_error", status: pushResult?.status };
+    }
   } catch (err) {
     // push失敗は申込成功を妨げない（ログのみ）
-    console.error("confirm_push_error", { appId, error: err?.message });
+    console.error("confirm_push_error", { appId, error: err?.message, stack: err?.stack });
     return { pushed: false, reason: "error" };
   }
 }
@@ -585,32 +590,50 @@ async function replyToLine(env, replyToken, messages) {
 }
 
 async function pushToLine(env, to, messages) {
-  if (!to) return;
-  await callLineApi(env, "https://api.line.me/v2/bot/message/push", {
+  if (!to) return { ok: false, message: "missing_to" };
+  return await callLineApi(env, "https://api.line.me/v2/bot/message/push", {
     to,
     messages,
   });
 }
 
 async function broadcastToLine(env, messages) {
-  await callLineApi(env, "https://api.line.me/v2/bot/message/broadcast", {
+  return await callLineApi(env, "https://api.line.me/v2/bot/message/broadcast", {
     messages,
   });
 }
 
+/**
+ * LINE API を呼び出して、ステータス・レスポンスボディを返す。
+ * @returns {{ok: boolean, status: number, message?: string}}
+ */
 async function callLineApi(env, url, body) {
   const token = env.LINE_CHANNEL_ACCESS_TOKEN || "";
-  if (!token) return;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    console.error("line_api_error", { url, status: response.status });
+  if (!token) {
+    console.warn("line_api_skip", { url, reason: "no_token" });
+    return { ok: false, status: 0, message: "no_token" };
+  }
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const responseBody = await response.text();
+    if (response.ok) {
+      console.log("line_api_ok", { url, status: response.status });
+      return { ok: true, status: response.status };
+    } else {
+      const errorMsg = responseBody ? `(${responseBody})` : "";
+      console.error("line_api_error", { url, status: response.status, message: errorMsg });
+      return { ok: false, status: response.status, message: responseBody };
+    }
+  } catch (err) {
+    console.error("line_api_network_error", { url, error: err?.message });
+    return { ok: false, status: 0, message: err?.message };
   }
 }
 
