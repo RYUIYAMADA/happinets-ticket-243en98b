@@ -1122,7 +1122,7 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">2026-27シーズン一括入替</span>
-        <span class="danger-note">⚠ 取消不可操作</span>
+        <span class="danger-note"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle;margin-right:3px" aria-hidden="true"><path d="M8 2 L14 13 H2 Z"/><line x1="8" y1="6" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r="0.5" fill="currentColor"/></svg>取消不可操作</span>
       </div>
       <div class="season-replace-section">
         <button class="btn-season" id="btn-season-replace" onclick="replaceSeason2627()">
@@ -1141,9 +1141,7 @@
 </div>
 <div class="toast" id="toast" aria-live="assertive"></div>
 
-<script>
-window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.dev";
-</script>
+<script src="./api-config.js"></script>
 <script>
 (function () {
   const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:8787";
