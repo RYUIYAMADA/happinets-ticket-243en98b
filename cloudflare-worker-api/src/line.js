@@ -8,7 +8,7 @@ import {
   getLineStats,
   linkLineUserIdToPlayer,
   listApplicationsByPlayer,
-  listConfirmedApplicationsForDate,
+  listGamesWithDeadlineTomorrow,
   listUpcomingGamesForLine,
   saveConversationState,
   clearConversationState,
@@ -47,22 +47,74 @@ export async function handleScheduledLineJobs(controller, env) {
   const nowIso = new Date(controller?.scheduledTime || Date.now()).toISOString();
   await deleteExpiredSessions(env.DB, nowIso);
 
-  const grouped = await listConfirmedApplicationsForDate(env.DB, nowIso.slice(0, 10));
-  if (!grouped.length) return;
+  // 締切前日アナウンス（毎日 18:00 JST = UTC 09:00, cron "0 9 * * *"）
+  // 翌日12:00 JST 締切の試合があれば LINE broadcast する。
+  // 手動配信は POST /api/admin/announce-deadline でも可能。
+  await broadcastDeadlineAnnouncement(env, nowIso);
+}
+
+/**
+ * 締切前日18:00 LINE broadcast アナウンス。
+ * 翌日12:00 JST 締切の試合が1件以上あれば broadcast する。0件なら何もしない。
+ */
+export async function broadcastDeadlineAnnouncement(env, nowIso) {
+  const games = await listGamesWithDeadlineTomorrow(env.DB, nowIso);
+  if (!games.length) {
+    console.log("broadcast_deadline_skip", { reason: "no_target_games", nowIso });
+    return { sent: false, reason: "no_target_games", gameCount: 0 };
+  }
 
   const stats = await getLineStats(env);
-  if (typeof stats.remaining === "number" && stats.remaining < grouped.length) {
-    console.log("line_quota_insufficient", {
-      date: nowIso.slice(0, 10),
-      remaining: stats.remaining,
-      required: grouped.length,
-    });
-    return;
+  // broadcast は友だち全員に1通 = quota 1消費
+  if (typeof stats.remaining === "number" && stats.remaining < 1) {
+    console.log("broadcast_deadline_skip", { reason: "quota_insufficient", remaining: stats.remaining });
+    return { sent: false, reason: "quota_insufficient", remaining: stats.remaining };
   }
 
-  for (const item of grouped) {
-    await pushToLine(env, item.lineUserId, [buildMorningNotificationMessage(item)]);
+  const messages = buildDeadlineAnnouncementMessages(games);
+  await broadcastToLine(env, messages);
+  console.log("broadcast_deadline_sent", { gameCount: games.length, nowIso });
+  return { sent: true, gameCount: games.length };
+}
+
+/**
+ * 締切前日アナウンスのメッセージを組み立てる（日本語＋英語を1通に収める）。
+ */
+export function buildDeadlineAnnouncementMessages(games) {
+  const jaLines = [
+    "【締切のアナウンス】",
+    "明日の12時で記載の試合のチケットの申込みは終了になります",
+    "",
+    "対象試合",
+  ];
+  for (const g of games) {
+    const date = formatGameDate(g.date);
+    jaLines.push(`・${date} vs ${g.opponent}`);
   }
+  jaLines.push("＝＝＝＝＝＝＝");
+
+  const enLines = [
+    "[Application Deadline]",
+    "Ticket applications for the games below will close tomorrow at 12:00.",
+    "",
+    "Games:",
+  ];
+  for (const g of games) {
+    const date = formatGameDate(g.date);
+    enLines.push(`・${date} vs ${g.opponent}`);
+  }
+  enLines.push("＝＝＝＝＝＝＝");
+
+  const fullText = [...jaLines, "", ...enLines].join("\n");
+  return [{ type: "text", text: fullText }];
+}
+
+/**
+ * 試合日を YYYY/MM/DD 形式にフォーマット。
+ */
+function formatGameDate(date) {
+  const [year = "", month = "", day = ""] = String(date).split("-");
+  return `${year}/${month}/${day}`;
 }
 
 export async function verifyLineSignature(bodyText, signature, secret) {
@@ -434,15 +486,6 @@ function buildQuickReply(items) {
   };
 }
 
-function buildMorningNotificationMessage(item) {
-  const lines = ["🏀 本日の試合チケット情報", "", `試合: ${item.gameLabel}`, ""];
-  for (const app of item.applications) {
-    lines.push(`【${ticketTypeJa(app.ticketType)}】大人${app.quantityAdult || 0}枚${app.quantityChild ? ` 子ども${app.quantityChild}枚` : ""}${app.receiverName ? ` 受取: ${app.receiverName}` : ""}`);
-  }
-  lines.push("", "会場でお楽しみください！");
-  return { type: "text", text: lines.join("\n") };
-}
-
 function buildStatusMessage(record, status) {
   return {
     type: "text",
@@ -468,6 +511,12 @@ async function pushToLine(env, to, messages) {
   if (!to) return;
   await callLineApi(env, "https://api.line.me/v2/bot/message/push", {
     to,
+    messages,
+  });
+}
+
+async function broadcastToLine(env, messages) {
+  await callLineApi(env, "https://api.line.me/v2/bot/message/broadcast", {
     messages,
   });
 }

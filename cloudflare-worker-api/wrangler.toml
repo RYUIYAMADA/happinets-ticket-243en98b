@@ -15,10 +15,11 @@ database_id   = "e0012711-4846-4727-8bc9-2a44d3d66de6"
 # location_hint は wrangler.toml では設定不可。wrangler d1 create 時に --location=apac を指定する
 # wrangler d1 create family-tickets-db --location=apac
 
-# Cron Triggers（朝通知・期限切れセッション削除）
-# 例: 毎朝 10:00 JST に当日試合通知と期限切れ session/state cleanup を実行
+# Cron Triggers
+# - 毎日 18:00 JST (UTC 09:00): 締切前日アナウンス broadcast + 期限切れ session/state cleanup
+#   朝通知（当日試合の選手への push 通知）は廃止済み（2026-06-14 龍偉指示）
 [triggers]
-crons = ["0 1 * * *"]   # 毎朝 10:00 JST (UTC 01:00)
+crons = ["0 9 * * *"]
 
 # 環境変数（秘密情報は wrangler secret put で設定）
 [vars]
