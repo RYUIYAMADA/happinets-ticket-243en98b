@@ -17,3 +17,4 @@ scripts/generated/
 .wrangler/
 cloudflare-worker-api/.tmp-xdg/
 cloudflare-worker-api/.tmp-home/
+.qa-screenshots/

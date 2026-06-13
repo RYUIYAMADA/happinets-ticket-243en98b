@@ -16,14 +16,16 @@
     --accent-line: #2563eb;
     --text: #0f172a;
     --text-sub: #64748b;
-    --text-muted: #94a3b8;
+    --text-faint: #94a3b8;
+    --text-muted: #667085;
     --border: #e2e8f0;
     --disabled: #cbd5e1;
-    --required: #e5384d;
-    --success: #16a34a;
+    --required: #d11f3a;
+    --success: #166534;
     --success-bg: #dcfce7;
     --warning-bg: #fef3c7;
     --warning-text: var(--text);
+    --success-border: #86efac;
     --error: #dc2626;
     --error-bg: #fee2e2;
     --radius-card: 14px;
@@ -427,11 +429,13 @@
     .header-right {
       width: 100%;
       gap: var(--space-2);
+      justify-content: flex-start;
     }
     .header-right .btn-sm {
-      flex: 1;
-      padding: 0 var(--space-3);
-      font-size: 12px;
+      flex: 0 0 auto;
+      padding: 0 10px;
+      font-size: 11px;
+      white-space: nowrap;
     }
     .tabs {
       padding: var(--space-3) var(--space-4) 0;
@@ -606,7 +610,7 @@
   .section-title:first-child { margin-top: 0; }
 
   /* インライン編集行 */
-  tr.editing-row td { background: #fffbf0; }
+  tr.editing-row td { background: var(--warning-bg); }
   .inline-edit-input {
     padding: var(--space-2) var(--space-3);
     font-size: 14px;
@@ -931,7 +935,7 @@
       <button class="type-tab" data-type="family" onclick="switchTypeTab(this,'family')">家族席</button>
       <button class="type-tab" data-type="paid" onclick="switchTypeTab(this,'paid')">有料チケット</button>
     </div>
-    <div class="card" style="border-radius:0 0 var(--radius) var(--radius);margin-top:0;">
+    <div class="card" style="border-radius:0 0 var(--radius-card) var(--radius-card);margin-top:0;">
       <div class="card-header">
         <span class="card-title" id="app-type-label">全申込一覧</span>
         <div class="toolbar">

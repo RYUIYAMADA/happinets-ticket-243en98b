@@ -16,16 +16,22 @@
     --accent-line: #2563eb;
     --text: #0f172a;
     --text-sub: #64748b;
-    --text-muted: #94a3b8;
+    --text-faint: #94a3b8;
+    --text-muted: #667085;
     --border: #e2e8f0;
     --disabled: #cbd5e1;
-    --required: #e5384d;
-    --success: #16a34a;
+    --required: #d11f3a;
+    --success: #166534;
     --success-bg: #dcfce7;
+    --success-border: #86efac;
     --error: #dc2626;
     --error-bg: #fee2e2;
     --warning-bg: #fef3c7;
     --warning-text: var(--text);
+    --overlay-strong: rgba(0, 0, 0, 0.75);
+    --inverse-soft: rgba(255, 255, 255, 0.16);
+    --inverse-border: rgba(255, 255, 255, 0.2);
+    --inverse-stroke: rgba(255, 255, 255, 0.4);
     --bg-muted: var(--bg-subtle);
     --bg-surface: var(--bg-subtle);
     --icon-muted: var(--text-sub);
@@ -287,8 +293,8 @@
   .ticket-tabs .radio-card:has(input:checked) .step-pill-label,
   .ticket-tabs .radio-card:has(input:checked) .step-pill-number { color: var(--bg); }
   .ticket-tabs .radio-card:has(input:checked) .rc-check {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--inverse-soft);
+    border-color: var(--inverse-border);
   }
   .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
   .step-pill-number {
@@ -579,7 +585,7 @@
   .seat-map-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.75);
+    background: var(--overlay-strong);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -628,7 +634,7 @@
   }
   .notice-success {
     background: var(--success-bg);
-    border-color: rgba(22, 163, 74, 0.24);
+    border-color: var(--success-border);
   }
   .notice-warning {
     background: var(--bg-subtle);
@@ -754,6 +760,15 @@
   }
   @media (min-width: 769px) {
     .container { padding: var(--space-6) var(--space-4) var(--space-8); }
+    .ticket-tabs .radio-group {
+      width: 100%;
+      min-width: 0;
+    }
+    .ticket-tabs .radio-card {
+      flex: 1 1 0;
+      min-width: 0;
+      justify-content: center;
+    }
   }
   .rc-avail-badge.open { background: var(--success-bg); color: var(--success); }
   .rc-avail-badge.none { background: var(--bg-muted); color: var(--text-sub); }
@@ -781,7 +796,7 @@
     display: inline-block;
     width: 15px;
     height: 15px;
-    border: 2px solid rgba(255,255,255,0.4);
+    border: 2px solid var(--inverse-stroke);
     border-top-color: var(--bg);
     border-radius: var(--radius-pill);
     animation: spin 0.6s linear infinite;

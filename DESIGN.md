@@ -41,6 +41,7 @@ updated: 2026-06-13
   --bg:               #ffffff;
   --bg-subtle:        #f5f6f8;
   --card:             var(--bg);
+  --text-faint:       #94a3b8; /* decorative only, on white 2.56:1 */
 
   /* ── Action / State ── */
   --primary:          #2456e6;
@@ -51,20 +52,25 @@ updated: 2026-06-13
   /* ── Text ── */
   --text:             #0f172a;
   --text-sub:         #64748b;
-  --text-muted:       #94a3b8;
+  --text-muted:       #667085; /* on white 4.97:1 */
 
   /* ── Border / Disabled ── */
   --border:           #e2e8f0;
   --disabled:         #cbd5e1;
 
   /* ── Validation / Status ── */
-  --required:         #e5384d;
-  --success:          #16a34a;
+  --required:         #d11f3a; /* on white 5.29:1 */
+  --success:          #166534; /* on --success-bg 6.49:1 */
   --success-bg:       #dcfce7;
   --error:            #dc2626;
   --error-bg:         #fee2e2;
   --warning-bg:       #fef3c7;
   --warning-text:     #0f172a;
+  --success-border:   #86efac;
+  --overlay-strong:   rgba(0, 0, 0, 0.75);
+  --inverse-soft:     rgba(255, 255, 255, 0.16);
+  --inverse-border:   rgba(255, 255, 255, 0.2);
+  --inverse-stroke:   rgba(255, 255, 255, 0.4);
 
   /* ── Shape ── */
   --radius-card:      14px;
@@ -92,6 +98,7 @@ updated: 2026-06-13
 - `--accent-line`: 可選択チップ、サブ導線、変更リンク
 - `--bg-subtle`: ページ背景、弱い区切り、補助面
 - `--required`: `(必須)` 表記専用。赤を強調用途に流用しない
+- `--text-faint`: 装飾専用。本文・ラベル・placeholder には使わない
 
 ---
 

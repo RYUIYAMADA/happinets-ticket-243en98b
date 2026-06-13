@@ -16,12 +16,14 @@
     --accent-line: #2563eb;
     --text: #0f172a;
     --text-sub: #64748b;
-    --text-muted: #94a3b8;
+    --text-faint: #94a3b8;
+    --text-muted: #667085;
     --border: #e2e8f0;
     --disabled: #cbd5e1;
-    --required: #e5384d;
-    --success: #16a34a;
+    --required: #d11f3a;
+    --success: #166534;
     --success-bg: #dcfce7;
+    --success-border: #86efac;
     --error: #dc2626;
     --error-bg: #fee2e2;
     --warning-bg: #fef3c7;
@@ -529,6 +531,7 @@
     .header-copy { text-align: left; }
   }
   @media (max-width: 767px) {
+    .container { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
     header { padding: var(--space-4) var(--space-4) var(--space-3); }
     .header-inner {
       display: grid;
