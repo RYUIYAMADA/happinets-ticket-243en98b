@@ -58,8 +58,8 @@ progress_pct: 0
 - ✅ D1 スキーマ詳細設計（migrations/0001_init.sql・9テーブル）
 - ✅ API 契約書 docs/api-contract.md（GAS 全 action 対照表つき・620行）
 - ✅ PM 裁定6件を SPEC §12 に記録（朝通知=Cron Triggers 等）
-- 🔄 Gate1 レビュー（engineer/security 並列。designer は FE 切替フェーズで実施＝デザイン変更なしのため）
-- ⬜ SPEC レビュー（Claude+Codex 並列）→ Gate2
+- ✅ Gate1 レビュー（engineer/security）→ 指摘11件を 87150a1 で反映
+- 🔄 Gate2 サインオフ（engineer/security 並列）→ 両者 concern・Block無し。設計書修正6件を Codex 反映中（ft-gate2-fix）。反映完了で Gate2 approve → 実装着手
 
 ### フェーズ2: 実装（垂直スライス先行 → 並列）
 - ⬜ スライス1本目: 「選手ログイン→試合一覧表示」を D1+Worker+FE で貫通（手戻り検出）
@@ -89,6 +89,7 @@ progress_pct: 0
 - 受入条件達成率: 0%（0/7）
 
 ## 作業ログ
+- **2026-06-13 14:40** — Gate2 サインオフ実施（engineer/security 並列, Sonnet）。両者 concern・Block/Critical設計欠陥なし。設計書修正6件（①管理者認証の二重ハッシュ廃止=FE平文送信+サーバPBKDF2のみ ②LINE署名の時定数比較MUST ③admin/players の LINE UID 露出抑制 ④replace-season DELETE+INSERT 単一batch ⑤朝通知 quota ガード ⑥game_no UNIQUE複合）を Codex(ft-gate2-fix)へ委託。反映完了→Gate2 approve→垂直スライス着手。
 - **2026-06-13 05:52** — SPEC-v1 完成（スケルトン+技術詳細+PM裁定6件）。0001_init.sql / api-contract.md 作成。Gate1（engineer/security）起動。次: Gate1 指摘の裁定 → Gate2
 - **2026-06-13 05:41** — 進捗管理表作成。龍偉が案1（D1+Workers）を承認。次: SPEC-v1 スケルトン作成 → Gate1
 

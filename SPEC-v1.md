@@ -18,7 +18,7 @@
 
 ## 3. データモデル（ERD 方針・DDL は §9 で肉付け）
 - `players`(id PK, player_no UNIQUE 正規化済み番号, name, name_en, line_user_id NULL, is_active, created_at)
-- `games`(id PK, game_no 'G01'形式 UNIQUE, date, tipoff, opponent, day_of_week, deadline, season, is_active)
+- `games`(id PK, game_no 'G01'形式 + season の複合 UNIQUE, date, tipoff, opponent, day_of_week, deadline, season, is_active)
 - `applications`(id PK, player_id FK, game_id FK, category CHECK('invite'|'family'|'paid'), quantity_adult/child/infant, receivers JSON, pickup_method, parking, note, status CHECK('confirmed'|'cancelled'), lang, source CHECK('web'|'line'), created_at, updated_at)
   - 現行の3シート（invite/family/paid）は **category 列で1テーブルに正規化**
 - `sessions`(token PK, player_id FK, expires_at) — TTL は DB 側で管理（CacheService 相当）
@@ -36,7 +36,7 @@
 - トークン生成: `crypto.randomUUID()`（122bit エントロピー）
 - ログアウト: `POST /api/auth/logout` で sessions 行を DELETE
 - 期限切れセッション: 朝通知 cron（0 1 * * *）に相乗りで日次 DELETE
-- 管理者認証: サーバー側 PBKDF2（SubtleCrypto deriveBits・iterations=100000・salt=env.ADMIN_SALT）で保存・比較
+- 管理者認証: 管理者ログインフォームに限り「FE 実装変更なし」制約を解除し、平文 password を HTTPS で送信する。サーバー側のみで PBKDF2（SubtleCrypto deriveBits・iterations=100000・salt=env.ADMIN_SALT）を用いて保存・比較する。
 - ログイン試行制限: 5回失敗で10分ロック（admins.failed_count / admins.locked_until）
 
 ## 5. API 設計方針（契約詳細は docs/api-contract.md へ肉付け）
@@ -44,14 +44,17 @@
 - エラー形式統一: `{ok:false, error:{code, message}}`。i18n は FE 側辞書（現行踏襲）
 - CORS: `env.ALLOWED_ORIGIN`（https://app-five-pi-50.vercel.app）固定・`*` 禁止
 - D1 複数書き込み: 必ず `env.DB.batch([...])` でアトミック実行（INSERT + audit_log 等）
+- `replace-season` は既存 `games` / `applications` の DELETE、新規 `games` の INSERT、`audit_log` 記録までを単一 `env.DB.batch([...])` に含めることを必須とする
 
 ## 6. LINE bot 移行方針
 - 現行 Code.gs の会話フロー（番号連携 / menu:apply / menu:check / 日英デフォルト返信）を Worker に移植。署名検証は worker.js 実装を流用
+- LINE webhook の署名比較は `crypto.subtle.verify` による時定数比較を MUST とし、文字列 `!==` 比較は禁止
 - 会話状態は D1（または KV）で管理。リッチメニューは現行のまま（URL 変更なし）
 
 ## 7. シート出力（フェーズ5・最終構築）
 - 対象: applications の status 変更含む全履歴を**現行スプレッドシートの列構成踏襲**で出力
 - 方式: Worker cron（5分間隔）で差分 append。Service Account の鍵は wrangler secret
+- 朝通知 Cron は送信前に LINE message quota 残量を確認し、不足時は push せずログのみ記録するガード節の実装を必須とする
 - シートは閲覧専用運用（編集されても D1 へ影響しない）
 
 ## 8. テスト戦略
@@ -69,7 +72,7 @@
 | テーブル | 行数見込み | GAS 対応 |
 |---|---|---|
 | `players` | ~35 | 選手・スタッフシート (col0/1/2) |
-| `games` | ~30/season | 試合日程シート (col0〜4) |
+| `games` | ~30/season | 試合日程シート (col0〜4)。`game_no + season` で一意 |
 | `applications` | ~500/season | 招待/家族席/有料 3シート → category 列で統一 |
 | `sessions` | TTL管理 | `CacheService.put('SESS_{token}', playerId, 21600)` |
 | `admin_sessions` | TTL管理 | `adminLogin` の返り値を永続化 |
@@ -112,7 +115,7 @@ CREATE TABLE IF NOT EXISTS games (
   CHECK(deadline IS NULL OR deadline GLOB '????-??-??'),
   CHECK(day_of_week IN ('月','火','水','木','金','土','日'))
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uq_games_game_no ON games(game_no);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_games_game_no_season ON games(game_no, season);
 ```
 
 #### applications（3シートを1テーブルに正規化）
@@ -246,7 +249,7 @@ node scripts/migrate-to-d1.js --input scripts/migration-data.json --env producti
 
 スクリプトの処理順（FK 制約のため順序厳守）:
 
-1. **admins**: migration-data.json に admins.pw_hash を含めない。移行後に wrangler d1 execute で直接 INSERT する。
+1. **admins**: migration-data.json に admins.pw_hash を含めない。移行後に平文 password から生成した PBKDF2 ハッシュを `wrangler d1 execute` で直接 INSERT する。
    ```sql
    -- wrangler d1 execute で実行（migration-data.json 経由禁止）
    INSERT INTO admins(role, pw_hash) VALUES('ticket', '<pbkdf2-hash>');

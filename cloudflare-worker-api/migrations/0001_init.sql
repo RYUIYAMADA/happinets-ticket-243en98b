@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS games (
   CHECK(day_of_week IN ('月','火','水','木','金','土','日'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uq_games_game_no ON games(game_no);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_games_game_no_season ON games(game_no, season);
 CREATE INDEX       IF NOT EXISTS idx_games_date ON games(date);
 CREATE INDEX       IF NOT EXISTS idx_games_deadline ON games(deadline);
 
