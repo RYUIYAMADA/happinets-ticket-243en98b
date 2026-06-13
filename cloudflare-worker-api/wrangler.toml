@@ -3,13 +3,10 @@ main            = "src/index.js"
 compatibility_date = "2026-06-01"
 
 # D1 データベース
-# database_id は wrangler d1 create family-tickets-db 実行後に返される ID を転記すること
-# 例: wrangler d1 create family-tickets-db --location=apac
-# TODO(龍偉): 下の YOUR_D1_DATABASE_ID を実発行 ID に置き換える
 [[d1_databases]]
 binding       = "DB"
 database_name = "family-tickets-db"
-database_id   = "YOUR_D1_DATABASE_ID"
+database_id   = "e0012711-4846-4727-8bc9-2a44d3d66de6"
 # D1 リージョン（日本ユーザー向け）
 # location_hint は wrangler.toml では設定不可。wrangler d1 create 時に --location=apac を指定する
 # wrangler d1 create family-tickets-db --location=apac
