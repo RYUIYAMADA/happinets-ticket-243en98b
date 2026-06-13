@@ -957,7 +957,7 @@ window.LIFF_CONFIG = {
     <h2 class="liff-modal-title">初回登録<span class="en-sub" aria-hidden="true">First-time Registration</span></h2>
     <p class="liff-modal-desc">背番号を入力してLINEアカウントと連携してください。<span class="en-sub" aria-hidden="true">Enter your 3-digit jersey number to link your LINE account.</span></p>
     <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
-      class="liff-modal-input"/>
+      class="liff-modal-input" data-i18n="jerseyExample"/>
     <div id="liff-link-error" class="liff-modal-error"></div>
     <button id="liff-link-btn" onclick="handleLiffLink()" class="liff-modal-btn">連携する<span class="en-sub" aria-hidden="true">Link Account</span></button>
   </div>
@@ -968,7 +968,7 @@ window.LIFF_CONFIG = {
     <h2 class="liff-modal-title">選手家族チケット申込<span class="en-sub" aria-hidden="true">Player Family Ticket Request</span></h2>
     <p class="liff-modal-desc">背番号3桁を入力してログインしてください。<span class="en-sub" aria-hidden="true">Enter your 3-digit jersey number to log in.</span></p>
     <input id="fallback-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
-      class="liff-modal-input" inputmode="numeric"/>
+      class="liff-modal-input" data-i18n="jerseyExample" inputmode="numeric"/>
     <div id="fallback-login-error" class="liff-modal-error"></div>
     <button id="fallback-login-btn" onclick="handleFallbackLogin()" class="liff-modal-btn">ログイン<span class="en-sub" aria-hidden="true">Log In</span></button>
   </div>
@@ -976,7 +976,7 @@ window.LIFF_CONFIG = {
 <!-- 認証中スピナー -->
 <div id="liff-loading-overlay" class="liff-loading-backdrop">
   <div class="liff-spinner"></div>
-  <p class="liff-loading-text">LINEアカウントを確認中...</p>
+  <p class="liff-loading-text" data-i18n="liffLoadingText">LINEアカウントを確認中...</p>
 </div>
 <header>
   <button class="back" onclick="handleBackButton()" data-i18n="backBtn">← 戻る</button>
@@ -994,8 +994,8 @@ window.LIFF_CONFIG = {
   <div class="top-shell">
     <div>
       <div class="section-eyebrow">STEP 1</div>
-      <h2 class="section-title">申込種別を選択</h2>
-      <p class="section-description">現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。</p>
+      <h2 class="section-title" data-i18n="ticketTypeSelect">申込種別を選択</h2>
+      <p class="section-description" data-i18n="ticketTypeDesc">現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。</p>
     </div>
     <div class="step-tabs ticket-tabs">
       <div class="radio-group">
@@ -1042,10 +1042,10 @@ window.LIFF_CONFIG = {
   <div class="ticket-section" id="section-invite">
     <div class="section-head">
       <div class="section-eyebrow">STEP 2</div>
-      <h2 class="section-title">招待チケットを申し込む</h2>
+      <h2 class="section-title" data-i18n="inviteTitle">招待チケットを申し込む</h2>
     </div>
     <div class="notice notice-success">
-      <div class="notice-title">2F自由チケット（無償提供）</div>
+      <div class="notice-title" data-i18n="inviteFreeSeats">2F自由チケット（無償提供）</div>
       <ul>
         <li>毎ホームゲーム最大<strong>10枚</strong>まで無料申込可能</li>
         <li>家族以外のゲストも招待可能</li>
@@ -1054,8 +1054,8 @@ window.LIFF_CONFIG = {
       </ul>
     </div>
     <div class="notice notice-warning">
-      <div class="notice-title">2F自由 ご注意</div>
-      <p>自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
+      <div class="notice-title" data-i18n="inviteNotice">2F自由 ご注意</div>
+      <p data-i18n="inviteNoticeText">自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
     </div>
     <div class="card">
       <div class="section-eyebrow">Reservation</div>
@@ -1069,7 +1069,7 @@ window.LIFF_CONFIG = {
   <div class="ticket-section" id="section-family">
     <div class="section-head">
       <div class="section-eyebrow">STEP 2</div>
-      <h2 class="section-title">家族席チケットを申し込む</h2>
+      <h2 class="section-title" data-i18n="familyTitle">家族席チケットを申し込む</h2>
     </div>
     <div class="notice">
       <ul>
@@ -1081,12 +1081,12 @@ window.LIFF_CONFIG = {
     </div>
     <div class="card">
       <div class="section-eyebrow">Receiver</div>
-      <div class="section-title">受取人登録</div>
-      <p class="section-description">登録した氏名は各試合の受取者欄から選択できます。</p>
+      <div class="section-title" data-i18n="receiverReg">受取人登録</div>
+      <p class="section-description" data-i18n="receiverDesc">登録した氏名は各試合の受取者欄から選択できます。</p>
       <div id="fam-receiver-chips" class="receiver-chips"></div>
       <div class="add-receiver-row">
-        <input type="text" id="fam-new-receiver-input" placeholder="氏名を入力（例：山田 花子）" maxlength="30">
-        <button type="button" class="add-receiver-btn" onclick="addFamReceiver()">追加</button>
+        <input type="text" id="fam-new-receiver-input" placeholder="氏名を入力（例：山田 花子）" maxlength="30" data-i18n="nameExample">
+        <button type="button" class="add-receiver-btn" onclick="addFamReceiver()" data-i18n="addBtn">追加</button>
       </div>
     </div>
     <div class="card">
@@ -1102,7 +1102,7 @@ window.LIFF_CONFIG = {
   <div class="ticket-section" id="section-paid">
     <div class="section-head">
       <div class="section-eyebrow">STEP 2</div>
-      <h2 class="section-title">有料チケットを申し込む</h2>
+      <h2 class="section-title" data-i18n="paidTitle">有料チケットを申し込む</h2>
     </div>
     <div class="notice">
       <ul>
@@ -1116,8 +1116,8 @@ window.LIFF_CONFIG = {
       <div class="section-title">申込内容</div>
       <div class="form-group">
         <label class="field-label">試合選択 <span class="req">*</span><span class="en-sub" aria-hidden="true">Select Game</span></label>
-        <select id="paid-game">
-          <option value="">--- 試合を選んでください ---</option>
+        <select id="paid-game" data-i18n-default="selectGame">
+          <option value="" data-i18n="selectGame">--- 試合を選んでください ---</option>
         </select>
         <div id="paid-deadline-info" class="helper-text"></div>
       </div>
@@ -1681,6 +1681,63 @@ STRINGS.ja = {
   otherRequests: 'その他リクエスト',
   receiverPayment: '受取者支払い（試合当日）',
   seatMap: '座席図',
+  // LIFF モーダル
+  liffLinkTitle: '初回登録',
+  liffLinkDesc: '背番号を入力してLINEアカウントと連携してください',
+  liffLinkBtn: '連携する',
+  fallbackTitle: '選手家族チケット申込',
+  fallbackDesc: '背番号3桁を入力してログインしてください',
+  fallbackBtn: 'ログイン',
+  liffLoadingText: 'LINEアカウントを確認中',
+  // セクション
+  ticketTypeSelect: '申込種別を選択',
+  ticketTypeDesc: '現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します',
+  inviteTitle: '招待チケットを申し込む',
+  familyTitle: '家族席チケットを申し込む',
+  paidTitle: '有料チケットを申し込む',
+  // 注釈
+  inviteFreeSeats: '2F自由チケット（無償提供）',
+  inviteMaxCount: '毎ホームゲーム最大10枚まで無料申込可能',
+  inviteGuests: '家族以外のゲストも招待可能',
+  inviteUpgrade: '11枚以上や座席アップグレードは料金発生 → 特記事項に記入',
+  applicationWarning: '申告内容と異なる場合はチケットをお渡しできません',
+  inviteNotice: '2F自由 ご注意',
+  inviteNoticeText: '自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。',
+  familyDef: '「家族」= 二親等内の親族限定',
+  familyGate: '実券をお渡しして一般入場口からご入場（関係者受付からは入場不可）',
+  familyInfant: '未就学児が座席を使用する場合は枚数に含めて申請',
+  receiverReg: '受取人登録',
+  receiverDesc: '登録した氏名は各試合の受取者欄から選択できます。',
+  addBtn: '追加',
+  gameReservation: '試合ごとの枚数・受取方法',
+  // Paid注釈
+  paidDeadline: '試合開催の7日前まで',
+  paidDeadlineNote: 'に申込',
+  paidSeatAvail: '申込時期・売れ行きにより希望座席を準備できない場合あり',
+  paidDynamic: 'フレックス価格・ダイナミックプライシング適用（公式サイト参照）',
+  paidAppContent: '申込内容',
+  // フォームラベル
+  selectGame: '試合選択',
+  seatCategory: '座席カテゴリー',
+  seatCount: '枚数',
+  seatRequest: '座席に関するリクエスト',
+  ticketPickup: 'チケット受取方法',
+  receiverNameForDay: '受取者名（当日受取の場合）',
+  // Placeholder
+  jerseyExample: '背番号（例: 002）',
+  nameExample: '氏名を入力（例：山田 花子）',
+  seatReqExample: '例）並びの席、ホームベンチ側、端の席、なるべく前の席など',
+  receiverNamePlaceholder: '受取者の氏名',
+  notesPlaceholder: 'その他ご要望があれば記入',
+  selectReceiver: '登録済みから選択 または直接入力',
+  selectPlaceholder: '選択してください',
+  selectGame: '--- 試合を選んでください ---',
+  // Select option
+  royalSeat: '①ロイヤルシート',
+  premiumSeat: '②プレミアムシート',
+  arenaSeat: '④アリーナ指定席センター',
+  // その他
+  tapToEnlarge: 'タップで拡大',
 };
 STRINGS.en = {
   title: 'Ticket Request Form',
@@ -1712,6 +1769,63 @@ STRINGS.en = {
   otherRequests: 'Other Requests',
   receiverPayment: 'Receiver Pays on Game Day',
   seatMap: 'Seat Map',
+  // LIFF モーダル
+  liffLinkTitle: 'First-time Registration',
+  liffLinkDesc: 'Enter your jersey number to link your LINE account',
+  liffLinkBtn: 'Link Account',
+  fallbackTitle: 'Family Ticket Application',
+  fallbackDesc: 'Enter your 3-digit jersey number to log in',
+  fallbackBtn: 'Log In',
+  liffLoadingText: 'Verifying LINE account',
+  // セクション
+  ticketTypeSelect: 'Select Ticket Type',
+  ticketTypeDesc: 'Your application continues as-is, with only the necessary fields shown for each type',
+  inviteTitle: 'Apply for Complimentary Tickets',
+  familyTitle: 'Apply for Family Seat Tickets',
+  paidTitle: 'Apply for Paid Tickets',
+  // 注釈
+  inviteFreeSeats: 'Section 2F Complimentary Tickets',
+  inviteMaxCount: 'Maximum 10 free tickets per home game',
+  inviteGuests: 'Non-family guests can also be invited',
+  inviteUpgrade: 'For 11+ tickets or seat upgrades, charges apply → note in remarks',
+  applicationWarning: 'Tickets cannot be issued if your application differs from the actual request',
+  inviteNotice: 'Section 2F Important Notice',
+  inviteNoticeText: 'As these are general admission seats, you may not be able to sit together or may have to stand depending on your arrival time. Please arrive early.',
+  familyDef: 'Family members up to second-degree relatives only',
+  familyGate: 'You will receive physical tickets to enter through the general admission gate (not staff entrance)',
+  familyInfant: 'If infants use a seat, include them in the ticket count',
+  receiverReg: 'Register Recipients',
+  receiverDesc: 'Registered names can be selected as the recipient for each game.',
+  addBtn: 'Add',
+  gameReservation: 'Quantity and Pickup Method by Game',
+  // Paid注釈
+  paidDeadline: '7 days before the game',
+  paidDeadlineNote: 'deadline',
+  paidSeatAvail: 'Desired seats may not be available depending on application timing and demand',
+  paidDynamic: 'Flex pricing and dynamic pricing apply (see official website)',
+  paidAppContent: 'Application Details',
+  // フォームラベル
+  selectGame: 'Select Game',
+  seatCategory: 'Seat Category',
+  seatCount: 'Quantity',
+  seatRequest: 'Seat Request',
+  ticketPickup: 'Ticket Pickup Method',
+  receiverNameForDay: 'Recipient Name (for same-day pickup)',
+  // Placeholder
+  jerseyExample: 'Jersey Number (e.g., 002)',
+  nameExample: 'Name (e.g., Yamada Hanako)',
+  seatReqExample: 'e.g., together, home bench side, corner seat, closer to front',
+  receiverNamePlaceholder: 'Recipient\'s Name',
+  notesPlaceholder: 'Other requests if any',
+  selectReceiver: 'Choose from registered or enter directly',
+  selectPlaceholder: 'Select',
+  selectGame: '--- Select a game ---',
+  // Select option
+  royalSeat: '① Royal Seat',
+  premiumSeat: '② Premium Seat',
+  arenaSeat: '④ Arena Designated Center',
+  // その他
+  tapToEnlarge: 'Tap to enlarge',
 };
 // ────────────────────────────────────────────────────
 
@@ -2122,8 +2236,8 @@ function buildFamilyGrid() {
         <div class="sel-wrap">
           <span class="sel-label">受取方法</span>
           <select class="game-card-sel fam-pickup" data-game="${esc(g.gameId)}">
-            <option value="pre" selected>事前受取</option>
-            <option value="day">当日受取</option>
+            <option value="pre">事前受取</option>
+            <option value="day" selected>当日受取</option>
           </select>
         </div>
         <div class="sel-wrap sel-wrap-narrow">
@@ -2137,11 +2251,11 @@ function buildFamilyGrid() {
       </div>
       <div class="receiver-field">
         <label>受取者名 <span class="req">*</span></label>
-        <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="登録済みから選択 または直接入力">
+        <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="登録済みから選択 または直接入力" data-i18n="selectReceiver">
       </div>
       <div class="receiver-field">
         <label>特記事項</label>
-        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="その他ご要望があれば記入"></textarea>
+        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="その他ご要望があれば記入" data-i18n="notesPlaceholder"></textarea>
       </div>
       <div class="qty-summary" data-existing="${famExisting}">
         <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
