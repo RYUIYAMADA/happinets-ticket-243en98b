@@ -287,7 +287,7 @@
     background: var(--primary);
     color: var(--bg);
   }
-  .ticket-tabs { display: flex; flex-direction: column; gap: var(--space-3); }
+  .ticket-tabs { display: flex; flex-direction: column; gap: var(--space-3); overflow-x: visible; }
   .ticket-tabs .radio-group {
     flex-direction: column;
     gap: var(--space-3);
@@ -1081,7 +1081,7 @@ window.LIFF_CONFIG = {
   <!-- ===== 招待チケット ===== -->
   <div class="ticket-section" id="section-invite">
     <div class="section-head">
-      <div class="section-eyebrow" data-i18n="inviteSection">STEP 2</div>
+      <div class="section-eyebrow" data-i18n="step2Eyebrow">STEP 2</div>
       <h2 class="section-title" data-i18n="inviteTitle">招待チケットを申し込む</h2>
     </div>
     <div class="notice notice-success">
@@ -1729,6 +1729,7 @@ STRINGS.ja = {
   step1Eyebrow: 'STEP 1',
   step1Title: '申込種別を選択',
   step1Description: '現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。',
+  step2Eyebrow: 'STEP 2',
   inviteSection: '招待チケット',
   inviteTitle: '招待チケットを申し込む',
   inviteTitle2f: '2F自由チケット（無償提供）',
@@ -1872,6 +1873,7 @@ STRINGS.en = {
   step1Eyebrow: 'STEP 1',
   step1Title: 'Select Ticket Type',
   step1Description: 'The current application flow stays the same, and only the fields needed for each ticket type are shown below.',
+  step2Eyebrow: 'STEP 2',
   inviteSection: 'Complimentary Tickets',
   inviteTitle: 'Apply for Complimentary Tickets',
   inviteTitle2f: '2F Unreserved Tickets (Free)',
