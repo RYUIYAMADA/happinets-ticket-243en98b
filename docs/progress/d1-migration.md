@@ -96,9 +96,15 @@ progress_pct: 0
 - 実装タスク完了率: 約73%（11/15。設計4✅ + 実装5✅ + セキュリティ修正 + 移行ツール。残=本番D1/並行稼働/E2E/シート出力/切替）
 - 受入条件達成率: コード面ほぼ充足。残=本番データ移行・並行稼働の結果一致・E2E（いずれも本番環境=龍偉のwrangler login必要）
 
-## ★龍偉アクション待ち（フェーズ3着手の唯一のブロッカー）
-本番D1作成とデータ移行は `wrangler login`（ブラウザで Allow 1クリック）が必要。以降は scripts/README-migration.md の9手順。
-ターミナルで: `cd ~/Desktop/ryui-workspace/projects/happinets/family-tickets/cloudflare-worker-api && npx wrangler login`
+## ★テスト版デプロイ完了（2026-06-13）— 龍偉が今すぐ触れる
+- Cloudflare 既ログイン済み（row2014.2015.k / acct 4dcd341c...）→ login操作不要だった
+- D1作成: family-tickets-db（id e0012711-4846-4727-8bc9-2a44d3d66de6・APAC/KIX）
+- 本番Worker: https://family-tickets-api.row2014-2015-k.workers.dev
+- スキーマ+テストマスタ投入（選手6/14/22/99/101・試合5件・admin pw=happinets-test）
+- FE api-client を本番Workerに結線→html-share再アップ（hnts-* 4URL）・CORS許可確認済み
+- secret: ADMIN_SALT設定済 / LINE_CHANNEL_ACCESS_TOKEN設定済(.env.gas) / **LINE_CHANNEL_SECRET 未設定=龍偉提供待ち**
+- 残: ①LINE_CHANNEL_SECRET設定 ②LINE Developers webhook= 上記/line/webhook ③リッチメニューURL=hnts-player-form
+- インフラ台帳: docs/README-deploy.md（孤児インフラ防止）
 
 ## 作業ログ
 - **2026-06-13 15:** — フェーズ1(設計)Gate2 approve確定→フェーズ2(実装)完走: 垂直スライス1(a760cc1)→API16ルート(57377c8)→LINE bot(4ab4381)→FE切替(1832905)→実装後検証(E2E approve/security concern)→セキュリティ修正HIGH1+MED3(66092d1)→移行ツール(36dc938)。全てローカルD1+npm test 19/19で検証。次=★龍偉 wrangler login→本番移行。
