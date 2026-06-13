@@ -973,7 +973,7 @@ window.LIFF_CONFIG = {
   <p class="liff-loading-text">LINEアカウントを確認中...</p>
 </div>
 <header>
-  <button class="back" onclick="location.href='index.html'" data-i18n="backBtn">← 戻る</button>
+  <button class="back" onclick="handleBackButton()" data-i18n="backBtn">← 戻る</button>
   <div class="header-title">
     <h1 data-i18n="title">チケット申込フォーム</h1>
     <div id="header-name" class="header-player"></div>
@@ -1032,48 +1032,10 @@ window.LIFF_CONFIG = {
       </div>
     </div>
   </div>
-
-  <div class="card">
-    <div class="section-eyebrow">STEP 2</div>
-    <h2 class="section-title">受付状況を確認</h2>
-    <div class="radio-group">
-      <label class="radio-card">
-        <input type="radio" name="ticketTypeMirror" value="invite" disabled>
-        <div class="rc-main">
-          <div class="rc-head">
-            <div class="rc-text">招待チケット</div>
-            <div class="rc-avail" id="avail-invite"></div>
-          </div>
-          <div class="rc-sub">無料・2F自由席・1試合最大10枚<span class="en-sub" aria-hidden="true">Free, 2F unreserved, up to 10 per game</span></div>
-        </div>
-      </label>
-      <label class="radio-card">
-        <input type="radio" name="ticketTypeMirror" value="family" disabled>
-        <div class="rc-main">
-          <div class="rc-head">
-            <div class="rc-text">家族席チケット</div>
-            <div class="rc-avail" id="avail-family"></div>
-          </div>
-          <div class="rc-sub">二親等内の親族限定・駐車場申請可<span class="en-sub" aria-hidden="true">Relatives within second degree, parking available</span></div>
-        </div>
-      </label>
-      <label class="radio-card">
-        <input type="radio" name="ticketTypeMirror" value="paid" disabled>
-        <div class="rc-main">
-          <div class="rc-head">
-            <div class="rc-text">有料チケット</div>
-            <div class="rc-avail" id="avail-paid"></div>
-          </div>
-          <div class="rc-sub">各座席カテゴリー・7日前までに申込<span class="en-sub" aria-hidden="true">Seat categories, request 7 days before</span></div>
-        </div>
-      </label>
-    </div>
-  </div>
-
   <!-- ===== 招待チケット ===== -->
   <div class="ticket-section" id="section-invite">
     <div class="section-head">
-      <div class="section-eyebrow">STEP 3</div>
+      <div class="section-eyebrow">STEP 2</div>
       <h2 class="section-title">招待チケットを申し込む</h2>
     </div>
     <div class="notice notice-success">
@@ -1100,7 +1062,7 @@ window.LIFF_CONFIG = {
   <!-- ===== 家族席チケット ===== -->
   <div class="ticket-section" id="section-family">
     <div class="section-head">
-      <div class="section-eyebrow">STEP 3</div>
+      <div class="section-eyebrow">STEP 2</div>
       <h2 class="section-title">家族席チケットを申し込む</h2>
     </div>
     <div class="notice">
@@ -1133,7 +1095,7 @@ window.LIFF_CONFIG = {
   <!-- ===== 有料チケット ===== -->
   <div class="ticket-section" id="section-paid">
     <div class="section-head">
-      <div class="section-eyebrow">STEP 3</div>
+      <div class="section-eyebrow">STEP 2</div>
       <h2 class="section-title">有料チケットを申し込む</h2>
     </div>
     <div class="notice">
@@ -1874,6 +1836,17 @@ async function handleFallbackLogin() {
     errEl.textContent = e.message || 'ログインに失敗しました';
     btn.disabled = false;
     btn.textContent = 'ログイン';
+  }
+}
+
+/** 戻るボタン: LIFF内なら closeWindow、外なら index.html へ */
+function handleBackButton() {
+  if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+    // LIFF コンテキスト内: LIFF を閉じる
+    liff.closeWindow();
+  } else {
+    // ブラウザ: index.html へ遷移
+    location.href = 'index.html';
   }
 }
 
