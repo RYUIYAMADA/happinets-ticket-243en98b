@@ -1,3 +1,11 @@
+export class HttpError extends Error {
+  constructor(status, code, message) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export function json(data, status = 200, origin) {
   return new Response(JSON.stringify(data), {
     status,
@@ -5,16 +13,12 @@ export function json(data, status = 200, origin) {
   });
 }
 
-export function ok(data, origin) {
-  return json({ ok: true, data }, 200, origin);
+export function ok(data, origin, status = 200) {
+  return json({ ok: true, data }, status, origin);
 }
 
 export function error(status, code, message, origin) {
-  return json(
-    { ok: false, error: { code, message } },
-    status,
-    origin,
-  );
+  return json({ ok: false, error: { code, message } }, status, origin);
 }
 
 export function corsHeaders(origin) {
