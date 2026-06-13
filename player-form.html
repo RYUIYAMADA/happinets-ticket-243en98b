@@ -14,6 +14,7 @@
     --primary-strong: #1d4fd7;
     --primary-weak: #eaf0ff;
     --accent-line: #2563eb;
+    --accent-cta: #EA580C;
     --text: #0f172a;
     --text-sub: #64748b;
     --text-faint: #94a3b8;
@@ -63,7 +64,7 @@
     color: var(--text);
     font-size: 16px;
     min-height: 100vh;
-    padding-bottom: calc(var(--space-8) * 2 + env(safe-area-inset-bottom));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
     line-break: strict;
@@ -286,22 +287,23 @@
     background: var(--primary);
     color: var(--bg);
   }
-  .ticket-tabs { display: flex; gap: var(--space-2); }
+  .ticket-tabs { display: flex; flex-direction: column; gap: var(--space-3); }
   .ticket-tabs .radio-group {
-    flex-direction: row;
-    gap: var(--space-2);
-    min-width: max-content;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
   }
   .ticket-tabs .radio-card {
-    min-width: 220px;
-    border-radius: var(--radius-pill);
-    padding: var(--space-3) var(--space-4);
-    background: transparent;
+    width: 100%;
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    background: var(--bg);
+    min-height: 72px;
   }
   .ticket-tabs .radio-card .rc-sub,
   .ticket-tabs .radio-card .rc-avail { display: none; }
-  .ticket-tabs .radio-card .rc-text { font-size: 14px; white-space: nowrap; }
-  .ticket-tabs .radio-card .en-sub { white-space: nowrap; }
+  .ticket-tabs .radio-card .rc-text { font-size: 15px; white-space: normal; font-weight: 700; }
+  .ticket-tabs .radio-card .en-sub { white-space: normal; }
   .ticket-tabs .radio-card:has(input:checked) {
     background: var(--primary);
     border-color: var(--primary);
@@ -683,6 +685,36 @@
   .btn-primary:hover { background: var(--primary-strong); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  /* ── 固定 bottom bar: 申込ボタン ── */
+  .submit-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: var(--space-4);
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+    display: flex;
+    gap: var(--space-3);
+  }
+  .submit-bottom-bar .btn-primary {
+    width: 100%;
+    margin: 0;
+    background: var(--accent-cta);
+    color: var(--bg);
+  }
+  .submit-bottom-bar .btn-primary:hover {
+    background: #D64B00;
+  }
+  .submit-bottom-bar .btn-primary:disabled {
+    background: var(--disabled);
+    opacity: 0.7;
+  }
+  .submit-bottom-bar button:not(.active-section) { display: none; }
+  .submit-bottom-bar button.active-section { display: block; }
+
   .alert {
     padding: var(--space-4);
     border-radius: var(--radius-card);
@@ -954,29 +986,29 @@ window.LIFF_CONFIG = {
 <!-- 初回連携モーダル（LIFF未連携時に表示） -->
 <div id="liff-link-overlay" class="liff-overlay-backdrop">
   <div class="liff-modal-box">
-    <h2 class="liff-modal-title">初回登録<span class="en-sub" aria-hidden="true">First-time Registration</span></h2>
-    <p class="liff-modal-desc">背番号を入力してLINEアカウントと連携してください。<span class="en-sub" aria-hidden="true">Enter your 3-digit jersey number to link your LINE account.</span></p>
+    <h2 class="liff-modal-title" data-i18n="liffLinkTitle">初回登録</h2>
+    <p class="liff-modal-desc" data-i18n="liffLinkDesc">背番号を入力してLINEアカウントと連携してください。</p>
     <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
-      class="liff-modal-input" data-i18n="jerseyExample"/>
+      class="liff-modal-input" data-i18n="liffLinkInputPlaceholder"/>
     <div id="liff-link-error" class="liff-modal-error"></div>
-    <button id="liff-link-btn" onclick="handleLiffLink()" class="liff-modal-btn">連携する<span class="en-sub" aria-hidden="true">Link Account</span></button>
+    <button id="liff-link-btn" onclick="handleLiffLink()" class="liff-modal-btn" data-i18n="linking">連携する</button>
   </div>
 </div>
 <!-- 番号ログイン（LIFF失敗時フォールバック）モーダル -->
 <div id="fallback-login-overlay" class="liff-overlay-backdrop">
   <div class="liff-modal-box">
-    <h2 class="liff-modal-title">選手家族チケット申込<span class="en-sub" aria-hidden="true">Player Family Ticket Request</span></h2>
-    <p class="liff-modal-desc">背番号3桁を入力してログインしてください。<span class="en-sub" aria-hidden="true">Enter your 3-digit jersey number to log in.</span></p>
+    <h2 class="liff-modal-title" data-i18n="fallbackLoginTitle">選手家族チケット申込</h2>
+    <p class="liff-modal-desc" data-i18n="fallbackLoginDesc">背番号3桁を入力してログインしてください。</p>
     <input id="fallback-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
-      class="liff-modal-input" data-i18n="jerseyExample" inputmode="numeric"/>
+      class="liff-modal-input" data-i18n="fallbackLoginInputPlaceholder" inputmode="numeric"/>
     <div id="fallback-login-error" class="liff-modal-error"></div>
-    <button id="fallback-login-btn" onclick="handleFallbackLogin()" class="liff-modal-btn">ログイン<span class="en-sub" aria-hidden="true">Log In</span></button>
+    <button id="fallback-login-btn" onclick="handleFallbackLogin()" class="liff-modal-btn" data-i18n="logIn">ログイン</button>
   </div>
 </div>
 <!-- 認証中スピナー -->
 <div id="liff-loading-overlay" class="liff-loading-backdrop">
   <div class="liff-spinner"></div>
-  <p class="liff-loading-text" data-i18n="liffLoadingText">LINEアカウントを確認中...</p>
+  <p class="liff-loading-text" data-i18n="loadingText">LINEアカウントを確認中...</p>
 </div>
 <header>
   <button class="back" onclick="handleBackButton()" data-i18n="backBtn">← 戻る</button>
@@ -993,9 +1025,9 @@ window.LIFF_CONFIG = {
 
   <div class="top-shell">
     <div>
-      <div class="section-eyebrow">STEP 1</div>
-      <h2 class="section-title" data-i18n="ticketTypeSelect">申込種別を選択</h2>
-      <p class="section-description" data-i18n="ticketTypeDesc">現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。</p>
+      <div class="section-eyebrow" data-i18n="step1Eyebrow">STEP 1</div>
+      <h2 class="section-title" data-i18n="step1Title">申込種別を選択</h2>
+      <p class="section-description" data-i18n="step1Description">現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。</p>
     </div>
     <div class="step-tabs ticket-tabs">
       <div class="radio-group">
@@ -1005,10 +1037,11 @@ window.LIFF_CONFIG = {
           <div class="step-pill-copy">
             <span class="step-pill-number">01</span>
             <div class="step-pill-label">
-              <div class="rc-text">招待チケット<span class="en-sub" aria-hidden="true">Complimentary Tickets</span></div>
+              <div class="rc-text" data-i18n="inviteSection">招待チケット</div>
             </div>
           </div>
         </div>
+        <span id="avail-invite"></span>
         <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
       </label>
       <label class="radio-card">
@@ -1017,10 +1050,11 @@ window.LIFF_CONFIG = {
           <div class="step-pill-copy">
             <span class="step-pill-number">02</span>
             <div class="step-pill-label">
-              <div class="rc-text">家族席チケット<span class="en-sub" aria-hidden="true">Family Seats</span></div>
+              <div class="rc-text" data-i18n="familySection">家族席チケット</div>
             </div>
           </div>
         </div>
+        <span id="avail-family"></span>
         <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
       </label>
       <label class="radio-card">
@@ -1029,10 +1063,11 @@ window.LIFF_CONFIG = {
           <div class="step-pill-copy">
             <span class="step-pill-number">03</span>
             <div class="step-pill-label">
-              <div class="rc-text">有料チケット<span class="en-sub" aria-hidden="true">Paid Tickets</span></div>
+              <div class="rc-text" data-i18n="paidSection">有料チケット</div>
             </div>
           </div>
         </div>
+        <span id="avail-paid"></span>
         <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
       </label>
       </div>
@@ -1041,185 +1076,189 @@ window.LIFF_CONFIG = {
   <!-- ===== 招待チケット ===== -->
   <div class="ticket-section" id="section-invite">
     <div class="section-head">
-      <div class="section-eyebrow">STEP 2</div>
+      <div class="section-eyebrow" data-i18n="inviteSection">STEP 2</div>
       <h2 class="section-title" data-i18n="inviteTitle">招待チケットを申し込む</h2>
     </div>
     <div class="notice notice-success">
-      <div class="notice-title" data-i18n="inviteFreeSeats">2F自由チケット（無償提供）</div>
+      <div class="notice-title" data-i18n="inviteTitle2f">2F自由チケット（無償提供）</div>
       <ul>
-        <li>毎ホームゲーム最大<strong>10枚</strong>まで無料申込可能</li>
-        <li>家族以外のゲストも招待可能</li>
-        <li>11枚以上や座席アップグレードは料金発生 → 特記事項に記入</li>
-        <li>申告内容と異なる場合はチケットをお渡しできません</li>
+        <li data-i18n="invitePoint1">毎ホームゲーム最大10枚まで無料申込可能</li>
+        <li data-i18n="invitePoint2">家族以外のゲストも招待可能</li>
+        <li data-i18n="invitePoint3">11枚以上や座席アップグレードは料金発生 → 特記事項に記入</li>
+        <li data-i18n="invitePoint4">申告内容と異なる場合はチケットをお渡しできません</li>
       </ul>
     </div>
     <div class="notice notice-warning">
-      <div class="notice-title" data-i18n="inviteNotice">2F自由 ご注意</div>
-      <p data-i18n="inviteNoticeText">自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
+      <div class="notice-title" data-i18n="inviteWarningTitle">2F自由 ご注意</div>
+      <p data-i18n="inviteWarningText">自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
     </div>
     <div class="card">
-      <div class="section-eyebrow">Reservation</div>
-      <div class="section-title">試合ごとの枚数・受取方法</div>
+      <div class="section-eyebrow" data-i18n="inviteReservation">Reservation</div>
+      <div class="section-title" data-i18n="inviteReservationTitle">試合ごとの枚数・受取方法</div>
       <div class="game-card-list" id="invite-list"></div>
     </div>
-    <button class="btn-primary" id="inv-submit" onclick="submitInvite()">申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span></button>
   </div>
 
   <!-- ===== 家族席チケット ===== -->
   <div class="ticket-section" id="section-family">
     <div class="section-head">
-      <div class="section-eyebrow">STEP 2</div>
+      <div class="section-eyebrow" data-i18n="familySection">STEP 2</div>
       <h2 class="section-title" data-i18n="familyTitle">家族席チケットを申し込む</h2>
     </div>
     <div class="notice">
       <ul>
-        <li>「家族」= 二親等内の親族限定</li>
-        <li>実券をお渡しして一般入場口からご入場（関係者受付からは入場不可）</li>
-        <li>未就学児が座席を使用する場合は枚数に含めて申請</li>
-        <li>申告内容と異なる場合はチケットをお渡しできません</li>
+        <li data-i18n="familyFamilyDef">「家族」= 二親等内の親族限定</li>
+        <li data-i18n="familyRealTickets">実券をお渡しして一般入場口からご入場（関係者受付からは入場不可）</li>
+        <li data-i18n="familyUnderAge">未就学児が座席を使用する場合は枚数に含めて申請</li>
+        <li data-i18n="familyCheckMatches">申告内容と異なる場合はチケットをお渡しできません</li>
       </ul>
     </div>
     <div class="card">
-      <div class="section-eyebrow">Receiver</div>
-      <div class="section-title" data-i18n="receiverReg">受取人登録</div>
-      <p class="section-description" data-i18n="receiverDesc">登録した氏名は各試合の受取者欄から選択できます。</p>
+      <div class="section-eyebrow" data-i18n="familyReceiverEyebrow">Receiver</div>
+      <div class="section-title" data-i18n="familyReceiverTitle">受取人登録</div>
+      <p class="section-description" data-i18n="familyReceiverDesc">登録した氏名は各試合の受取者欄から選択できます。</p>
       <div id="fam-receiver-chips" class="receiver-chips"></div>
       <div class="add-receiver-row">
-        <input type="text" id="fam-new-receiver-input" placeholder="氏名を入力（例：山田 花子）" maxlength="30" data-i18n="nameExample">
-        <button type="button" class="add-receiver-btn" onclick="addFamReceiver()" data-i18n="addBtn">追加</button>
+        <input type="text" id="fam-new-receiver-input" placeholder="氏名を入力（例：山田 花子）" maxlength="30" data-i18n="familyReceiverInput">
+        <button type="button" class="add-receiver-btn" onclick="addFamReceiver()" data-i18n="familyAdd">追加</button>
       </div>
     </div>
     <div class="card">
-      <div class="section-eyebrow">Reservation</div>
-      <div class="section-title">試合ごとの枚数・受取方法</div>
+      <div class="section-eyebrow" data-i18n="familyReservation">Reservation</div>
+      <div class="section-title" data-i18n="familyReservationTitle">試合ごとの枚数・受取方法</div>
       <div class="game-card-list" id="family-list"></div>
     </div>
     <datalist id="fam-receivers-datalist"></datalist>
-    <button class="btn-primary" id="fam-submit" onclick="submitFamily()">申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span></button>
   </div>
 
   <!-- ===== 有料チケット ===== -->
   <div class="ticket-section" id="section-paid">
     <div class="section-head">
-      <div class="section-eyebrow">STEP 2</div>
+      <div class="section-eyebrow" data-i18n="paidSection">STEP 2</div>
       <h2 class="section-title" data-i18n="paidTitle">有料チケットを申し込む</h2>
     </div>
     <div class="notice">
       <ul>
-        <li>試合開催の<strong>7日前まで</strong>に申込</li>
-        <li>申込時期・売れ行きにより希望座席を準備できない場合あり</li>
-        <li>フレックス価格・ダイナミックプライシング適用（公式サイト参照）</li>
+        <li data-i18n="paidDeadlineRule">試合開催の7日前までに申込</li>
+        <li data-i18n="paidSeatAvailability">申込時期・売れ行きにより希望座席を準備できない場合あり</li>
+        <li data-i18n="paidPricingRule">フレックス価格・ダイナミックプライシング適用（公式サイト参照）</li>
       </ul>
     </div>
     <div class="card">
-      <div class="section-eyebrow">Reservation</div>
-      <div class="section-title">申込内容</div>
+      <div class="section-eyebrow" data-i18n="paidReservation">Reservation</div>
+      <div class="section-title" data-i18n="paidReservationTitle">申込内容</div>
       <div class="form-group">
-        <label class="field-label">試合選択 <span class="req">*</span><span class="en-sub" aria-hidden="true">Select Game</span></label>
+        <label class="field-label" data-i18n="paidGameSelect">試合選択 *</label>
         <select id="paid-game" data-i18n-default="selectGame">
-          <option value="" data-i18n="selectGame">--- 試合を選んでください ---</option>
+          <option value="" data-i18n="paidSelectGame">--- 試合を選んでください ---</option>
         </select>
         <div id="paid-deadline-info" class="helper-text"></div>
       </div>
       <!-- 座席図 -->
       <div class="form-group">
-        <label class="field-label">座席図 / Seat Map</label>
+        <label class="field-label" data-i18n="paidSeatMap">座席図 / Seat Map</label>
         <div class="seat-map-wrap" onclick="toggleSeatMap(this)">
           <img src="https://northern-happinets.bl.kuroco-img.app/v=1662023116/files/user/202209011805_4-800x859.png"
-               alt="座席図 Seat Map"
+               alt="Seat Map"
                class="seat-map-img"
                loading="lazy">
-          <div class="seat-map-hint">タップで拡大 / Tap to enlarge</div>
+          <div class="seat-map-hint" data-i18n="paidSeatMapTap">タップで拡大 / Tap to enlarge</div>
         </div>
         <div class="seat-map-overlay is-hidden" id="seat-map-overlay" onclick="closeSeatMap()">
           <div class="seat-map-modal">
-            <button class="seat-map-close" onclick="closeSeatMap(event)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg> 閉じる</button>
+            <button class="seat-map-close" onclick="closeSeatMap(event)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14" aria-hidden="true"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg> <span data-i18n="paidSeatMapClose">閉じる</span></button>
             <img src="https://northern-happinets.bl.kuroco-img.app/v=1662023116/files/user/202209011805_4-800x859.png"
-                 alt="座席図 Seat Map" class="seat-map-img">
+                 alt="Seat Map" class="seat-map-img">
           </div>
         </div>
       </div>
 
       <div class="form-group">
-        <label class="field-label">座席カテゴリー <span class="req">*</span><span class="en-sub" aria-hidden="true">Seat Category</span></label>
+        <label class="field-label" data-i18n="paidSeatCategory">座席カテゴリー *</label>
         <select id="paid-seat">
-          <option value="">選択してください</option>
-          <option value="①ロイヤルシート">①ロイヤルシート</option>
-          <option value="②プレミアムシート">②プレミアムシート</option>
-          <option value="③エキサイトシート">③エキサイトシート</option>
-          <option value="④アリーナ指定席センター">④アリーナ指定席センター</option>
-          <option value="⑤アリーナ指定席センターベンチ">⑤アリーナ指定席センターベンチ</option>
-          <option value="⑥アリーナ指定席（メイン／ベンチ）">⑥アリーナ指定席（メイン／ベンチ）</option>
-          <option value="⑥アリーナ指定席（リングH/V）">⑥アリーナ指定席（リングH/V）</option>
-          <option value="⑦パノラマシートセンター">⑦パノラマシートセンター</option>
-          <option value="⑧パノラマシート（2F指定）">⑧パノラマシート（2F指定）</option>
-          <option value="⑨エリア指定席（1F自由）">⑨エリア指定席（1F自由）</option>
-          <option value="⑩2F指定席">⑩2F指定席</option>
-          <option value="⑫車いす席">⑫車いす席</option>
+          <option value="" data-i18n="paidSelectSeat">選択してください</option>
+          <option value="①ロイヤルシート" data-i18n="seatCategory1">①ロイヤルシート</option>
+          <option value="②プレミアムシート" data-i18n="seatCategory2">②プレミアムシート</option>
+          <option value="③エキサイトシート" data-i18n="seatCategory3">③エキサイトシート</option>
+          <option value="④アリーナ指定席センター" data-i18n="seatCategory4">④アリーナ指定席センター</option>
+          <option value="⑤アリーナ指定席センターベンチ" data-i18n="seatCategory5">⑤アリーナ指定席センターベンチ</option>
+          <option value="⑥アリーナ指定席（メイン／ベンチ）" data-i18n="seatCategory6">⑥アリーナ指定席（メイン／ベンチ）</option>
+          <option value="⑥アリーナ指定席（リングH/V）" data-i18n="seatCategory7">⑥アリーナ指定席（リングH/V）</option>
+          <option value="⑦パノラマシートセンター" data-i18n="seatCategory8">⑦パノラマシートセンター</option>
+          <option value="⑧パノラマシート（2F指定）" data-i18n="seatCategory9">⑧パノラマシート（2F指定）</option>
+          <option value="⑨エリア指定席（1F自由）" data-i18n="seatCategory10">⑨エリア指定席（1F自由）</option>
+          <option value="⑩2F指定席" data-i18n="seatCategory11">⑩2F指定席</option>
+          <option value="⑫車いす席" data-i18n="seatCategory12">⑫車いす席</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="field-label">枚数 <span class="req">*</span><span class="en-sub" aria-hidden="true">Quantity</span></label>
+        <label class="field-label" data-i18n="paidQuantity">枚数 *</label>
         <select id="paid-qty">
-          <option value="1">1枚</option><option value="2">2枚</option><option value="3">3枚</option>
-          <option value="4">4枚</option><option value="5">5枚</option><option value="6">6枚</option>
-          <option value="7">7枚</option><option value="8">8枚</option><option value="9">9枚</option>
-          <option value="10">10枚</option>
+          <option value="1" data-i18n="paidQty1">1枚</option><option value="2" data-i18n="paidQty2">2枚</option><option value="3" data-i18n="paidQty3">3枚</option>
+          <option value="4" data-i18n="paidQty4">4枚</option><option value="5" data-i18n="paidQty5">5枚</option><option value="6" data-i18n="paidQty6">6枚</option>
+          <option value="7" data-i18n="paidQty7">7枚</option><option value="8" data-i18n="paidQty8">8枚</option><option value="9" data-i18n="paidQty9">9枚</option>
+          <option value="10" data-i18n="paidQty10">10枚</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="field-label">座席に関するリクエスト<span class="en-sub" aria-hidden="true">Seat Request</span></label>
-        <textarea id="paid-seat-req" placeholder="例）並びの席、ホームベンチ側、端の席、なるべく前の席など"></textarea>
+        <label class="field-label" data-i18n="paidSeatRequest">座席に関するリクエスト</label>
+        <textarea id="paid-seat-req" placeholder="例）並びの席、ホームベンチ側、端の席、なるべく前の席など" data-i18n="paidSeatRequestPlaceholder"></textarea>
       </div>
       <div class="form-group">
-        <label class="field-label">お支払い方法 <span class="req">*</span><span class="en-sub" aria-hidden="true">Payment Method</span></label>
+        <label class="field-label" data-i18n="paidPaymentMethod">お支払い方法 *</label>
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="paid-payment" value="salary">
             <div class="rc-main">
-              <div class="rc-text">給料天引き<span class="en-sub" aria-hidden="true">Salary Deduction</span></div>
+              <div class="rc-text" data-i18n="paidSalaryDeduct">給料天引き</div>
             </div>
             <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
           </label>
           <label class="radio-card">
             <input type="radio" name="paid-payment" value="receiver">
             <div class="rc-main">
-              <div class="rc-text">受取者支払い（試合当日）<span class="en-sub" aria-hidden="true">Receiver Pays on Game Day</span></div>
+              <div class="rc-text" data-i18n="paidReceiverPayDay">受取者支払い（試合当日）</div>
             </div>
             <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
           </label>
         </div>
       </div>
       <div class="form-group">
-        <label class="field-label">チケット受取方法 <span class="req">*</span><span class="en-sub" aria-hidden="true">Ticket Pickup</span></label>
+        <label class="field-label" data-i18n="paidTicketPickup">チケット受取方法 *</label>
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="paid-pickup" value="pre">
             <div class="rc-main">
-              <div class="rc-text">事前受取<span class="en-sub" aria-hidden="true">Pick Up Before Game Day</span></div>
+              <div class="rc-text" data-i18n="paidPickupPre">事前受取</div>
             </div>
             <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
           </label>
           <label class="radio-card">
             <input type="radio" name="paid-pickup" value="day">
             <div class="rc-main">
-              <div class="rc-text">当日受取<span class="en-sub" aria-hidden="true">Pick Up on Game Day</span></div>
+              <div class="rc-text" data-i18n="paidPickupDay">当日受取</div>
             </div>
             <span class="rc-check" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="3 8 6.5 11.5 13 5"/></svg></span>
           </label>
         </div>
       </div>
       <div class="form-group">
-        <label class="field-label">受取者名（当日受取の場合）<span class="en-sub" aria-hidden="true">Receiver Name (Game Day Pickup)</span></label>
-        <input type="text" id="paid-receiver" placeholder="受取者の氏名">
+        <label class="field-label" data-i18n="paidReceiverNameGameDay">受取者名（当日受取の場合）</label>
+        <input type="text" id="paid-receiver" placeholder="受取者の氏名" data-i18n="paidReceiverNamePlaceholder">
       </div>
       <div class="form-group">
-        <label class="field-label">その他リクエスト<span class="en-sub" aria-hidden="true">Other Requests</span></label>
-        <textarea id="paid-note" placeholder="その他ご要望があれば記入"></textarea>
+        <label class="field-label" data-i18n="paidOtherRequests">その他リクエスト</label>
+        <textarea id="paid-note" placeholder="その他ご要望があれば記入" data-i18n="paidOtherRequestsPlaceholder"></textarea>
       </div>
     </div>
-    <button class="btn-primary" id="paid-submit" onclick="submitPaid()">申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span></button>
   </div>
+</div>
+
+<!-- Bottom bar: 固定申込ボタン -->
+<div class="submit-bottom-bar">
+  <button class="btn-primary" id="inv-submit" onclick="submitInvite()" data-i18n="submitBtn">申込を送信する</button>
+  <button class="btn-primary" id="fam-submit" onclick="submitFamily()" data-i18n="submitBtn">申込を送信する</button>
+  <button class="btn-primary" id="paid-submit" onclick="submitPaid()" data-i18n="submitBtn">申込を送信する</button>
 </div>
 
 <script src="./api-config.js"></script>
@@ -1519,10 +1558,10 @@ window.LIFF_CONFIG = {
       return;
     }
     if (!liffId || liffId.includes("XXXXXXXXXXXX")) {
-      throw new Error("LIFF IDが未設定です。管理者にお問い合わせください。");
+      throw new Error(t('unsetLiffId'));
     }
     if (typeof liff === "undefined") {
-      throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
+      throw new Error(t('liffSdkError'));
     }
     try {
       await liff.init({ liffId, withLoginOnExternalBrowser: true });
@@ -1557,7 +1596,7 @@ window.LIFF_CONFIG = {
         : 'null ⚠️';
       if (!idToken) {
         // openid scope 未同意 or scope 未設定の可能性
-        throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
+        throw new Error(t('mustBeInLineApp'));
       }
 
       // sessionStorage にキャッシュがあれば返す
@@ -1583,7 +1622,7 @@ window.LIFF_CONFIG = {
         return { unlinked: true };
       }
 
-      const errMsg = result.error?.message || 'LIFF認証に失敗しました。';
+      const errMsg = result.error?.message || t('submitError');
       throw new Error(errMsg);
     } catch (e) {
       throw e;
@@ -1592,7 +1631,7 @@ window.LIFF_CONFIG = {
 
   async function linkWithPlayerNo(playerId) {
     try {
-      if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
+      if (typeof liff === "undefined") throw new Error(t('liffSdkError'));
 
       // 【重要】init + login 完了待ち
       const liffId = (window.LIFF_CONFIG || {}).formLiffId || '';
@@ -1604,7 +1643,7 @@ window.LIFF_CONFIG = {
         ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
         : 'null ⚠️';
       if (!idToken) {
-        throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
+        throw new Error(t('mustBeInLineApp'));
       }
 
       // Worker API で IDToken + 背番号を送信 → 初回連携
@@ -1618,11 +1657,11 @@ window.LIFF_CONFIG = {
       }
 
       if (result.error && result.error.code === "UNAUTHORIZED") {
-        const msg = "背番号が見つかりません。正しい背番号を入力してください。";
+        const msg = t('errorUnlinked');
         throw new Error(msg);
       }
 
-      const errMsg = result.error?.message || '連携に失敗しました。';
+      const errMsg = result.error?.message || t('errorLinkFailed');
       throw new Error(errMsg);
     } catch (e) {
       throw e;
@@ -1636,14 +1675,25 @@ window.LIFF_CONFIG = {
 const STRINGS = { ja: {}, en: {} };
 let lang = localStorage.getItem('ht_lang') || 'ja';
 function t(key) { return (STRINGS[lang] && STRINGS[lang][key]) || (STRINGS.ja && STRINGS.ja[key]) || key; }
+function tf(key, vars = {}) {
+  return t(key).replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ''));
+}
 function applyI18n() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.getAttribute('data-i18n');
-    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) el.placeholder = t(k);
+    if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.hasAttribute('placeholder')) el.placeholder = t(k);
     else el.textContent = t(k);
   });
+  document.title = t('title');
   const btn = document.getElementById('lang-toggle');
   if (btn) btn.textContent = lang === 'ja' ? 'JA / en' : 'ja / EN';
+  if (games.length) {
+    buildInviteGrid();
+    buildFamilyGrid();
+    renderPaidGameOptions();
+    updateAvailBadges();
+    onPaidGameChange();
+  }
 }
 function toggleLang() {
   lang = lang === 'ja' ? 'en' : 'ja';
@@ -1655,177 +1705,285 @@ STRINGS.ja = {
   title: 'チケット申込フォーム',
   backBtn: '← 戻る',
   reloginBtn: '接続し直す',
-  ticketType: 'チケット種別',
-  inviteTicket: '招待チケット',
-  familyTicket: '家族席チケット',
-  paidTicket: '有料チケット',
-  gameSelect: '試合を選択',
-  adultCount: '大人の枚数',
-  childCount: '子ども（小学生以上）',
-  infantCount: '幼児（膝上観戦）',
-  seatType: '座席カテゴリー',
-  seatRequest: '座席に関するリクエスト',
-  receiverName: '受取者氏名',
-  pickupMethod: '受取方法',
-  prePickup: '事前受取',
-  dayPickup: '当日受取',
-  paymentMethod: 'お支払い方法',
-  salaryDeduct: '給与天引き',
-  cashOnDay: '当日現金',
-  parkingCount: '駐車場（台数）',
-  notes: '備考',
   submitBtn: '申込を送信する',
-  requiredMark: '必須',
+  liffLinkTitle: '初回登録',
+  liffLinkDesc: '背番号を入力してLINEアカウントと連携してください。',
+  liffLinkInputPlaceholder: '背番号（例: 002）',
+  fallbackLoginTitle: '選手家族チケット申込',
+  fallbackLoginDesc: '背番号3桁を入力してログインしてください。',
+  fallbackLoginInputPlaceholder: '背番号（例: 002）',
+  loadingText: 'LINEアカウントを確認中...',
+  errorNoPlayerNo: '背番号を入力してください。',
+  errorLinkFailed: '連携に失敗しました。',
+  errorUnlinked: '背番号が見つかりません。正しい背番号を入力してください。',
+  linkingText: '連携中...',
+  linking: '連携する',
+  errorLogin3Digit: '3桁の背番号を入力してください',
+  loggingInText: 'ログイン中...',
+  logIn: 'ログイン',
+  step1Eyebrow: 'STEP 1',
+  step1Title: '申込種別を選択',
+  step1Description: '現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。',
+  inviteSection: '招待チケット',
+  inviteTitle: '招待チケットを申し込む',
+  inviteTitle2f: '2F自由チケット（無償提供）',
+  invitePoint1: '毎ホームゲーム最大10枚まで無料申込可能',
+  invitePoint2: '家族以外のゲストも招待可能',
+  invitePoint3: '11枚以上や座席アップグレードは料金発生 → 特記事項に記入',
+  invitePoint4: '申告内容と異なる場合はチケットをお渡しできません',
+  inviteWarningTitle: '2F自由 ご注意',
+  inviteWarningText: '自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。',
+  inviteReservation: 'Reservation',
+  inviteReservationTitle: '試合ごとの枚数・受取方法',
+  receiverName: '受取者名',
+  receiverRequired: '受取者名 *',
+  inviteSpecialNote: '特記事項',
+  inviteSpecialNotePlaceholder: '例）座席アップグレード希望など',
+  inviteTicketsApplied: '現在 {count} 枚申込済み',
+  invitePickup: '当日受取',
+  familySection: '家族席チケット',
+  familyTitle: '家族席チケットを申し込む',
+  familyReceiverEyebrow: 'Receiver',
+  familyReceiverTitle: '受取人登録',
+  familyReceiverDesc: '登録した氏名は各試合の受取者欄から選択できます。',
+  familyReceiverInput: '氏名を入力（例：山田 花子）',
+  familyReceiverSelectPlaceholder: '登録済みから選択 または直接入力',
+  familyAdd: '追加',
+  familyFamilyDef: '「家族」= 二親等内の親族限定',
+  familyRealTickets: '実券をお渡しして一般入場口からご入場（関係者受付からは入場不可）',
+  familyUnderAge: '未就学児が座席を使用する場合は枚数に含めて申請',
+  familyCheckMatches: '申告内容と異なる場合はチケットをお渡しできません',
+  familyReservation: 'Reservation',
+  familyReservationTitle: '試合ごとの枚数・受取方法',
+  familyPickupMethod: '受取方法',
+  familyPickupPre: '事前受取',
+  familyPickupDay: '当日受取',
+  familyParking: '駐車場',
+  familyParkingCountZero: '0台',
+  familyParkingCountOne: '1台',
+  familyParkingCountTwo: '2台',
+  familyTicketsApplied: '現在 {count} 枚申込済み',
+  familySpecialNote: '特記事項',
+  familySpecialNotePlaceholder: 'その他ご要望があれば記入',
+  paidSection: '有料チケット',
+  paidReservation: 'Reservation',
+  paidReservationTitle: '申込内容',
+  paidTitle: '有料チケットを申し込む',
+  paidDeadlineRule: '試合開催の7日前までに申込',
+  paidSeatAvailability: '申込時期・売れ行きにより希望座席を準備できない場合あり',
+  paidPricingRule: 'フレックス価格・ダイナミックプライシング適用（公式サイト参照）',
+  paidGameSelect: '試合選択 *',
+  paidSelectGame: '--- 試合を選んでください ---',
+  paidSeatMap: '座席図 / Seat Map',
+  paidSeatMapTap: 'タップで拡大 / Tap to enlarge',
+  paidSeatMapClose: '閉じる',
+  paidSeatCategory: '座席カテゴリー *',
+  paidSelectSeat: '選択してください',
+  seatCategory1: '①ロイヤルシート',
+  seatCategory2: '②プレミアムシート',
+  seatCategory3: '③エキサイトシート',
+  seatCategory4: '④アリーナ指定席センター',
+  seatCategory5: '⑤アリーナ指定席センターベンチ',
+  seatCategory6: '⑥アリーナ指定席（メイン／ベンチ）',
+  seatCategory7: '⑥アリーナ指定席（リングH/V）',
+  seatCategory8: '⑦パノラマシートセンター',
+  seatCategory9: '⑧パノラマシート（2F指定）',
+  seatCategory10: '⑨エリア指定席（1F自由）',
+  seatCategory11: '⑩2F指定席',
+  seatCategory12: '⑫車いす席',
+  paidQuantity: '枚数 *',
+  paidQty1: '1枚',
+  paidQty2: '2枚',
+  paidQty3: '3枚',
+  paidQty4: '4枚',
+  paidQty5: '5枚',
+  paidQty6: '6枚',
+  paidQty7: '7枚',
+  paidQty8: '8枚',
+  paidQty9: '9枚',
+  paidQty10: '10枚',
+  paidSeatRequest: '座席に関するリクエスト',
+  paidSeatRequestPlaceholder: '例）並びの席、ホームベンチ側、端の席、なるべく前の席など',
+  paidPaymentMethod: 'お支払い方法 *',
+  paidSalaryDeduct: '給料天引き',
+  paidReceiverPayDay: '受取者支払い（試合当日）',
+  paidTicketPickup: 'チケット受取方法 *',
+  paidPickupPre: '事前受取',
+  paidPickupDay: '当日受取',
+  paidReceiverNameGameDay: '受取者名（当日受取の場合）',
+  paidReceiverNamePlaceholder: '受取者の氏名',
+  paidOtherRequests: 'その他リクエスト',
+  paidOtherRequestsPlaceholder: 'その他ご要望があれば記入',
+  paidDeadlineInfo: '申込期限: {deadline}',
+  paidDeadlinePassed: '（締切済み）',
+  paidDeadlineNotSet: '期限未設定',
+  gameLoadFailed: '試合データ読込失敗: {message}',
+  emptyStateInvite: '現在申込受付中の試合はありません',
+  selectOneGame: '1試合以上、1枚以上を選択してください',
+  missingReceiverLabel: '{game} の受取者名を入力してください',
+  alreadyAppliedInvite: '{game} の招待チケットは既に申込済みです',
+  alreadyAppliedFamily: '{game} の家族席は既に申込済みです',
+  alreadyAppliedPaid: '{game} の有料チケットは既に申込済みです',
+  sending: '送信中...',
   submitSuccess: '申込が完了しました',
   submitError: '送信に失敗しました',
-  otherRequests: 'その他リクエスト',
-  receiverPayment: '受取者支払い（試合当日）',
-  seatMap: '座席図',
-  // LIFF モーダル
-  liffLinkTitle: '初回登録',
-  liffLinkDesc: '背番号を入力してLINEアカウントと連携してください',
-  liffLinkBtn: '連携する',
-  fallbackTitle: '選手家族チケット申込',
-  fallbackDesc: '背番号3桁を入力してログインしてください',
-  fallbackBtn: 'ログイン',
-  liffLoadingText: 'LINEアカウントを確認中',
-  // セクション
-  ticketTypeSelect: '申込種別を選択',
-  ticketTypeDesc: '現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します',
-  inviteTitle: '招待チケットを申し込む',
-  familyTitle: '家族席チケットを申し込む',
-  paidTitle: '有料チケットを申し込む',
-  // 注釈
-  inviteFreeSeats: '2F自由チケット（無償提供）',
-  inviteMaxCount: '毎ホームゲーム最大10枚まで無料申込可能',
-  inviteGuests: '家族以外のゲストも招待可能',
-  inviteUpgrade: '11枚以上や座席アップグレードは料金発生 → 特記事項に記入',
-  applicationWarning: '申告内容と異なる場合はチケットをお渡しできません',
-  inviteNotice: '2F自由 ご注意',
-  inviteNoticeText: '自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。',
-  familyDef: '「家族」= 二親等内の親族限定',
-  familyGate: '実券をお渡しして一般入場口からご入場（関係者受付からは入場不可）',
-  familyInfant: '未就学児が座席を使用する場合は枚数に含めて申請',
-  receiverReg: '受取人登録',
-  receiverDesc: '登録した氏名は各試合の受取者欄から選択できます。',
-  addBtn: '追加',
-  gameReservation: '試合ごとの枚数・受取方法',
-  // Paid注釈
-  paidDeadline: '試合開催の7日前まで',
-  paidDeadlineNote: 'に申込',
-  paidSeatAvail: '申込時期・売れ行きにより希望座席を準備できない場合あり',
-  paidDynamic: 'フレックス価格・ダイナミックプライシング適用（公式サイト参照）',
-  paidAppContent: '申込内容',
-  // フォームラベル
-  selectGame: '試合選択',
-  seatCategory: '座席カテゴリー',
-  seatCount: '枚数',
-  seatRequest: '座席に関するリクエスト',
-  ticketPickup: 'チケット受取方法',
-  receiverNameForDay: '受取者名（当日受取の場合）',
-  // Placeholder
-  jerseyExample: '背番号（例: 002）',
-  nameExample: '氏名を入力（例：山田 花子）',
-  seatReqExample: '例）並びの席、ホームベンチ側、端の席、なるべく前の席など',
-  receiverNamePlaceholder: '受取者の氏名',
-  notesPlaceholder: 'その他ご要望があれば記入',
-  selectReceiver: '登録済みから選択 または直接入力',
-  selectPlaceholder: '選択してください',
-  selectGame: '--- 試合を選んでください ---',
-  // Select option
-  royalSeat: '①ロイヤルシート',
-  premiumSeat: '②プレミアムシート',
-  arenaSeat: '④アリーナ指定席センター',
-  // その他
-  tapToEnlarge: 'タップで拡大',
+  selectGame: '試合を選択してください',
+  selectSeatCategory: '座席カテゴリーを選択してください',
+  selectPaymentMethod: 'お支払い方法を選択してください',
+  selectPickupMethod: '受取方法を選択してください',
+  deadlinePassedMessage: 'この試合の申込期限は終了しています',
+  applicationComplete: '{count}試合分の申込が完了しました。{errors}',
+  submitted: '申込済み',
+  applicationFailed: '申込に失敗しました: {errors}',
+  noGamesAccepting: '申込する試合を選択し、枚数と受取方法を設定してください',
+  openGamesCountFormat: '{count}試合 受付中（次: {date} vs {opponent}）',
+  openGamesCountFormatClose: '現在受付中の試合はありません',
+  accountConnectError: '上部のデバッグ情報を確認してください',
+  unsetLiffId: 'LIFF IDが未設定です。管理者にお問い合わせください。',
+  liffSdkError: 'LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。',
+  mustBeInLineApp: 'LINEアプリ内で開いてください。'
 };
 STRINGS.en = {
   title: 'Ticket Request Form',
   backBtn: '← Back',
   reloginBtn: 'Reconnect',
-  ticketType: 'Ticket Type',
-  inviteTicket: 'Complimentary Tickets',
-  familyTicket: 'Family Seats',
-  paidTicket: 'Paid Tickets',
-  gameSelect: 'Select a game',
-  adultCount: 'Adults',
-  childCount: 'Children (elementary+)',
-  infantCount: 'Infant (lap)',
-  seatType: 'Seat Category',
-  seatRequest: 'Seat Request',
-  receiverName: 'Recipient Name',
-  pickupMethod: 'Pickup Method',
-  prePickup: 'Pick Up Before Game Day',
-  dayPickup: 'Pick Up on Game Day',
-  paymentMethod: 'Payment Method',
-  salaryDeduct: 'Salary Deduction',
-  cashOnDay: 'Cash on Game Day',
-  parkingCount: 'Parking (cars)',
-  notes: 'Notes',
-  submitBtn: 'Submit Application',
-  requiredMark: 'Required',
-  submitSuccess: 'Your application has been submitted.',
-  submitError: 'Submission failed.',
-  otherRequests: 'Other Requests',
-  receiverPayment: 'Receiver Pays on Game Day',
-  seatMap: 'Seat Map',
-  // LIFF モーダル
+  submitBtn: 'Submit Request',
   liffLinkTitle: 'First-time Registration',
-  liffLinkDesc: 'Enter your jersey number to link your LINE account',
-  liffLinkBtn: 'Link Account',
-  fallbackTitle: 'Family Ticket Application',
-  fallbackDesc: 'Enter your 3-digit jersey number to log in',
-  fallbackBtn: 'Log In',
-  liffLoadingText: 'Verifying LINE account',
-  // セクション
-  ticketTypeSelect: 'Select Ticket Type',
-  ticketTypeDesc: 'Your application continues as-is, with only the necessary fields shown for each type',
+  liffLinkDesc: 'Enter your jersey number to link your LINE account.',
+  liffLinkInputPlaceholder: 'Jersey number (e.g. 002)',
+  fallbackLoginTitle: 'Player Family Ticket Request',
+  fallbackLoginDesc: 'Enter your 3-digit jersey number to log in.',
+  fallbackLoginInputPlaceholder: 'Jersey number (e.g. 002)',
+  loadingText: 'Checking your LINE account...',
+  errorNoPlayerNo: 'Enter your jersey number.',
+  errorLinkFailed: 'Failed to link your account.',
+  errorUnlinked: 'Jersey number not found. Enter the correct jersey number.',
+  linkingText: 'Linking...',
+  linking: 'Link Account',
+  errorLogin3Digit: 'Enter a 3-digit jersey number.',
+  loggingInText: 'Logging in...',
+  logIn: 'Log In',
+  step1Eyebrow: 'STEP 1',
+  step1Title: 'Select Ticket Type',
+  step1Description: 'The current application flow stays the same, and only the fields needed for each ticket type are shown below.',
+  inviteSection: 'Complimentary Tickets',
   inviteTitle: 'Apply for Complimentary Tickets',
+  inviteTitle2f: '2F Unreserved Tickets (Free)',
+  invitePoint1: 'Up to 10 free tickets per home game',
+  invitePoint2: 'You may invite guests outside your family',
+  invitePoint3: 'Charges apply for 11+ tickets or seat upgrades. Add details in the note field.',
+  invitePoint4: 'Tickets cannot be issued if the actual use differs from the declared request.',
+  inviteWarningTitle: '2F Unreserved Seating Notice',
+  inviteWarningText: 'These are unreserved seats, so your group may not be seated together or may need to stand depending on arrival time. Please arrive early on game day.',
+  inviteReservation: 'Reservation',
+  inviteReservationTitle: 'Quantity and Pickup Method by Game',
+  receiverName: 'Receiver Name',
+  receiverRequired: 'Receiver Name *',
+  inviteSpecialNote: 'Special Note',
+  inviteSpecialNotePlaceholder: 'e.g. seat upgrade request',
+  inviteTicketsApplied: 'Currently applied: {count} tickets',
+  invitePickup: 'Pick up on game day',
+  familySection: 'Family Seat Tickets',
   familyTitle: 'Apply for Family Seat Tickets',
+  familyReceiverEyebrow: 'Receiver',
+  familyReceiverTitle: 'Receiver Registration',
+  familyReceiverDesc: 'Registered names can be selected in the receiver field for each game.',
+  familyReceiverInput: 'Enter a name (e.g. Hanako Yamada)',
+  familyReceiverSelectPlaceholder: 'Choose a registered name or enter one directly',
+  familyAdd: 'Add',
+  familyFamilyDef: 'Family means relatives within the second degree of kinship only',
+  familyRealTickets: 'Physical tickets will be issued. Enter through the general admission gate, not the staff entrance.',
+  familyUnderAge: 'If a preschool child uses a seat, include them in the ticket count.',
+  familyCheckMatches: 'Tickets cannot be issued if the actual use differs from the declared request.',
+  familyReservation: 'Reservation',
+  familyReservationTitle: 'Quantity and Pickup Method by Game',
+  familyPickupMethod: 'Pickup Method',
+  familyPickupPre: 'Pick up before game day',
+  familyPickupDay: 'Pick up on game day',
+  familyParking: 'Parking',
+  familyParkingCountZero: '0 cars',
+  familyParkingCountOne: '1 car',
+  familyParkingCountTwo: '2 cars',
+  familyTicketsApplied: 'Currently applied: {count} tickets',
+  familySpecialNote: 'Special Note',
+  familySpecialNotePlaceholder: 'Enter any other requests',
+  paidSection: 'Paid Tickets',
+  paidReservation: 'Reservation',
+  paidReservationTitle: 'Application Details',
   paidTitle: 'Apply for Paid Tickets',
-  // 注釈
-  inviteFreeSeats: 'Section 2F Complimentary Tickets',
-  inviteMaxCount: 'Maximum 10 free tickets per home game',
-  inviteGuests: 'Non-family guests can also be invited',
-  inviteUpgrade: 'For 11+ tickets or seat upgrades, charges apply → note in remarks',
-  applicationWarning: 'Tickets cannot be issued if your application differs from the actual request',
-  inviteNotice: 'Section 2F Important Notice',
-  inviteNoticeText: 'As these are general admission seats, you may not be able to sit together or may have to stand depending on your arrival time. Please arrive early.',
-  familyDef: 'Family members up to second-degree relatives only',
-  familyGate: 'You will receive physical tickets to enter through the general admission gate (not staff entrance)',
-  familyInfant: 'If infants use a seat, include them in the ticket count',
-  receiverReg: 'Register Recipients',
-  receiverDesc: 'Registered names can be selected as the recipient for each game.',
-  addBtn: 'Add',
-  gameReservation: 'Quantity and Pickup Method by Game',
-  // Paid注釈
-  paidDeadline: '7 days before the game',
-  paidDeadlineNote: 'deadline',
-  paidSeatAvail: 'Desired seats may not be available depending on application timing and demand',
-  paidDynamic: 'Flex pricing and dynamic pricing apply (see official website)',
-  paidAppContent: 'Application Details',
-  // フォームラベル
-  selectGame: 'Select Game',
-  seatCategory: 'Seat Category',
-  seatCount: 'Quantity',
-  seatRequest: 'Seat Request',
-  ticketPickup: 'Ticket Pickup Method',
-  receiverNameForDay: 'Recipient Name (for same-day pickup)',
-  // Placeholder
-  jerseyExample: 'Jersey Number (e.g., 002)',
-  nameExample: 'Name (e.g., Yamada Hanako)',
-  seatReqExample: 'e.g., together, home bench side, corner seat, closer to front',
-  receiverNamePlaceholder: 'Recipient\'s Name',
-  notesPlaceholder: 'Other requests if any',
-  selectReceiver: 'Choose from registered or enter directly',
-  selectPlaceholder: 'Select',
-  selectGame: '--- Select a game ---',
-  // Select option
-  royalSeat: '① Royal Seat',
-  premiumSeat: '② Premium Seat',
-  arenaSeat: '④ Arena Designated Center',
-  // その他
-  tapToEnlarge: 'Tap to enlarge',
+  paidDeadlineRule: 'Apply no later than 7 days before the game',
+  paidSeatAvailability: 'Requested seats may not be available depending on timing and demand',
+  paidPricingRule: 'Flex pricing and dynamic pricing apply. See the official website.',
+  paidGameSelect: 'Select Game *',
+  paidSelectGame: '--- Select a game ---',
+  paidSeatMap: 'Seat Map',
+  paidSeatMapTap: 'Tap to enlarge',
+  paidSeatMapClose: 'Close',
+  paidSeatCategory: 'Seat Category *',
+  paidSelectSeat: 'Select',
+  seatCategory1: '① Royal Seat',
+  seatCategory2: '② Premium Seat',
+  seatCategory3: '③ Excite Seat',
+  seatCategory4: '④ Arena Reserved Center',
+  seatCategory5: '⑤ Arena Reserved Center Bench',
+  seatCategory6: '⑥ Arena Reserved (Main / Bench)',
+  seatCategory7: '⑥ Arena Reserved (Ring H/V)',
+  seatCategory8: '⑦ Panorama Seat Center',
+  seatCategory9: '⑧ Panorama Seat (2F Reserved)',
+  seatCategory10: '⑨ Area Reserved (1F Unreserved)',
+  seatCategory11: '⑩ 2F Reserved Seat',
+  seatCategory12: '⑫ Wheelchair Seat',
+  paidQuantity: 'Quantity *',
+  paidQty1: '1 ticket',
+  paidQty2: '2 tickets',
+  paidQty3: '3 tickets',
+  paidQty4: '4 tickets',
+  paidQty5: '5 tickets',
+  paidQty6: '6 tickets',
+  paidQty7: '7 tickets',
+  paidQty8: '8 tickets',
+  paidQty9: '9 tickets',
+  paidQty10: '10 tickets',
+  paidSeatRequest: 'Seat Request',
+  paidSeatRequestPlaceholder: 'e.g. seats together, home bench side, aisle seat, as close to front as possible',
+  paidPaymentMethod: 'Payment Method *',
+  paidSalaryDeduct: 'Salary deduction',
+  paidReceiverPayDay: 'Receiver pays on game day',
+  paidTicketPickup: 'Ticket Pickup *',
+  paidPickupPre: 'Pick up before game day',
+  paidPickupDay: 'Pick up on game day',
+  paidReceiverNameGameDay: 'Receiver Name (Game Day Pickup)',
+  paidReceiverNamePlaceholder: 'Receiver name',
+  paidOtherRequests: 'Other Requests',
+  paidOtherRequestsPlaceholder: 'Enter any other requests',
+  paidDeadlineInfo: 'Application deadline: {deadline}',
+  paidDeadlinePassed: ' (Closed)',
+  paidDeadlineNotSet: 'Deadline not set',
+  gameLoadFailed: 'Failed to load games: {message}',
+  emptyStateInvite: 'There are no games currently accepting applications.',
+  selectOneGame: 'Select at least one game with at least one ticket.',
+  missingReceiverLabel: 'Enter the receiver name for {game}.',
+  alreadyAppliedInvite: 'Complimentary tickets for {game} have already been requested.',
+  alreadyAppliedFamily: 'Family seat tickets for {game} have already been requested.',
+  alreadyAppliedPaid: 'Paid tickets for {game} have already been requested.',
+  sending: 'Sending...',
+  submitSuccess: 'Your request has been submitted.',
+  submitError: 'Failed to submit your request.',
+  selectGame: 'Select a game.',
+  selectSeatCategory: 'Select a seat category.',
+  selectPaymentMethod: 'Select a payment method.',
+  selectPickupMethod: 'Select a pickup method.',
+  deadlinePassedMessage: 'The application deadline for this game has passed.',
+  applicationComplete: 'Requests submitted for {count} games.{errors}',
+  submitted: 'Submitted',
+  applicationFailed: 'Failed to submit your request: {errors}',
+  noGamesAccepting: 'Select a game to apply for, then set the quantity and pickup method.',
+  openGamesCountFormat: '{count} games open (next: {date} vs {opponent})',
+  openGamesCountFormatClose: 'There are no games currently accepting applications.',
+  accountConnectError: 'Check the debug information shown above.',
+  unsetLiffId: 'LIFF ID is not set. Contact the administrator.',
+  liffSdkError: 'LIFF SDK is not loaded. Open this page inside the LINE app.',
+  mustBeInLineApp: 'Open this page inside the LINE app.'
 };
 // ────────────────────────────────────────────────────
 
@@ -1882,19 +2040,19 @@ async function handleLiffLink() {
   const errEl = document.getElementById('liff-link-error');
   const btn = document.getElementById('liff-link-btn');
   const playerId = (input.value || '').trim();
-  if (!playerId) { errEl.textContent = '背番号を入力してください。'; return; }
+  if (!playerId) { errEl.textContent = t('errorNoPlayerNo'); return; }
   errEl.textContent = '';
   btn.disabled = true;
-  btn.textContent = '連携中...';
+  btn.textContent = t('linkingText');
   try {
     const authData = await window.liffAuth.linkWithPlayerNo(playerId);
     document.getElementById('liff-link-overlay').style.display = 'none';
     await initFormAfterAuth(authData);
   } catch (e) {
     // エラーメッセージをモーダルの下に表示。デバッグパネルもあわせて表示
-    errEl.innerHTML = e.message || '連携に失敗しました。<br><small style="font-size:11px;color:var(--text-sub)">上部のデバッグ情報を確認してください</small>';
+    errEl.innerHTML = (e.message || t('errorLinkFailed')) + `<br><small style="font-size:11px;color:var(--text-sub)">${t('accountConnectError')}</small>`;
     btn.disabled = false;
-    btn.textContent = '連携する';
+    btn.textContent = t('linking');
   }
 }
 
@@ -1934,18 +2092,18 @@ async function handleFallbackLogin() {
   const playerId = (input.value || '').trim();
 
   if (!playerId || playerId.length !== 3) {
-    errEl.textContent = '3桁の背番号を入力してください';
+    errEl.textContent = t('errorLogin3Digit');
     return;
   }
 
   errEl.textContent = '';
   btn.disabled = true;
-  btn.textContent = 'ログイン中...';
+  btn.textContent = t('loggingInText');
 
   try {
     const result = await workerApiClient.loginPlayer(playerId);
     if (!result.ok) {
-      throw new Error(result.error?.message || result.error || '背番号が見つかりません');
+      throw new Error(result.error?.message || result.error || t('errorUnlinked'));
     }
     const authData = { ...result.data, role: 'player' };
     sessionStorage.setItem('auth', JSON.stringify(authData));
@@ -1953,9 +2111,9 @@ async function handleFallbackLogin() {
     document.getElementById('fallback-login-overlay').style.display = 'none';
     await initFormAfterAuth(authData);
   } catch (e) {
-    errEl.textContent = e.message || 'ログインに失敗しました';
+    errEl.textContent = e.message || t('submitError');
     btn.disabled = false;
-    btn.textContent = 'ログイン';
+    btn.textContent = t('logIn');
   }
 }
 
@@ -1998,7 +2156,7 @@ function handleRelogin() {
     if (errEl) errEl.textContent = '';
     if (btn) {
       btn.disabled = false;
-      btn.textContent = '接続';
+      btn.textContent = t('logIn');
     }
     input?.focus();
   }
@@ -2040,22 +2198,26 @@ function rememberSubmittedApplication(gameId, ticketType) {
 
 async function loadGames() {
   const result = await workerApiClient.getGames();
-  if (!result.ok) { showAlert('試合データ読込失敗: ' + (result.error?.message || result.error), 'error'); return; }
+  if (!result.ok) { showAlert(tf('gameLoadFailed', { message: result.error?.message || result.error }), 'error'); return; }
   games = result.data;
-
-  // 有料チケット試合選択
-  const sel = document.getElementById('paid-game');
-  games.forEach(g => {
-    const opt = document.createElement('option');
-    opt.value = g.gameId;
-    opt.textContent = `${formatGameDate(g.date)}（${g.dayOfWeek}）vs ${g.opponent}`;
-    if (g.isDeadlinePassed) { opt.textContent += ' ✕ 締切'; opt.disabled = true; }
-    sel.appendChild(opt);
-  });
-
+  renderPaidGameOptions();
   buildInviteGrid();
   buildFamilyGrid();
   updateAvailBadges();
+}
+
+function renderPaidGameOptions() {
+  const sel = document.getElementById('paid-game');
+  const current = sel.value;
+  sel.innerHTML = `<option value="" data-i18n="paidSelectGame">${esc(t('paidSelectGame'))}</option>`;
+  games.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.gameId;
+    opt.textContent = `${formatGameDate(g.date)}（${formatDayOfWeek(g.dayOfWeek)}）vs ${g.opponent}`;
+    if (g.isDeadlinePassed) { opt.textContent += lang === 'ja' ? ' ✕ 締切' : ' ✕ Closed'; opt.disabled = true; }
+    sel.appendChild(opt);
+  });
+  sel.value = current;
 }
 
 function updateAvailBadges() {
@@ -2063,8 +2225,8 @@ function updateAvailBadges() {
   const count = open.length;
   const next = open[0];
   const label = count > 0
-    ? `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:middle;margin-right:3px" aria-hidden="true"><polyline points="3 8 6.5 11.5 13 5"/></svg>${count}試合 受付中（次: ${esc(formatGameDate(next.date))} vs ${esc(next.opponent)}）`
-    : '現在受付中の試合はありません';
+    ? `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" style="vertical-align:middle;margin-right:3px" aria-hidden="true"><polyline points="3 8 6.5 11.5 13 5"/></svg>${esc(tf('openGamesCountFormat', { count, date: formatGameDate(next.date), opponent: next.opponent }))}`
+    : esc(t('openGamesCountFormatClose'));
   const cls = count > 0 ? 'open' : 'none';
   ['invite','family','paid'].forEach(type => {
     document.getElementById('avail-' + type).innerHTML =
@@ -2095,7 +2257,9 @@ function stepQty(id, delta, max) {
       const existing = parseInt(summaryEl.dataset.existing) || 0;
       if (total > 0) {
         summaryEl.classList.add('has-new');
-        summaryEl.querySelector('.qty-total').textContent = '追加後 合計 ' + (existing + total) + ' 枚';
+        summaryEl.querySelector('.qty-total').textContent = lang === 'ja'
+          ? `追加後 合計 ${existing + total} 枚`
+          : `New total: ${existing + total} tickets`;
       } else {
         summaryEl.classList.remove('has-new');
       }
@@ -2112,6 +2276,12 @@ function formatGameDate(dateStr) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}/${m}/${day}`;
+}
+
+function formatDayOfWeek(dayOfWeek) {
+  if (lang === 'ja') return dayOfWeek;
+  const map = { '月': 'Mon', '火': 'Tue', '水': 'Wed', '木': 'Thu', '金': 'Fri', '土': 'Sat', '日': 'Sun' };
+  return map[dayOfWeek] || dayOfWeek;
 }
 
 // ===== 受取人登録（家族席） =====
@@ -2171,18 +2341,18 @@ function getExistingQty(gameId, ticketType) {
 function buildInviteGrid() {
   const list = document.getElementById('invite-list');
   const active = games.filter(g => !g.isDeadlinePassed);
-  if (!active.length) { list.innerHTML = '<p class="empty-state">現在申込受付中の試合はありません</p>'; return; }
+  if (!active.length) { list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`; return; }
   list.innerHTML = active.map(g => {
     const past = false;
     const dl = g.deadline
-      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? '締切済み' : '期限 ' + g.deadline}</span>`
+      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: g.deadline })}</span>`
       : '';
     const sid = 'inv-' + g.gameId;
     const invExisting = getExistingQty(g.gameId, 'invite');
     return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
       <div class="game-card-top">
         <div class="game-card-info">
-          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(g.dayOfWeek)}）</div>
+          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
           <div class="game-name">vs ${esc(g.opponent)}</div>
         </div>
         ${dl}
@@ -2190,19 +2360,19 @@ function buildInviteGrid() {
       <div class="game-card-controls">
         ${stepperHtml(sid, 10)}
         <label class="inv-day-label">
-          <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">当日受取
+          <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">${esc(t('invitePickup'))}
         </label>
       </div>
       <div class="receiver-field">
-        <label>受取者名 <span class="req">*</span></label>
-        <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="受取者の氏名">
+        <label>${esc(t('receiverRequired'))}</label>
+        <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('paidReceiverNamePlaceholder'))}">
       </div>
       <div class="receiver-field">
-        <label>特記事項</label>
-        <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="例）座席アップグレード希望など"></textarea>
+        <label>${esc(t('inviteSpecialNote'))}</label>
+        <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('inviteSpecialNotePlaceholder'))}"></textarea>
       </div>
       <div class="qty-summary" data-existing="${invExisting}">
-        <span class="qty-current">現在 ${invExisting} 枚申込済み</span>
+        <span class="qty-current">${esc(tf('inviteTicketsApplied', { count: invExisting }))}</span>
         <span class="qty-new">
           <span class="qty-arrow">→</span>
           <span class="qty-total"></span>
@@ -2215,18 +2385,18 @@ function buildInviteGrid() {
 function buildFamilyGrid() {
   const list = document.getElementById('family-list');
   const active = games.filter(g => !g.isDeadlinePassed);
-  if (!active.length) { list.innerHTML = '<p class="empty-state">現在申込受付中の試合はありません</p>'; return; }
+  if (!active.length) { list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`; return; }
   list.innerHTML = active.map(g => {
     const past = false;
     const dl = g.deadline
-      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? '締切済み' : '期限 ' + g.deadline}</span>`
+      ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: g.deadline })}</span>`
       : '';
     const famSid = 'fam-' + g.gameId;
     const famExisting = getExistingQty(g.gameId, 'family');
     return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
       <div class="game-card-top">
         <div class="game-card-info">
-          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(g.dayOfWeek)}）</div>
+          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
           <div class="game-name">vs ${esc(g.opponent)}</div>
         </div>
         ${dl}
@@ -2234,31 +2404,31 @@ function buildFamilyGrid() {
       <div class="game-card-controls">
         ${stepperHtml(famSid, 10)}
         <div class="sel-wrap">
-          <span class="sel-label">受取方法</span>
+          <span class="sel-label">${esc(t('familyPickupMethod'))}</span>
           <select class="game-card-sel fam-pickup" data-game="${esc(g.gameId)}">
-            <option value="pre">事前受取</option>
-            <option value="day" selected>当日受取</option>
+            <option value="pre">${esc(t('familyPickupPre'))}</option>
+            <option value="day" selected>${esc(t('familyPickupDay'))}</option>
           </select>
         </div>
         <div class="sel-wrap sel-wrap-narrow">
-          <span class="sel-label">駐車場</span>
+          <span class="sel-label">${esc(t('familyParking'))}</span>
           <select class="game-card-sel fam-parking" data-game="${esc(g.gameId)}">
-            <option value="0">0台</option>
-            <option value="1">1台</option>
-            <option value="2">2台</option>
+            <option value="0">${esc(t('familyParkingCountZero'))}</option>
+            <option value="1">${esc(t('familyParkingCountOne'))}</option>
+            <option value="2">${esc(t('familyParkingCountTwo'))}</option>
           </select>
         </div>
       </div>
       <div class="receiver-field">
-        <label>受取者名 <span class="req">*</span></label>
-        <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="登録済みから選択 または直接入力" data-i18n="selectReceiver">
+        <label>${esc(t('receiverRequired'))}</label>
+        <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="${esc(t('familyReceiverSelectPlaceholder'))}">
       </div>
       <div class="receiver-field">
-        <label>特記事項</label>
-        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="その他ご要望があれば記入" data-i18n="notesPlaceholder"></textarea>
+        <label>${esc(t('familySpecialNote'))}</label>
+        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('familySpecialNotePlaceholder'))}"></textarea>
       </div>
       <div class="qty-summary" data-existing="${famExisting}">
-        <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
+        <span class="qty-current">${esc(tf('familyTicketsApplied', { count: famExisting }))}</span>
         <span class="qty-new">
           <span class="qty-arrow">→</span>
           <span class="qty-total"></span>
@@ -2283,6 +2453,14 @@ function onTypeChange() {
   document.querySelectorAll('.ticket-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('input[name="ticketTypeMirror"]').forEach(input => { input.checked = input.value === type; });
   if (type) document.getElementById(`section-${type === 'paid' ? 'paid' : type === 'family' ? 'family' : 'invite'}`).classList.add('active');
+
+  // bottom bar: ボタン表示制御
+  document.getElementById('inv-submit').classList.remove('active-section');
+  document.getElementById('fam-submit').classList.remove('active-section');
+  document.getElementById('paid-submit').classList.remove('active-section');
+  if (type === 'invite') document.getElementById('inv-submit').classList.add('active-section');
+  else if (type === 'family') document.getElementById('fam-submit').classList.add('active-section');
+  else if (type === 'paid') document.getElementById('paid-submit').classList.add('active-section');
 }
 
 function onPaidGameChange() {
@@ -2290,7 +2468,9 @@ function onPaidGameChange() {
   const g = games.find(g => g.gameId === gameId);
   const info = document.getElementById('paid-deadline-info');
   if (!g) { info.textContent = ''; return; }
-  info.textContent = g.deadline ? `申込期限: ${g.deadline}${g.isDeadlinePassed ? '（締切済み）' : ''}` : '期限未設定';
+  info.textContent = g.deadline
+    ? tf('paidDeadlineInfo', { deadline: g.deadline }) + (g.isDeadlinePassed ? t('paidDeadlinePassed') : '')
+    : t('paidDeadlineNotSet');
 }
 document.addEventListener('change', e => { if (e.target.id === 'paid-game') onPaidGameChange(); });
 
@@ -2309,15 +2489,15 @@ async function submitInvite() {
     entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre', receiverName: receiver, note });
   });
 
-  if (entries.length === 0) { showAlert('1試合以上、1枚以上を選択してください', 'error'); return; }
+  if (entries.length === 0) { showAlert(t('selectOneGame'), 'error'); return; }
   const missingReceiver = entries.find(e => !e.receiverName);
-  if (missingReceiver) { showAlert(`${getGameLabel(missingReceiver.gameId)} の受取者名を入力してください`, 'error'); return; }
+  if (missingReceiver) { showAlert(tf('missingReceiverLabel', { game: getGameLabel(missingReceiver.gameId) }), 'error'); return; }
   const duplicate = findDuplicateEntry(entries, 'invite');
-  if (duplicate) { showAlert(`${getGameLabel(duplicate.gameId)} の招待チケットは既に申込済みです`, 'error'); return; }
+  if (duplicate) { showAlert(tf('alreadyAppliedInvite', { game: getGameLabel(duplicate.gameId) }), 'error'); return; }
 
   const btn = document.getElementById('inv-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub" aria-hidden="true">Sending...</span>';
+  btn.innerHTML = `<span class="spinner"></span>${esc(t('sending'))}`;
 
   let success = 0, errors = [];
   for (const e of entries) {
@@ -2347,13 +2527,13 @@ async function submitInvite() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span>';
+  btn.innerHTML = esc(t('submitBtn'));
 
   if (success > 0) {
-    showAlert(`${success}試合分の申込が完了しました。${errors.length ? '\n失敗: ' + errors.join(', ') : ''}`, success > 0 && errors.length === 0 ? 'success' : 'error');
+    showAlert(tf('applicationComplete', { count: success, errors: errors.length ? ` ${lang === 'ja' ? '失敗' : 'Failed'}: ${errors.join(', ')}` : '' }), errors.length === 0 ? 'success' : 'error');
     if (errors.length === 0) setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
   } else {
-    showAlert('申込に失敗しました: ' + errors.join(', '), 'error');
+    showAlert(tf('applicationFailed', { errors: errors.join(', ') }), 'error');
   }
 }
 
@@ -2373,15 +2553,15 @@ async function submitFamily() {
     entries.push({ gameId, quantityAdult: qty, pickupMethod: pickup, parkingCount: parking, receiverName: receiver, note });
   });
 
-  if (entries.length === 0) { showAlert('申込する試合を選択し、枚数と受取方法を設定してください', 'error'); return; }
+  if (entries.length === 0) { showAlert(t('noGamesAccepting'), 'error'); return; }
   const missingReceiver = entries.find(e => !e.receiverName);
-  if (missingReceiver) { showAlert(`${getGameLabel(missingReceiver.gameId)} の受取者名を入力してください`, 'error'); return; }
+  if (missingReceiver) { showAlert(tf('missingReceiverLabel', { game: getGameLabel(missingReceiver.gameId) }), 'error'); return; }
   const duplicate = findDuplicateEntry(entries, 'family');
-  if (duplicate) { showAlert(`${getGameLabel(duplicate.gameId)} の家族席は既に申込済みです`, 'error'); return; }
+  if (duplicate) { showAlert(tf('alreadyAppliedFamily', { game: getGameLabel(duplicate.gameId) }), 'error'); return; }
 
   const btn = document.getElementById('fam-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub" aria-hidden="true">Sending...</span>';
+  btn.innerHTML = `<span class="spinner"></span>${esc(t('sending'))}`;
 
   let success = 0, errors = [];
   for (const e of entries) {
@@ -2412,13 +2592,13 @@ async function submitFamily() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span>';
+  btn.innerHTML = esc(t('submitBtn'));
 
   if (success > 0) {
-    showAlert(`${success}試合分の申込が完了しました。${errors.length ? ' 失敗: ' + errors.join(', ') : ''}`, errors.length === 0 ? 'success' : 'error');
+    showAlert(tf('applicationComplete', { count: success, errors: errors.length ? ` ${lang === 'ja' ? '失敗' : 'Failed'}: ${errors.join(', ')}` : '' }), errors.length === 0 ? 'success' : 'error');
     if (errors.length === 0) setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
   } else {
-    showAlert('申込に失敗しました: ' + errors.join(', '), 'error');
+    showAlert(tf('applicationFailed', { errors: errors.join(', ') }), 'error');
   }
 }
 
@@ -2431,18 +2611,18 @@ async function submitPaid() {
   const payment = document.querySelector('input[name="paid-payment"]:checked')?.value;
   const pickup = document.querySelector('input[name="paid-pickup"]:checked')?.value;
 
-  if (!gameId) { showAlert('試合を選択してください', 'error'); return; }
-  if (!seat) { showAlert('座席カテゴリーを選択してください', 'error'); return; }
-  if (!payment) { showAlert('お支払い方法を選択してください', 'error'); return; }
-  if (!pickup) { showAlert('受取方法を選択してください', 'error'); return; }
+  if (!gameId) { showAlert(t('selectGame'), 'error'); return; }
+  if (!seat) { showAlert(t('selectSeatCategory'), 'error'); return; }
+  if (!payment) { showAlert(t('selectPaymentMethod'), 'error'); return; }
+  if (!pickup) { showAlert(t('selectPickupMethod'), 'error'); return; }
 
   const g = games.find(g => g.gameId === gameId);
-  if (g?.isDeadlinePassed) { showAlert('この試合の申込期限は終了しています', 'error'); return; }
-  if (hasExistingApplication(gameId, 'paid')) { showAlert(`${getGameLabel(gameId)} の有料チケットは既に申込済みです`, 'error'); return; }
+  if (g?.isDeadlinePassed) { showAlert(t('deadlinePassedMessage'), 'error'); return; }
+  if (hasExistingApplication(gameId, 'paid')) { showAlert(tf('alreadyAppliedPaid', { game: getGameLabel(gameId) }), 'error'); return; }
 
   const btn = document.getElementById('paid-submit');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub" aria-hidden="true">Sending...</span>';
+  btn.innerHTML = `<span class="spinner"></span>${esc(t('sending'))}`;
 
   try {
     const r = await workerApiClient.submitApplication({
@@ -2464,13 +2644,13 @@ async function submitPaid() {
     }
     if (!r.ok) throw new Error(r.error?.message || r.error);
     rememberSubmittedApplication(gameId, 'paid');
-    showAlert('申込が完了しました！', 'success');
-    btn.innerHTML = '申込済み <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle" aria-hidden="true"><polyline points="3 8 6.5 11.5 13 5"/></svg><span class="en-sub" aria-hidden="true">Submitted</span>';
+    showAlert(t('submitSuccess'), 'success');
+    btn.innerHTML = `${esc(t('submitted'))} <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle" aria-hidden="true"><polyline points="3 8 6.5 11.5 13 5"/></svg>`;
     setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
   } catch (e) {
-    showAlert('申込失敗: ' + e.message, 'error');
+    showAlert(tf('applicationFailed', { errors: e.message }), 'error');
     btn.disabled = false;
-    btn.innerHTML = '申込を送信する<span class="en-sub" aria-hidden="true">Submit Request</span>';
+    btn.innerHTML = esc(t('submitBtn'));
   }
 }
 
