@@ -1370,17 +1370,26 @@ window.LIFF_CONFIG = {
   }
 
   async function request(path, options = {}, includeAuth = false) {
-    const response = await fetch(`${resolveBaseUrl()}${path}`, {
-      ...options,
-      headers: buildHeaders(options, includeAuth),
-    });
-    const result = await parseResponse(response);
+    try {
+      const response = await fetch(`${resolveBaseUrl()}${path}`, {
+        ...options,
+        headers: buildHeaders(options, includeAuth),
+      });
+      const result = await parseResponse(response);
 
-    if (result.ok && result.data?.token && result.data?.role) {
-      setStoredToken(result.data.role, result.data.token);
+      if (result.ok && result.data?.token && result.data?.role) {
+        setStoredToken(result.data.role, result.data.token);
+      }
+
+      return result;
+    } catch (err) {
+      // fetch がネットワークエラー等で失敗した場合をキャッチ
+      const errMsg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        error: { message: `Fetch failed: ${errMsg}`, status: undefined },
+      };
     }
-
-    return result;
   }
 
   function withQuery(path, params) {
@@ -1646,7 +1655,10 @@ window.liffDebug = (function() {
 
       // この時点で確実にログイン済み
       const idToken = liff.getIDToken();
-      window.liffDebug.log('liff.getIDToken結果', idToken ? idToken.substring(0, 10) + '... (長さ:' + idToken.length + ')' : 'null ⚠️');
+      const tokenDisplay = idToken
+        ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
+        : 'null ⚠️';
+      window.liffDebug.log('liff.getIDToken結果', tokenDisplay);
       if (!idToken) {
         // openid scope 未同意 or scope 未設定の可能性
         throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
@@ -1665,7 +1677,7 @@ window.liffDebug = (function() {
       // Worker API で IDToken を検証 → セッション発行
       window.liffDebug.log('API呼び出し', 'loginWithLiff 実行中...');
       const result = await workerApiClient.loginWithLiff(idToken);
-      window.liffDebug.log('API レスポンス', result.ok ? '✅ OK' : `❌ status=${result.status}`);
+      window.liffDebug.log('API レスポンス', result.ok ? '✅ OK' : `❌ ${result.error?.message || 'status=' + result.error?.status}`);
 
       if (result.ok) {
         const authData = { ...result.data, role: "player" };
@@ -1703,7 +1715,10 @@ window.liffDebug = (function() {
 
       // この時点で確実にログイン済み
       const idToken = liff.getIDToken();
-      window.liffDebug.log('liff.getIDToken結果', idToken ? idToken.substring(0, 10) + '... (長さ:' + idToken.length + ')' : 'null ⚠️');
+      const tokenDisplay = idToken
+        ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
+        : 'null ⚠️';
+      window.liffDebug.log('liff.getIDToken結果', tokenDisplay);
       if (!idToken) {
         throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
       }
@@ -1711,7 +1726,7 @@ window.liffDebug = (function() {
       // Worker API で IDToken + 背番号を送信 → 初回連携
       window.liffDebug.log('API呼び出し', 'linkLiff 実行中...');
       const result = await workerApiClient.linkLiff(idToken, playerId);
-      window.liffDebug.log('API レスポンス', result.ok ? '✅ OK' : `❌ status=${result.status}`);
+      window.liffDebug.log('API レスポンス', result.ok ? '✅ OK' : `❌ ${result.error?.message || 'status=' + result.error?.status}`);
 
       if (result.ok) {
         const authData = { ...result.data, role: "player" };
