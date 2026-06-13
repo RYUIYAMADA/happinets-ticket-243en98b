@@ -587,7 +587,6 @@ function esc(s) {
   return d.innerHTML;
 }
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 let auth = null;
 let games = [];
 let applications = [];
@@ -623,8 +622,13 @@ async function loadData() {
       getGames(),
       getApplications()
     ]);
-    if (!gamesRes.ok) throw new Error(gamesRes.error);
-    if (!appsRes.ok) throw new Error(appsRes.error);
+    if (workerApiClient.isUnauthorizedResult(appsRes)) {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+      return;
+    }
+    if (!gamesRes.ok) throw new Error(gamesRes.error?.message || gamesRes.error);
+    if (!appsRes.ok) throw new Error(appsRes.error?.message || appsRes.error);
     games = gamesRes.data;
     applications = appsRes.data.filter(a => a.status !== 'cancelled');
     updateSummary();
@@ -655,8 +659,7 @@ async function getGames() {
 }
 
 function getApplications() {
-  const sessionToken = sessionStorage.getItem('sessionToken');
-  return callGAS('GET', { action: 'getApplications', playerId: auth.playerId, sessionToken });
+  return workerApiClient.getApplications();
 }
 
 function updateSummary() {
@@ -871,39 +874,26 @@ function editApp(gameId, type) {
 async function cancelApp(applicationId, gameId) {
   if (!confirm('この申込をキャンセルしますか？')) return;
   try {
-    const sessionToken = sessionStorage.getItem('sessionToken');
-    const result = await callGAS('POST', { action: 'cancelApplication', applicationId, playerId: auth.playerId, sessionToken });
-    if (!result.ok) throw new Error(result.error);
+    const result = await workerApiClient.cancelApplication(applicationId);
+    if (workerApiClient.isUnauthorizedResult(result)) {
+      sessionStorage.clear();
+      location.href = 'index.html';
+      return;
+    }
+    if (!result.ok) throw new Error(result.error?.message || result.error);
     await loadData();
   } catch (e) {
     alert('キャンセル失敗: ' + e.message);
   }
 }
 
-function logout() {
-  sessionStorage.clear();
-  location.href = 'index.html';
-}
-
-async function callGAS(method, params) {
-  if (!GAS_URL) return demoCallGAS(method, params);
-  let result;
-  if (method === 'GET') {
-    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
-    result = await res.json();
-  } else {
-    const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(params), redirect: 'follow' });
-    result = await res.json();
-  }
-  if (result && result.error === 'unauthorized') {
+async function logout() {
+  try {
+    await workerApiClient.logout();
+  } finally {
     sessionStorage.clear();
-    window.location.href = 'index.html';
-    return result;
+    location.href = 'index.html';
   }
-  if (result && result.sessionToken) {
-    sessionStorage.setItem('sessionToken', result.sessionToken);
-  }
-  return result;
 }
 
 function demoCallGAS(method, params) {

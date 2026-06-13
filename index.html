@@ -319,9 +319,6 @@ STRINGS.en = {
 };
 // ────────────────────────────────────────────────────
 
-// ★ デプロイ後にGAS Web AppのURLを設定 ★
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
-
 function switchTab(type) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', (i === 0 && type === 'player') || (i === 1 && type === 'admin'));
@@ -330,54 +327,10 @@ function switchTab(type) {
   document.getElementById('panel-admin').classList.toggle('active', type === 'admin');
 }
 
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 function getLoginErrorMessage(e) {
   if (e.name === 'AbortError') return '通信がタイムアウトしました。再度お試しください';
   if (e.name === 'TypeError') return 'ネットワークエラーが発生しました。再度お試しください';
   return e.message;
-}
-
-async function fetchWithTimeout(url, options = {}, timeout = 10000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function callGAS(method, params, retries = 2) {
-  if (!GAS_URL) {
-    // デモモード: LocalStorageでオフライン動作
-    return demoMode(method, params);
-  }
-  for (let i = 0; i <= retries; i++) {
-    try {
-      if (method === 'GET') {
-        const qs = new URLSearchParams(params).toString();
-        const res = await fetchWithTimeout(`${GAS_URL}?${qs}`, { redirect: 'follow' });
-        const json = await res.json();
-        return json;
-      } else {
-        const res = await fetchWithTimeout(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(params),
-          redirect: 'follow'
-        });
-        const json = await res.json();
-        return json;
-      }
-    } catch(e) {
-      if (i === retries) throw e;
-      await new Promise(r => setTimeout(r, 200));
-    }
-  }
 }
 
 async function loginPlayer() {
@@ -422,12 +375,9 @@ async function loginAdmin() {
   btn.disabled = true;
   btn.textContent = 'ログイン中...';
   try {
-    const SALT = 'hnts2026_';
-    const hash = await sha256(SALT + pw);
-    const result = await callGAS('POST', { action: 'adminLogin', passwordHash: hash });
-    if (!result.ok) throw new Error(result.error);
+    const result = await workerApiClient.loginAdmin(pw);
+    if (!result.ok) throw new Error(result.error?.message || result.error || 'ログインに失敗しました');
     sessionStorage.setItem('auth', JSON.stringify(result.data));
-    sessionStorage.setItem('adminPasswordHash', hash);
     window.location.href = 'admin.html';
   } catch (e) {
     errEl.textContent = getLoginErrorMessage(e) || 'ログインに失敗しました';
@@ -438,7 +388,7 @@ async function loginAdmin() {
 }
 
 // =====================================================
-// デモモード（GAS_URL未設定時のオフライン動作）
+// デモモード（API 未接続時のオフライン動作）
 // =====================================================
 function demoMode(method, params) {
   if (params.action === 'login') {
@@ -505,19 +455,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// GAS URL設定チェック
-if (!GAS_URL) {
-  console.info('デモモード: GAS_URLが未設定です。LocalStorage に GAS_URL を設定するか、index.html の GAS_URL 定数を更新してください。');
-}
-
-// GASウォームアップ（ログイン前にコールドスタートを解消）
-function warmupGAS() {
-  if (!GAS_URL) return;
-  fetch(GAS_URL + '?action=ping', { method: 'GET', redirect: 'follow' })
-    .catch(() => {}); // エラーは無視
-}
-// ページ読み込み後500ms後に実行（ユーザーの入力を邪魔しない）
-setTimeout(warmupGAS, 500);
 </script>
 </body>
 </html>

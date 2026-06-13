@@ -882,7 +882,6 @@ function esc(s) {
   return d.innerHTML;
 }
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 let games = [];
 let auth = null;
 
@@ -890,9 +889,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   applyI18n();
   auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
   if (!auth || auth.role !== 'player') { location.href = 'index.html'; return; }
-  // login 応答に sessionToken が含まれている場合は保存する
-  if (auth.sessionToken && !sessionStorage.getItem('sessionToken')) {
-    sessionStorage.setItem('sessionToken', auth.sessionToken);
+  if (auth.token && !sessionStorage.getItem('sessionToken')) {
+    sessionStorage.setItem('sessionToken', auth.token);
   }
   document.getElementById('header-name').textContent = auth.name + '（' + auth.playerId + '）';
 
@@ -916,7 +914,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadApplications() {
-  const result = await callGAS('GET', { action: 'getApplications', playerId: auth.playerId });
+  const result = await workerApiClient.getApplications();
+  if (workerApiClient.isUnauthorizedResult(result)) {
+    sessionStorage.clear();
+    location.href = 'index.html';
+    return;
+  }
   if (result.ok) sessionStorage.setItem('myApplications', JSON.stringify(result.data || []));
 }
 
@@ -1222,17 +1225,21 @@ async function submitInvite() {
   let success = 0, errors = [];
   for (const e of entries) {
     try {
-      const r = await callGAS('POST', {
-        action: 'submitApplication',
+      const r = await workerApiClient.submitApplication({
         gameId: e.gameId,
-        playerId: auth.playerId,
+        category: 'invite',
         ticketType: 'invite',
         quantityAdult: e.quantityAdult,
         receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
         note: e.note
       });
-      if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
+      if (workerApiClient.isUnauthorizedResult(r)) {
+        sessionStorage.clear();
+        location.href = 'index.html';
+        return;
+      }
+      if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + (r.error?.message || r.error));
       else {
         rememberSubmittedApplication(e.gameId, 'invite');
         success++;
@@ -1282,10 +1289,9 @@ async function submitFamily() {
   let success = 0, errors = [];
   for (const e of entries) {
     try {
-      const r = await callGAS('POST', {
-        action: 'submitApplication',
+      const r = await workerApiClient.submitApplication({
         gameId: e.gameId,
-        playerId: auth.playerId,
+        category: 'family',
         ticketType: 'family',
         quantityAdult: e.quantityAdult,
         receiverName: e.receiverName,
@@ -1293,7 +1299,12 @@ async function submitFamily() {
         parkingCount: e.parkingCount,
         note: e.note
       });
-      if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + r.error);
+      if (workerApiClient.isUnauthorizedResult(r)) {
+        sessionStorage.clear();
+        location.href = 'index.html';
+        return;
+      }
+      if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + (r.error?.message || r.error));
       else {
         rememberSubmittedApplication(e.gameId, 'family');
         success++;
@@ -1337,10 +1348,9 @@ async function submitPaid() {
   btn.innerHTML = '<span class="spinner"></span>送信中...<span class="en-sub" aria-hidden="true">Sending...</span>';
 
   try {
-    const r = await callGAS('POST', {
-      action: 'submitApplication',
+    const r = await workerApiClient.submitApplication({
       gameId,
-      playerId: auth.playerId,
+      category: 'paid',
       ticketType: 'paid',
       quantityAdult: parseInt(qty),
       seatType: seat,
@@ -1350,7 +1360,12 @@ async function submitPaid() {
       receiverName: document.getElementById('paid-receiver').value.trim(),
       note: document.getElementById('paid-note').value
     });
-    if (!r.ok) throw new Error(r.error);
+    if (workerApiClient.isUnauthorizedResult(r)) {
+      sessionStorage.clear();
+      location.href = 'index.html';
+      return;
+    }
+    if (!r.ok) throw new Error(r.error?.message || r.error);
     rememberSubmittedApplication(gameId, 'paid');
     showAlert('申込が完了しました！', 'success');
     btn.innerHTML = '申込済み ✓<span class="en-sub" aria-hidden="true">Submitted</span>';
@@ -1365,29 +1380,6 @@ async function submitPaid() {
 function getGameLabel(gameId) {
   const g = games.find(g => g.gameId === gameId);
   return g ? `${formatGameDate(g.date)} vs ${g.opponent}` : gameId;
-}
-
-async function callGAS(method, params) {
-  if (!GAS_URL) return demoCallGAS(method, params);
-  const sessionToken = sessionStorage.getItem('sessionToken') || undefined;
-  let result;
-  if (method === 'GET') {
-    const queryParams = { ...params };
-    if (sessionToken) queryParams.sessionToken = sessionToken;
-    const res = await fetch(`${GAS_URL}?${new URLSearchParams(queryParams)}`, { redirect: 'follow' });
-    result = await res.json();
-  } else {
-    const body = { ...params };
-    if (sessionToken) body.sessionToken = sessionToken;
-    const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), redirect: 'follow' });
-    result = await res.json();
-  }
-  if (result && result.error === 'unauthorized') {
-    sessionStorage.clear();
-    location.href = 'index.html';
-    return result;
-  }
-  return result;
 }
 
 function demoCallGAS(method, params) {

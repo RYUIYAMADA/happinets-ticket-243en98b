@@ -921,10 +921,11 @@
           <thead><tr>
             <th scope="col">選手ID（背番号）</th>
             <th scope="col">名前</th>
+            <th scope="col">LINE連携</th>
             <th scope="col">操作</th>
           </tr></thead>
           <tbody id="data-players-tbody">
-            <tr><td colspan="3" class="empty-msg"><span class="spinner"></span></td></tr>
+            <tr><td colspan="4" class="empty-msg"><span class="spinner"></span></td></tr>
           </tbody>
         </table>
       </div>
@@ -976,6 +977,7 @@
 </div>
 <div class="toast" id="toast" aria-live="assertive"></div>
 
+<script src="./api-client.js"></script>
 <script>
 function formatDate(dateStr) {
   const d = new Date(dateStr);
@@ -991,7 +993,6 @@ function esc(s) {
   return d.innerHTML;
 }
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzx2dSpTkrIcWT9a2qzaM2pQIsRAQt3P0p6Y2q9gfr9mmU3oPgE3qeCNLRCQNJusFYo/exec';
 // ※ private リポジトリ前提。公開リポジトリ化する場合は環境設定へ移すこと
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/18b-W0vAu9fIZDb9mvEDcTUw-zPTxnVTa78T5vJI1qY8/edit';
 let games = [], applications = [], players = [];
@@ -1000,13 +1001,18 @@ const PICKUP_LABELS  = { pre: '事前', day: '当日' };
 const STATUS_LABELS  = { pending: '確認中', confirmed: '確保済み', rejected: '対応不可', cancelled: 'キャンセル' };
 
 let adminRole = 'ticket';
-let adminPwHash = '';
+
+function handleUnauthorized(result) {
+  if (!workerApiClient.isUnauthorizedResult(result)) return false;
+  sessionStorage.clear();
+  location.href = 'index.html';
+  return true;
+}
 
 window.addEventListener('DOMContentLoaded', async () => {
   let auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
   if (!auth || auth.role !== 'admin') { location.href = 'index.html'; return; }
   adminRole = auth.adminRole || 'ticket';
-  adminPwHash = sessionStorage.getItem('adminPasswordHash') || '';
   const roleEl = document.getElementById('admin-role-badge');
   if (roleEl) {
     roleEl.textContent = adminRole === 'manager' ? 'チームマネージャー（閲覧のみ）' : 'チケット担当';
@@ -1024,13 +1030,17 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function loadAll() {
   try {
-    const adminToken = sessionStorage.getItem('adminToken') || '';
     const [gr, ar, pr, lr] = await Promise.all([
-      callGAS('GET', { action: 'getGames' }),
-      callGAS('GET', { action: 'getAllApplications', adminToken }),
-      callGAS('GET', { action: 'getPlayers', adminToken }),
-      callGAS('GET', { action: 'getLineStats', adminToken }),
+      workerApiClient.getGames(),
+      workerApiClient.getAllApplications(),
+      workerApiClient.getPlayers(),
+      workerApiClient.getLineStats(),
     ]);
+    if ([gr, ar, pr, lr].some(handleUnauthorized)) return;
+    if (!gr.ok) throw new Error(gr.error?.message || gr.error || '試合データ取得失敗');
+    if (!ar.ok) throw new Error(ar.error?.message || ar.error || '申込データ取得失敗');
+    if (!pr.ok) throw new Error(pr.error?.message || pr.error || '選手データ取得失敗');
+    if (!lr.ok) throw new Error(lr.error?.message || lr.error || 'LINE統計取得失敗');
     games = gr.data || [];
     applications = ar.data || [];
     players = pr.data || [];
@@ -1064,7 +1074,11 @@ function getGameLabel(gameId) {
 }
 function getPlayerName(playerId) {
   const p = players.find(p => String(p.playerId) === String(playerId));
-  return p ? `${p.name}（${playerId}）` : playerId;
+  return p ? `${p.name}（${p.playerNo || playerId}）` : playerId;
+}
+
+function getPlayerKey(player) {
+  return String(player.playerNo || player.playerId);
 }
 function getQtyText(app) {
   if (app.ticketType === 'family') {
@@ -1206,8 +1220,9 @@ function toggleMobileDetails(id, btn) {
 
 async function changeStatus(applicationId, status) {
   try {
-    const r = await callGAS('POST', { action: 'updateStatus', applicationId, status });
-    if (!r.ok) throw new Error(r.error);
+    const r = await workerApiClient.updateApplicationStatus(applicationId, status);
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error);
     const idx = applications.findIndex(a => a.applicationId === applicationId);
     if (idx >= 0) applications[idx].status = status;
     updateKPI();
@@ -1314,8 +1329,9 @@ async function bulkSetDeadlines(overwrite = false) {
     d.setDate(d.getDate() - days);
     const deadline = d.toISOString().split('T')[0];
     try {
-      const r = await callGAS('POST', { action: 'updateDeadline', gameId: g.gameId, deadline });
-      if (!r.ok) throw new Error(r.error);
+      const r = await workerApiClient.updateDeadline(g.gameId, deadline);
+      if (handleUnauthorized(r)) return;
+      if (!r.ok) throw new Error(r.error?.message || r.error);
       g.deadline = deadline;
       g.isDeadlinePassed = new Date(deadline) < new Date();
       ok++;
@@ -1328,8 +1344,9 @@ async function bulkSetDeadlines(overwrite = false) {
 async function saveDeadline(gameId) {
   const val = document.getElementById('dl-' + gameId).value;
   try {
-    const r = await callGAS('POST', { action: 'updateDeadline', gameId, deadline: val });
-    if (!r.ok) throw new Error(r.error);
+    const r = await workerApiClient.updateDeadline(gameId, val);
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error);
     const g = games.find(g => g.gameId === gameId);
     if (g) {
       g.deadline = val;
@@ -1443,12 +1460,9 @@ async function saveGameEdit(gameId) {
   if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
 
   try {
-    const r = await callGAS('POST', {
-      action: 'updateGame',
-      gameId,
-      fields: { date, opponent, deadline }
-    });
-    if (!r.ok) throw new Error(r.error || '更新失敗');
+    const r = await workerApiClient.updateGame(gameId, { date, opponent, deadline });
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error || '更新失敗');
     const g = games.find(g => String(g.gameId) === String(gameId));
     if (g) {
       g.date = date;
@@ -1478,12 +1492,13 @@ async function deleteGame(gameId) {
   if (btn) { btn.disabled = true; btn.textContent = '削除中…'; }
 
   try {
-    const r = await callGAS('POST', { action: 'deleteGame', gameId });
+    const r = await workerApiClient.deleteGame(gameId);
+    if (handleUnauthorized(r)) return;
     if (!r.ok) {
-      if (r.error === 'has_applications') {
+      if (r.error?.code === 'HAS_APPLICATIONS' || r.error?.message === 'has_applications' || r.error === 'has_applications') {
         showToast('申込がある試合は削除できません');
       } else {
-        throw new Error(r.error || '削除失敗');
+        throw new Error(r.error?.message || r.error || '削除失敗');
       }
       if (btn) { btn.disabled = false; btn.textContent = '削除'; }
       return;
@@ -1511,8 +1526,9 @@ async function addGame() {
 
   try {
     const game = { date, opponent, deadline: deadline || '' };
-    const r = await callGAS('POST', { action: 'addGame', game });
-    if (!r.ok) throw new Error(r.error || '追加失敗');
+    const r = await workerApiClient.addGame(game);
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error || '追加失敗');
     const newGame = r.data || {};
     const d = new Date(date);
     const days = ['日','月','火','水','木','金','土'];
@@ -1546,37 +1562,43 @@ function renderDataPlayers() {
   const tbody = document.getElementById('data-players-tbody');
   if (!tbody) return;
   if (!players.length) {
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-msg">選手データなし</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-msg">選手データなし</td></tr>';
     return;
   }
   tbody.innerHTML = players.map(p => buildPlayerRow(p)).join('');
 }
 
 function buildPlayerRow(p, editing = false) {
+  const playerKey = getPlayerKey(p);
+  const lineStatus = p.lineLinked
+    ? '<span class="badge badge-confirmed">連携済み</span>'
+    : '<span class="badge badge-cancelled">未連携</span>';
   if (editing) {
-    return `<tr class="editing-row" id="player-row-${esc(p.playerId)}">
-      <td style="font-size:12px">${esc(p.playerId)}</td>
-      <td><input type="text" class="inline-edit-input" id="edit-player-name-${esc(p.playerId)}" value="${esc(p.name)}" placeholder="名前" style="min-width:180px;"></td>
+    return `<tr class="editing-row" id="player-row-${esc(playerKey)}">
+      <td style="font-size:12px">${esc(playerKey)}</td>
+      <td><input type="text" class="inline-edit-input" id="edit-player-name-${esc(playerKey)}" value="${esc(p.name)}" placeholder="名前" style="min-width:180px;"></td>
+      <td>${lineStatus}</td>
       <td>
         <div class="btn-action-group">
-          <button class="btn-icon btn-save" onclick="savePlayerEdit('${esc(p.playerId)}')">保存</button>
-          <button class="btn-icon btn-cancel-edit" onclick="cancelPlayerEdit('${esc(p.playerId)}')">キャンセル</button>
+          <button class="btn-icon btn-save" onclick="savePlayerEdit('${esc(playerKey)}')">保存</button>
+          <button class="btn-icon btn-cancel-edit" onclick="cancelPlayerEdit('${esc(playerKey)}')">キャンセル</button>
         </div>
       </td>
     </tr>`;
   }
   const canEdit = adminRole === 'ticket';
-  return `<tr id="player-row-${esc(p.playerId)}">
-    <td style="font-size:12px">${esc(p.playerId)}</td>
+  return `<tr id="player-row-${esc(playerKey)}">
+    <td style="font-size:12px">${esc(playerKey)}</td>
     <td>${esc(p.name)}</td>
+    <td>${lineStatus}</td>
     <td>
-      ${canEdit ? `<button class="btn-icon btn-edit" onclick="startPlayerEdit('${esc(p.playerId)}')">編集</button>` : '—'}
+      ${canEdit ? `<button class="btn-icon btn-edit" onclick="startPlayerEdit('${esc(playerKey)}')">編集</button>` : '—'}
     </td>
   </tr>`;
 }
 
 function startPlayerEdit(playerId) {
-  const p = players.find(p => String(p.playerId) === String(playerId));
+  const p = players.find(p => getPlayerKey(p) === String(playerId));
   if (!p) return;
   const row = document.getElementById('player-row-' + playerId);
   if (!row) return;
@@ -1584,7 +1606,7 @@ function startPlayerEdit(playerId) {
 }
 
 function cancelPlayerEdit(playerId) {
-  const p = players.find(p => String(p.playerId) === String(playerId));
+  const p = players.find(p => getPlayerKey(p) === String(playerId));
   if (!p) return;
   const row = document.getElementById('player-row-' + playerId);
   if (!row) return;
@@ -1601,10 +1623,16 @@ async function savePlayerEdit(playerId) {
   if (btn) { btn.disabled = true; btn.textContent = '保存中…'; }
 
   try {
-    const r = await callGAS('POST', { action: 'updatePlayer', playerId, fields: { name } });
-    if (!r.ok) throw new Error(r.error || '更新失敗');
-    const p = players.find(p => String(p.playerId) === String(playerId));
-    if (p) p.name = name;
+    const r = await workerApiClient.updatePlayer(playerId, { name });
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error || '更新失敗');
+    const p = players.find(p => getPlayerKey(p) === String(playerId));
+    if (p) {
+      p.name = r.data?.name || name;
+      p.playerId = r.data?.playerId || p.playerId;
+      p.playerNo = r.data?.playerNo || p.playerNo;
+      p.lineLinked = typeof r.data?.lineLinked === 'boolean' ? r.data.lineLinked : p.lineLinked;
+    }
     renderDataPlayers();
     showToast('選手情報を更新しました');
   } catch (e) {
@@ -1618,7 +1646,7 @@ async function addPlayer() {
   const playerId = document.getElementById('new-player-id').value.trim();
   const name     = document.getElementById('new-player-name').value.trim();
   if (!playerId || !name) { showToast('選手IDと名前は必須です'); return; }
-  if (players.find(p => String(p.playerId) === String(playerId))) {
+  if (players.find(p => getPlayerKey(p) === String(playerId) || String(p.playerId) === String(playerId))) {
     showToast('その選手IDはすでに存在します'); return;
   }
 
@@ -1626,9 +1654,15 @@ async function addPlayer() {
   if (btn) { btn.disabled = true; btn.textContent = '追加中…'; }
 
   try {
-    const r = await callGAS('POST', { action: 'addPlayer', player: { playerId, name } });
-    if (!r.ok) throw new Error(r.error || '追加失敗');
-    players.push({ playerId, name });
+    const r = await workerApiClient.addPlayer({ playerId, name, lineUserId: null });
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error || '追加失敗');
+    players.push({
+      playerId: r.data?.playerId || playerId,
+      playerNo: r.data?.playerNo || playerId,
+      name: r.data?.name || name,
+      lineLinked: false,
+    });
     document.getElementById('new-player-id').value = '';
     document.getElementById('new-player-name').value = '';
     renderDataPlayers();
@@ -1649,9 +1683,10 @@ async function replaceSeason2627() {
   if (btn) { btn.disabled = true; btn.textContent = '実行中…'; }
 
   try {
-    const r = await callGAS('POST', { action: 'replaceSeason2627' });
-    if (!r.ok) throw new Error(r.error || '入替失敗');
-    const count = r.data?.gameCount ?? '?';
+    const r = await workerApiClient.replaceSeason2627({});
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error || '入替失敗');
+    const count = r.data?.inserted ?? '?';
     showToast(`2026-27シーズン入替完了。${count}試合を登録しました`);
     await loadAll();
     renderDataTab();
@@ -1669,23 +1704,20 @@ function openSheet() {
     if (url) { localStorage.setItem('SHEET_URL', url); window.open(url, '_blank'); }
   }
 }
-function logout() { sessionStorage.clear(); location.href = 'index.html'; }
+async function logout() {
+  try {
+    await workerApiClient.logout();
+  } finally {
+    sessionStorage.clear();
+    location.href = 'index.html';
+  }
+}
 
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
-}
-
-async function callGAS(method, params) {
-  if (!GAS_URL) return demoCallGAS(method, params);
-  if (method === 'GET') {
-    const res = await fetch(`${GAS_URL}?${new URLSearchParams(params)}`, { redirect: 'follow' });
-    return res.json();
-  }
-  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({...params, pwHash: adminPwHash}), redirect: 'follow' });
-  return res.json();
 }
 
 function demoCallGAS(method, params) {
