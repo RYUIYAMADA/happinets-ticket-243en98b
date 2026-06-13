@@ -1628,7 +1628,7 @@ function buildGameCard(g) {
   const hasAny = appList.length > 0;
 
   const deadlineText = g.deadline
-    ? tf('deadlineFormat', { date: g.deadline }) + (g.isDeadlinePassed ? t('deadlineEnded') : '')
+    ? tf('deadlineFormat', { date: formatDate(g.deadline) }) + (g.isDeadlinePassed ? t('deadlineEnded') : '')
     : t('deadlineUnset');
 
   // ヘッダーの3種別ピル
