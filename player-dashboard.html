@@ -694,7 +694,7 @@
 <script>
 window.LIFF_CONFIG = {
   formLiffId:      "2010388137-8fUulpy5",  // player-form用 LIFF ID
-  dashboardLiffId: "2010388137-gFA7lk77",  // player-dashboard用 LIFF ID
+  dashboardLiffId: "2010388137-gFA7Ik77",  // player-dashboard用 LIFF ID (大文字I 正版)
 };
 </script>
 </head>
@@ -715,28 +715,6 @@ window.LIFF_CONFIG = {
 <div id="liff-loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.9);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div class="liff-spinner"></div>
   <p class="liff-spinner-text">LINEアカウントを確認中...</p>
-<!-- DEBUG PANEL (実機LIFF対応テスト用) -->
-<div id="debug-panel" style="
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 99999;
-  background: #fee2e2;
-  border-bottom: 3px solid #dc2626;
-  padding: 8px 12px;
-  font-family: monospace;
-  font-size: 11px;
-  color: #7f1d1d;
-  max-height: 120px;
-  overflow-y: auto;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  display: none;
-">
-  <div style="font-weight:bold;margin-bottom:4px;">🔴 DEBUG PANEL</div>
-  <div id="debug-content" style="white-space:pre-wrap;word-break:break-word;"></div>
-</div>
-
 </div>
 <header>
   <div class="header-inner">
@@ -1117,24 +1095,17 @@ window.LIFF_CONFIG = {
     if (!liffId || liffId.includes("XXXXXXXXXXXX")) {
       throw new Error("LIFF IDが未設定です。管理者にお問い合わせください。");
     }
-    debugLog("LIFF SDK", typeof liff === "undefined" ? "undefined" : "loaded");
-    debugLog("LIFF ID", liffId);
     if (typeof liff === "undefined") {
       throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
     }
-    debugLog("LIFF init", "starting");
     await liff.init({ liffId, withLoginOnExternalBrowser: true });
-    debugLog("LIFF init", "success");
 
     // 【重要】ログイン状態を確認・ログイン処理
     const isLoggedIn = liff.isLoggedIn();
-    debugLog("liff.isLoggedIn()", isLoggedIn);
     if (!isLoggedIn) {
       try {
-        debugLog("liff.login()", "calling");
         await liff.login();
       } catch (e) {
-        debugLog("liff.login error", e.message);
         throw e;
       }
     }
@@ -1145,35 +1116,28 @@ window.LIFF_CONFIG = {
 
   async function initAndAuthWithLiff(liffId) {
     // 【重要】init + login 完了待ち
-    debugLog("initAndAuthWithLiff", "start");
     await ensureLiffInitialized(liffId);
 
     // この時点で確実にログイン済み
     const idToken = liff.getIDToken();
-    debugLog("getIDToken length", idToken ? idToken.length : "null");
     if (!idToken) throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
 
     const storedToken = sessionStorage.getItem("sessionToken");
     if (storedToken) {
       const storedAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
       if (storedAuth && storedAuth.role === "player") {
-        debugLog("cached auth", "found, skipping login");
         return storedAuth;
       }
     }
 
-    debugLog("loginWithLiff", "calling");
     const result = await workerApiClient.loginWithLiff(idToken);
-    debugLog("loginWithLiff result", result.ok ? "ok" : `error: ${result.error?.code}`);
     if (result.ok) {
       const authData = { ...result.data, role: "player" };
       sessionStorage.setItem("auth", JSON.stringify(authData));
       sessionStorage.setItem("sessionToken", result.data.token);
-      debugLog("auth stored", "sessionStorage set");
       return authData;
     }
     if (result.error && result.error.code === "UNLINKED") {
-      debugLog("UNLINKED", "returning unlinked flag");
       return { unlinked: true };
     }
     throw new Error(result.error && result.error.message ? result.error.message : "LIFF認証に失敗しました。");
@@ -1205,22 +1169,6 @@ window.LIFF_CONFIG = {
 })();
 </script>
 <script>
-// ─── DEBUG PANEL (実機LIFF対応テスト用) ───────────────────
-const DEBUG_LOG = [];
-function debugLog(label, value) {
-  const ts = new Date().toLocaleTimeString('ja-JP');
-  const msg = `[${ts}] ${label}: ${typeof value === 'object' ? JSON.stringify(value).slice(0, 100) : String(value).slice(0, 100)}`;
-  DEBUG_LOG.push(msg);
-  const panel = document.getElementById('debug-panel');
-  const content = document.getElementById('debug-content');
-  if (panel && content) {
-    panel.style.display = 'block';
-    content.textContent = DEBUG_LOG.join('\n');
-    content.parentElement.scrollTop = content.parentElement.scrollHeight;
-  }
-  console.log('[DEBUG]', label, value);
-}
-
 // ─── i18n ───────────────────────────────────────────
 const STRINGS = { ja: {}, en: {} };
 let lang = localStorage.getItem('ht_lang') || 'ja';
@@ -1438,8 +1386,6 @@ function handleRelogin() {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  debugLog("DOMContentLoaded", "start");
-  debugLog("liff.isInClient()", typeof liff !== 'undefined' && liff.isInClient ? liff.isInClient() : "SDK not loaded");
   applyI18n();
   const loadingEl = document.getElementById('liff-loading-overlay');
   loadingEl.style.display = 'flex';
@@ -1449,7 +1395,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const storedAuth = JSON.parse(sessionStorage.getItem('auth') || 'null');
   const storedToken = sessionStorage.getItem('sessionToken');
   if (storedAuth && (storedAuth.role === 'player' || storedAuth.role === 'admin') && storedToken && typeof workerApiClient !== 'undefined') {
-    debugLog("fallback path", "using stored auth");
     loadingEl.style.display = 'none';
     await initDashboardAfterAuth(storedAuth);
     return;
@@ -1457,24 +1402,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const liffId = (window.LIFF_CONFIG || {}).dashboardLiffId || '';
-    debugLog("dashboardLiffId", liffId);
     const result = await window.liffAuth.initAndAuthWithLiff(liffId);
     if (!result) {
-      debugLog("liff auth", "redirecting");
       return; // liff.login() リダイレクト中
     }
     if (result.unlinked) {
-      debugLog("liff auth", "unlinked");
       loadingEl.style.display = 'none';
       const overlay = document.getElementById('liff-link-overlay');
       overlay.style.display = 'flex';
       return;
     }
-    debugLog("liff auth", "success");
     loadingEl.style.display = 'none';
     await initDashboardAfterAuth(result);
   } catch (e) {
-    debugLog("ERROR", e.message);
     loadingEl.style.display = 'none';
     // spin CSS が未定義の場合のフォールバックメッセージ
     document.body.insertAdjacentHTML('afterbegin',
@@ -1484,15 +1424,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function loadData() {
   try {
-    debugLog("loadData", "getGames/getApplications");
     const [gamesRes, appsRes] = await Promise.all([
       getGames(),
       getApplications()
     ]);
-    debugLog("API getGames", `${gamesRes.ok ? 'ok' : 'err'}`);
-    debugLog("API getApplications", `${appsRes.ok ? 'ok' : 'err'}`);
     if (workerApiClient.isUnauthorizedResult(appsRes)) {
-      debugLog("API result", "UNAUTHORIZED");
       sessionStorage.clear();
       window.location.href = 'index.html';
       return;
@@ -1511,13 +1447,9 @@ async function loadData() {
       return nowJst < hideAfterJst;
     });
     applications = appsRes.data.filter(a => a.status !== 'cancelled');
-    debugLog("games/apps", `${games.length}/${applications.length}`);
     updateSummary();
-    debugLog("renderList", "starting");
     renderList();
-    debugLog("renderList", "done");
   } catch (e) {
-    debugLog("loadData ERROR", e.message);
     document.getElementById('game-list').innerHTML = `<div class="loading-msg is-error">データ読み込み失敗: ${esc(e.message)}</div>`;
   }
 }
@@ -1834,8 +1766,7 @@ const BUILD_DATE = new Date().toISOString().slice(0, 13).replace(/[:-]/g, '');
 const VERSION = 'v0.3.4-' + BUILD_DATE;
 const verEl = document.getElementById('app-version');
 if (verEl) {
-  verEl.textContent = VERSION + ' (debug)';
-  debugLog("version", VERSION);
+  verEl.textContent = VERSION;
 }
 </script>
 </body>
