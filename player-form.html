@@ -366,8 +366,14 @@
     background: transparent;
     box-shadow: none;
   }
+  /* 先頭試合: 上部に区切り線 */
+  .game-card-list .game-card-row:first-child {
+    border-top: 2px solid var(--text-sub);
+    padding-top: var(--space-5);
+  }
+  /* 試合間: 区切り線（先頭より太く） */
   .card .game-card-row + .game-card-row {
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--text-sub);
     padding-top: var(--space-5);
     margin-top: var(--space-3);
   }
@@ -758,6 +764,23 @@
   }
   .submit-bottom-bar button:not(.active-section) { display: none; }
   .submit-bottom-bar button.active-section { display: block; }
+
+  .show-more-btn {
+    width: 100%;
+    padding: var(--space-4);
+    background: var(--bg-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: var(--space-4);
+    transition: background 0.15s;
+  }
+  .show-more-btn:hover {
+    background: var(--border);
+  }
 
   .alert {
     padding: var(--space-4);
@@ -1786,6 +1809,7 @@ STRINGS.ja = {
   inviteSpecialNotePlaceholder: '例）座席アップグレード希望など',
   inviteTicketsApplied: '現在 {count} 枚申込済み',
   invitePickup: '当日受取',
+  showMoreGames: 'さらに表示（残り {count} 試合）',
   familySection: '家族席チケット',
   familyTitle: '家族席チケットを申し込む',
   familyReceiverEyebrow: 'Receiver',
@@ -1930,6 +1954,7 @@ STRINGS.en = {
   inviteSpecialNotePlaceholder: 'e.g. seat upgrade request',
   inviteTicketsApplied: 'Currently applied: {count} tickets',
   invitePickup: 'Pick up on game day',
+  showMoreGames: 'Show More ({count} games remaining)',
   familySection: 'Family Seat Tickets',
   familyTitle: 'Apply for Family Seat Tickets',
   familyReceiverEyebrow: 'Receiver',
@@ -2410,19 +2435,23 @@ function getExistingQty(gameId, ticketType) {
     .reduce((sum, a) => sum + (parseInt(a.quantityAdult) || 0), 0);
 }
 
+const INITIAL_GAME_COUNT = 6;
+const inviteExpandState = { visible: INITIAL_GAME_COUNT };
+
 function buildInviteGrid() {
   const list = document.getElementById('invite-list');
-  // 日付順のまま維持（分割・並び替えしない）
-  const visible = games; // gamesShouldHideは loadGames 側でフィルタ済み
+  const visible = games;
 
   if (!visible.length) {
     list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`;
     return;
   }
 
-  const html = visible.map(g => {
+  const displayCount = Math.min(inviteExpandState.visible, visible.length);
+  const hasMore = displayCount < visible.length;
+
+  const gameRows = visible.slice(0, displayCount).map(g => {
     if (g.isDeadlinePassed) {
-      // 締切後: 申し込み終了表示（位置は日付順で固定）
       return `<div class="game-card-row row-closed" data-game="${esc(g.gameId)}" style="opacity: 0.6; pointer-events: none;">
         <div class="game-card-top">
           <div class="game-card-info">
@@ -2433,7 +2462,6 @@ function buildInviteGrid() {
         </div>
       </div>`;
     }
-    // 締切前: 通常申込可
     const dl = g.deadline
       ? `<span class="deadline-badge deadline-ok">${tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
       : '';
@@ -2449,13 +2477,17 @@ function buildInviteGrid() {
       </div>
       <div class="game-card-controls">
         ${stepperHtml(sid, 10)}
-        <label class="inv-day-label">
-          <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">${esc(t('invitePickup'))}
-        </label>
+        <div class="sel-wrap">
+          <span class="sel-label">${esc(t('familyPickupMethod'))}</span>
+          <select class="game-card-sel inv-pickup" data-game="${esc(g.gameId)}">
+            <option value="pre">${esc(t('familyPickupPre'))}</option>
+            <option value="day" selected>${esc(t('familyPickupDay'))}</option>
+          </select>
+        </div>
       </div>
       <div class="receiver-field">
         <label>${esc(t('receiverRequired'))}</label>
-        <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('paidReceiverNamePlaceholder'))}">
+        <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('familyReceiverSelectPlaceholder'))}">
       </div>
       <div class="receiver-field">
         <label>${esc(t('inviteSpecialNote'))}</label>
@@ -2471,22 +2503,36 @@ function buildInviteGrid() {
     </div>`;
   });
 
-  list.innerHTML = html.join('');
+  let html = gameRows.join('');
+  if (hasMore) {
+    const remaining = visible.length - displayCount;
+    html += `<button type="button" class="show-more-btn" onclick="expandInviteGames()">${esc(tf('showMoreGames', { count: remaining }))}</button>`;
+  }
+
+  list.innerHTML = html;
 }
+
+function expandInviteGames() {
+  inviteExpandState.visible += INITIAL_GAME_COUNT;
+  buildInviteGrid();
+}
+
+const familyExpandState = { visible: INITIAL_GAME_COUNT };
 
 function buildFamilyGrid() {
   const list = document.getElementById('family-list');
-  // 日付順のまま維持（分割・並び替えしない）
-  const visible = games; // gamesShouldHideは loadGames 側でフィルタ済み
+  const visible = games;
 
   if (!visible.length) {
     list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`;
     return;
   }
 
-  const html = visible.map(g => {
+  const displayCount = Math.min(familyExpandState.visible, visible.length);
+  const hasMore = displayCount < visible.length;
+
+  const gameRows = visible.slice(0, displayCount).map(g => {
     if (g.isDeadlinePassed) {
-      // 締切後: 申し込み終了表示（位置は日付順で固定）
       return `<div class="game-card-row row-closed" data-game="${esc(g.gameId)}" style="opacity: 0.6; pointer-events: none;">
         <div class="game-card-top">
           <div class="game-card-info">
@@ -2497,7 +2543,6 @@ function buildFamilyGrid() {
         </div>
       </div>`;
     }
-    // 締切前: 通常申込可
     const dl = g.deadline
       ? `<span class="deadline-badge deadline-ok">${tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
       : '';
@@ -2547,7 +2592,18 @@ function buildFamilyGrid() {
     </div>`;
   });
 
-  list.innerHTML = html.join('');
+  let html = gameRows.join('');
+  if (hasMore) {
+    const remaining = visible.length - displayCount;
+    html += `<button type="button" class="show-more-btn" onclick="expandFamilyGames()">${esc(tf('showMoreGames', { count: remaining }))}</button>`;
+  }
+
+  list.innerHTML = html;
+}
+
+function expandFamilyGames() {
+  familyExpandState.visible += INITIAL_GAME_COUNT;
+  buildFamilyGrid();
 }
 
 function toggleSeatMap(wrap) {
@@ -2595,10 +2651,11 @@ async function submitInvite() {
     const gameId = row.dataset.game;
     const qty = parseInt(document.getElementById('val-inv-' + gameId)?.textContent) || 0;
     if (qty === 0) return;
-    const isDay = row.querySelector('.inv-day').checked;
+    const pickupSelect = row.querySelector('.inv-pickup');
+    const pickupMethod = pickupSelect?.value || 'day';
     const receiver = (document.getElementById('rec-inv-' + gameId)?.value || '').trim();
     const note = document.getElementById('note-inv-' + gameId)?.value || '';
-    entries.push({ gameId, quantityAdult: qty, pickupMethod: isDay ? 'day' : 'pre', receiverName: receiver, note });
+    entries.push({ gameId, quantityAdult: qty, pickupMethod, receiverName: receiver, note });
   });
 
   if (entries.length === 0) { showAlert(t('selectOneGame'), 'error'); return; }
@@ -2829,7 +2886,7 @@ function clearAlert() { document.getElementById('alert-area').innerHTML = ''; }
 <script>
 // Version hash from build time
 const BUILD_DATE = new Date().toISOString().slice(0, 13).replace(/[:-]/g, '');
-const VERSION = 'v0.3.2-' + BUILD_DATE;
+const VERSION = 'v0.3.3-' + BUILD_DATE;
 const verEl = document.getElementById('app-version');
 if (verEl) {
   verEl.textContent = VERSION;
