@@ -637,13 +637,13 @@ window.LIFF_CONFIG = {
 <!-- 初回連携モーダル（LIFF未連携時に表示） -->
 <div id="liff-link-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:12px;padding:24px;width:min(90vw,360px);box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:8px;">初回登録</h2>
-    <p style="font-size:14px;color:#64748b;margin-bottom:16px;">背番号を入力してLINEアカウントと連携してください。</p>
-    <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 6）" maxlength="3"
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:4px;">初回登録<span style="display:block;font-size:12px;font-weight:400;color:#64748b;margin-top:4px;">First-time Registration</span></h2>
+    <p style="font-size:14px;color:#64748b;margin-bottom:16px;">背番号を入力してLINEアカウントと連携してください。<span style="display:block;font-size:12px;margin-top:4px;">Enter your 3-digit jersey number to link your LINE account.</span></p>
+    <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
       style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:16px;margin-bottom:8px;"/>
     <div id="liff-link-error" style="color:#dc2626;font-size:13px;min-height:20px;margin-bottom:8px;"></div>
     <button id="liff-link-btn" onclick="handleLiffLink()"
-      style="width:100%;padding:12px;background:#2456e6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">連携する</button>
+      style="width:100%;padding:12px;background:#2456e6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">連携する<span style="display:block;font-size:11px;font-weight:400;margin-top:2px;">Link Account</span></button>
   </div>
 </div>
 <!-- 認証中スピナー -->

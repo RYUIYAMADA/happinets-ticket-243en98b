@@ -948,23 +948,23 @@ window.LIFF_CONFIG = {
 <!-- 初回連携モーダル（LIFF未連携時に表示） -->
 <div id="liff-link-overlay" class="liff-overlay-backdrop">
   <div class="liff-modal-box">
-    <h2 class="liff-modal-title">初回登録</h2>
-    <p class="liff-modal-desc">背番号を入力してLINEアカウントと連携してください。</p>
-    <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 6）" maxlength="3"
+    <h2 class="liff-modal-title">初回登録<span class="en-sub" aria-hidden="true">First-time Registration</span></h2>
+    <p class="liff-modal-desc">背番号を入力してLINEアカウントと連携してください。<span class="en-sub" aria-hidden="true">Enter your 3-digit jersey number to link your LINE account.</span></p>
+    <input id="liff-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
       class="liff-modal-input"/>
     <div id="liff-link-error" class="liff-modal-error"></div>
-    <button id="liff-link-btn" onclick="handleLiffLink()" class="liff-modal-btn">連携する</button>
+    <button id="liff-link-btn" onclick="handleLiffLink()" class="liff-modal-btn">連携する<span class="en-sub" aria-hidden="true">Link Account</span></button>
   </div>
 </div>
 <!-- 番号ログイン（LIFF失敗時フォールバック）モーダル -->
 <div id="fallback-login-overlay" class="liff-overlay-backdrop">
   <div class="liff-modal-box">
-    <h2 class="liff-modal-title">選手家族チケット申込</h2>
-    <p class="liff-modal-desc">背番号3桁を入力してログインしてください。</p>
-    <input id="fallback-player-no-input" type="tel" placeholder="背番号（例: 6）" maxlength="3"
+    <h2 class="liff-modal-title">選手家族チケット申込<span class="en-sub" aria-hidden="true">Player Family Ticket Request</span></h2>
+    <p class="liff-modal-desc">背番号3桁を入力してログインしてください。<span class="en-sub" aria-hidden="true">Enter your 3-digit jersey number to log in.</span></p>
+    <input id="fallback-player-no-input" type="tel" placeholder="背番号（例: 002）" maxlength="3"
       class="liff-modal-input" inputmode="numeric"/>
     <div id="fallback-login-error" class="liff-modal-error"></div>
-    <button id="fallback-login-btn" onclick="handleFallbackLogin()" class="liff-modal-btn">ログイン</button>
+    <button id="fallback-login-btn" onclick="handleFallbackLogin()" class="liff-modal-btn">ログイン<span class="en-sub" aria-hidden="true">Log In</span></button>
   </div>
 </div>
 <!-- 認証中スピナー -->
