@@ -266,6 +266,7 @@
   </div>
 </div>
 
+<script src="./api-client.js"></script>
 <script>
 // ─── i18n ───────────────────────────────────────────
 const STRINGS = { ja: {}, en: {} };
@@ -391,10 +392,9 @@ async function loginPlayer() {
   btn.disabled = true;
   btn.textContent = 'ログイン中...';
   try {
-    const result = await callGAS('POST', { action: 'login', playerId });
-    if (!result.ok) throw new Error(result.error);
+    const result = await workerApiClient.loginPlayer(playerId);
+    if (!result.ok) throw new Error(result.error?.message || result.error || 'ログインに失敗しました');
     sessionStorage.setItem('auth', JSON.stringify(result.data));
-    if (result.data.sessionToken) sessionStorage.setItem('sessionToken', result.data.sessionToken);
     window.location.href = 'player-dashboard.html';
   } catch (e) {
     errEl.textContent = getLoginErrorMessage(e) || '番号が見つかりません';

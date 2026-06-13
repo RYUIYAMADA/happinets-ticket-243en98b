@@ -122,7 +122,7 @@ D1 への複数書き込み（INSERT + audit_log 等）は必ず `env.DB.batch([
 ```
 - `playerId` は正規化済み整数文字列 (GAS互換: `String(parseInt(playerId))`)
 - TTL: 6時間 (GAS: `CacheService.put(key, val, 21600)` 相当)
-- 404: player_no 未登録
+- 401: player_no 未登録（404ではなく401。番号存在有無のブルートフォース探索を防ぐため）
 
 ---
 

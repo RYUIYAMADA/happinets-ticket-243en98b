@@ -10,3 +10,8 @@ gas/.clasp.json
 # GAS 環境変数（機密情報）
 .env.gas
 scripts/*.env
+
+# Wrangler local state
+.wrangler/
+cloudflare-worker-api/.tmp-xdg/
+cloudflare-worker-api/.tmp-home/

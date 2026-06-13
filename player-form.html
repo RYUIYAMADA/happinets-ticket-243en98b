@@ -792,6 +792,7 @@
   </div>
 </div>
 
+<script src="./api-client.js"></script>
 <script>
 // ─── i18n ───────────────────────────────────────────
 const STRINGS = { ja: {}, en: {} };
@@ -939,8 +940,8 @@ function rememberSubmittedApplication(gameId, ticketType) {
 }
 
 async function loadGames() {
-  const result = await callGAS('GET', { action: 'getGames' });
-  if (!result.ok) { showAlert('試合データ読込失敗: ' + result.error, 'error'); return; }
+  const result = await workerApiClient.getGames();
+  if (!result.ok) { showAlert('試合データ読込失敗: ' + (result.error?.message || result.error), 'error'); return; }
   games = result.data;
 
   // 有料チケット試合選択

@@ -519,6 +519,7 @@
 
 <button class="fab" onclick="location.href='player-form.html'" data-i18n="newApp">＋ 新規申込</button>
 
+<script src="./api-client.js"></script>
 <script>
 // ─── i18n ───────────────────────────────────────────
 const STRINGS = { ja: {}, en: {} };
@@ -645,7 +646,7 @@ async function getGames() {
     }
   }
 
-  const result = await callGAS('GET', { action: 'getGames' });
+  const result = await workerApiClient.getGames();
   if (result.ok) {
     sessionStorage.setItem(GAMES_CACHE_KEY, JSON.stringify(result));
     sessionStorage.setItem(GAMES_CACHE_TS_KEY, String(Date.now()));
