@@ -193,12 +193,16 @@
     color: var(--accent-line);
   }
   .btn-relogin {
-    background: var(--primary-weak);
+    background: transparent;
     color: var(--primary);
+    font-size: 13px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
   }
   .btn-relogin:hover {
-    background: var(--primary);
-    color: var(--bg);
+    background: var(--primary-weak);
+    border-color: var(--primary);
   }
   .btn-logout {
     background: var(--bg-subtle);
@@ -1207,6 +1211,7 @@ STRINGS.ja = {
   newApp: '＋ 新規申込',
   noMatch: '該当する試合はありません',
   expiredLabel: '終了した試合',
+  monthFormat: '{month}月の試合',
 };
 STRINGS.en = {
   title: 'Request Status Dashboard',
@@ -1227,6 +1232,7 @@ STRINGS.en = {
   newApp: '＋ New Request',
   noMatch: 'No matching games',
   expiredLabel: 'Completed Games',
+  monthFormat: '{month} Games',
 };
 // ────────────────────────────────────────────────────
 
@@ -1491,7 +1497,7 @@ function renderList() {
     let h = '';
     Object.keys(grouped).sort().forEach(month => {
       const [, m] = month.split('-');
-      h += `<div class="section-label">${parseInt(m)}月の試合</div>`;
+      h += `<div class="section-label">${tf('monthFormat', { month: parseInt(m) })}</div>`;
       grouped[month].forEach(g => { h += buildGameCard(g); });
     });
     return h;

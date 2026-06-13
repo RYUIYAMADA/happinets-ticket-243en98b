@@ -301,24 +301,30 @@
     background: var(--bg);
     min-height: auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: flex-start;
     gap: var(--space-3);
   }
   .ticket-tabs .radio-card input[type="radio"] {
-    margin-top: var(--space-1);
     flex-shrink: 0;
+    margin-top: 3px;
   }
   .ticket-tabs .radio-card .rc-main {
-    width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: var(--space-3);
-    min-width: 0;
+    flex: 1;
+    min-width: calc(200px - var(--space-3));
   }
   .ticket-tabs .radio-card .rc-sub { display: none; }
-  .ticket-tabs .radio-card .rc-avail { display: block; width: 100%; }
+  .ticket-tabs .radio-card .rc-avail {
+    display: block;
+    flex-basis: 100%;
+    width: 100%;
+    order: 2;
+  }
   .ticket-tabs .radio-card .rc-check { display: none; }
   .ticket-tabs .radio-card .rc-text { font-size: 15px; white-space: normal; font-weight: 700; word-break: break-word; }
   .ticket-tabs .radio-card .en-sub { white-space: normal; }
