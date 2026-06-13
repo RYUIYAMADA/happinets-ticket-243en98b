@@ -27,75 +27,69 @@
     gap: 0;
   }
   .btn + .btn {
-    border-left: 3px solid #e2e8f0;
+    border-left: 4px solid #e2e8f0;
   }
+
   /* ボタン1: 予約する — プライマリブルー */
   .btn-reserve {
     background: #2456e6;
   }
+
   /* ボタン2: マイ申込状況 — 白 */
   .btn-status {
     background: #ffffff;
   }
-  /* ボタン3: トップ — 薄グレー */
-  .btn-home {
-    background: #f5f6f8;
-  }
 
   /* ── アイコンエリア ── */
   .icon-wrap {
-    width: 220px;
-    height: 220px;
+    width: 280px;
+    height: 280px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 60px;
+    margin-bottom: 80px;
   }
   .icon-wrap-reserve { background: rgba(255,255,255,0.15); }
   .icon-wrap-status  { background: #eaf0ff; }
-  .icon-wrap-home    { background: #e2e8f0; }
 
   /* ── SVG アイコン ── */
   .icon-svg {
-    width: 110px;
-    height: 110px;
+    width: 140px;
+    height: 140px;
   }
   .icon-svg-reserve { stroke: #ffffff; }
   .icon-svg-status  { stroke: #2456e6; }
-  .icon-svg-home    { stroke: #1a3fa0; }
 
-  /* ── メインラベル ── */
+  /* ── メインラベル（日本語） ── */
   .label {
-    font-size: 100px;
+    font-size: 130px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    line-height: 1.1;
+    line-height: 1.0;
     text-align: center;
   }
   .label-reserve { color: #ffffff; }
   .label-status  { color: #2456e6; }
-  .label-home    { color: #1a3fa0; }
 
   /* ── サブラベル（英語） ── */
   .sublabel {
-    font-size: 52px;
+    font-size: 68px;
     font-weight: 500;
-    margin-top: 20px;
+    margin-top: 32px;
     text-align: center;
     letter-spacing: 0.06em;
   }
   .sublabel-reserve { color: rgba(255,255,255,0.80); }
   .sublabel-status  { color: #5a78bf; }
-  .sublabel-home    { color: #5a78bf; }
 
   /* ── タップヒント（底部） ── */
   .tap-hint {
     position: absolute;
-    bottom: 80px;
-    font-size: 38px;
+    bottom: 100px;
+    font-size: 48px;
     font-weight: 500;
-    padding: 16px 48px;
+    padding: 20px 60px;
     border-radius: 999px;
     letter-spacing: 0.08em;
   }
@@ -107,22 +101,6 @@
     background: #eaf0ff;
     color: #2456e6;
   }
-  .tap-hint-home {
-    background: #e2e8f0;
-    color: #1a3fa0;
-  }
-
-  /* ── 区切り線（上部カラーバー） ── */
-  .top-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 16px;
-  }
-  .top-bar-reserve { background: rgba(255,255,255,0.35); }
-  .top-bar-status  { background: #2456e6; }
-  .top-bar-home    { background: #1a3fa0; }
 </style>
 </head>
 <body>
@@ -130,7 +108,6 @@
 
   <!-- ボタン1: 予約する / Reserve -->
   <div class="btn btn-reserve">
-    <div class="top-bar top-bar-reserve"></div>
     <div class="icon-wrap icon-wrap-reserve">
       <!-- チケット(outline)アイコン -->
       <svg class="icon-svg icon-svg-reserve" viewBox="0 0 64 64" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -153,7 +130,6 @@
 
   <!-- ボタン2: マイ申込状況 / My Requests -->
   <div class="btn btn-status">
-    <div class="top-bar top-bar-status"></div>
     <div class="icon-wrap icon-wrap-status">
       <!-- クリップボード+チェック(outline)アイコン -->
       <svg class="icon-svg icon-svg-status" viewBox="0 0 64 64" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -172,29 +148,6 @@
     <div class="label label-status">マイ申込状況</div>
     <div class="sublabel sublabel-status">My Requests</div>
     <div class="tap-hint tap-hint-status">タップして確認 →</div>
-  </div>
-
-  <!-- ボタン3: トップ / Home -->
-  <div class="btn btn-home">
-    <div class="top-bar top-bar-home"></div>
-    <div class="icon-wrap icon-wrap-home">
-      <!-- ホーム(outline)アイコン -->
-      <svg class="icon-svg icon-svg-home" viewBox="0 0 64 64" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-        <!-- 屋根 -->
-        <polyline points="8,30 32,8 56,30"/>
-        <!-- 外壁 -->
-        <path d="M14 28 L14 56 L50 56 L50 28"/>
-        <!-- ドア -->
-        <rect x="24" y="40" width="16" height="16" rx="2"/>
-        <!-- 窓（左） -->
-        <rect x="16" y="32" width="10" height="8" rx="1"/>
-        <!-- 窓（右） -->
-        <rect x="38" y="32" width="10" height="8" rx="1"/>
-      </svg>
-    </div>
-    <div class="label label-home">トップ</div>
-    <div class="sublabel sublabel-home">Home</div>
-    <div class="tap-hint tap-hint-home">タップしてホームへ →</div>
   </div>
 
 </div>
