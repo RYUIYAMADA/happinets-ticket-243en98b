@@ -31,12 +31,13 @@ progress_pct: 10
 - --radius 14(card)/10(input,btn)/999(pill)px / Noto Sans JP・見出し700
 
 ## タスク一覧
-- 🔄 スライス1: player-form.html 刷新 + DESIGN.md 新トークン確定（ft-ui-form）
-- ⬜ プレビュー(Preview MCP)で龍偉確認 → 基準デザイン承認
-- ⬜ index.html 展開
-- ⬜ player-dashboard.html 展開
-- ⬜ admin.html 展開（同テイスト・管理画面の情報密度に合わせ調整）
-- ⬜ 全画面 ビジュアルQA（gan-evaluator / accessibility）+ 最長テキストで重なり/見切れ機械検査
+- ✅ スライス1: player-form.html 刷新 + DESIGN.md 新トークン確定（c77f097）
+- ✅ index.html 展開（da2ce75）
+- ✅ player-dashboard.html 展開（da2ce75）
+- ✅ admin.html 展開（da2ce75・テーブル/フォーム/タブに統一適用）
+- ✅ ビジュアルQA（gan-evaluator・SP/PCスクショ+機械検査）→ concern（P1崩壊2/P2コントラスト3/PC見切れ）
+- ✅ QA修正（80c632c）: --radius統一・ハードコード除去・WCAG-AA(4.97〜6.49:1)・PCタブ見切れ解消
+- ⬜ 龍偉の最終確認（html-share アップは龍偉の明示指示待ち）→ 必要なら微調整
 
 ## 🔀 方向転換・仕様変更ログ
 - 2026-06-13 16:30 — 龍偉が予約システムUIを共有し全FEデザイン刷新を指示。d1-migration の「デザイン刷新は対象外」スコープを龍偉指示で覆す（D1移行のAPI結線は維持したまま見た目のみ刷新）。当初範囲=利用者3画面 → 直後に「管理者も」で admin 追加し4画面に拡大。
