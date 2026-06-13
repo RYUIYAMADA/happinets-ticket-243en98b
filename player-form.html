@@ -358,6 +358,25 @@
     padding: var(--space-4);
     transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   }
+  /* カード内にネストされたgame-card-rowは枠線を削除して入れ子重複を防ぐ */
+  .card .game-card-row {
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .card .game-card-row + .game-card-row {
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-5);
+    margin-top: var(--space-3);
+  }
+  .card .game-card-row.has-entry {
+    background: var(--primary-weak);
+    border-radius: var(--radius-control);
+    padding: var(--space-3);
+    margin: calc(-1 * var(--space-1)) 0;
+  }
   .game-card-row.row-disabled { opacity: 0.48; pointer-events: none; }
   .game-card-row.has-entry {
     border-width: 2px;
@@ -2238,7 +2257,21 @@ function rememberSubmittedApplication(gameId, ticketType) {
 async function loadGames() {
   const result = await workerApiClient.getGames();
   if (!result.ok) { showAlert(tf('gameLoadFailed', { message: result.error?.message || result.error }), 'error'); return; }
-  games = result.data;
+  // 試合の3段階表示ロジック:
+  // ①締切前 = 通常申込可
+  // ②申込締切後〜試合日翌日12:00JST = 「申し込み終了」表示（位置固定）
+  // ③試合日翌日12:00JST以降 = 一覧から完全除外
+  const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  games = (result.data || []).filter(g => {
+    if (!g.date) return true;
+    const gameDate = new Date(g.date);
+    // 試合日翌日の12:00 JST = (試合日+1日) の 12:00 JST
+    const hideAfter = new Date(gameDate);
+    hideAfter.setDate(hideAfter.getDate() + 1);
+    hideAfter.setHours(12, 0, 0, 0); // ローカル時刻でセット（JSTで比較するため変換済みnowJstと比較）
+    const hideAfterJst = new Date(new Date(hideAfter).toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    return nowJst < hideAfterJst; // 翌日12:00JST以降は除外
+  });
   renderPaidGameOptions();
   buildInviteGrid();
   buildFamilyGrid();
@@ -2379,53 +2412,17 @@ function getExistingQty(gameId, ticketType) {
 
 function buildInviteGrid() {
   const list = document.getElementById('invite-list');
-  const active = games.filter(g => !g.isDeadlinePassed);
-  const closed = games.filter(g => g.isDeadlinePassed);
+  // 日付順のまま維持（分割・並び替えしない）
+  const visible = games; // gamesShouldHideは loadGames 側でフィルタ済み
 
-  if (!active.length && !closed.length) {
+  if (!visible.length) {
     list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`;
     return;
   }
 
-  const html = [
-    ...active.map(g => {
-      const past = false;
-      const dl = g.deadline
-        ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
-        : '';
-      const sid = 'inv-' + g.gameId;
-      const invExisting = getExistingQty(g.gameId, 'invite');
-      return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
-        <div class="game-card-top">
-          <div class="game-card-info">
-            <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
-            <div class="game-name">vs ${esc(g.opponent)}</div>
-          </div>
-          ${dl}
-        </div>
-        <div class="game-card-controls">
-          ${stepperHtml(sid, 10)}
-          <label class="inv-day-label">
-            <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">${esc(t('invitePickup'))}
-          </label>
-        </div>
-        <div class="receiver-field">
-          <label>${esc(t('receiverRequired'))}</label>
-          <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('paidReceiverNamePlaceholder'))}">
-        </div>
-        <div class="receiver-field">
-          <label>${esc(t('inviteSpecialNote'))}</label>
-          <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('inviteSpecialNotePlaceholder'))}"></textarea>
-        </div>
-        <div class="qty-summary" data-existing="${invExisting}">
-          <span class="qty-current">${esc(tf('inviteTicketsApplied', { count: invExisting }))}</span>
-          <span class="qty-new">
-            <span class="qty-arrow">→</span>
-            <span class="qty-total"></span>
-          </span>
-        </div>`;
-    }),
-    ...closed.map(g => {
+  const html = visible.map(g => {
+    if (g.isDeadlinePassed) {
+      // 締切後: 申し込み終了表示（位置は日付順で固定）
       return `<div class="game-card-row row-closed" data-game="${esc(g.gameId)}" style="opacity: 0.6; pointer-events: none;">
         <div class="game-card-top">
           <div class="game-card-info">
@@ -2435,74 +2432,61 @@ function buildInviteGrid() {
           <span class="deadline-badge deadline-ng">${lang === 'ja' ? '申し込み終了' : 'Closed'}</span>
         </div>
       </div>`;
-    })
-  ];
+    }
+    // 締切前: 通常申込可
+    const dl = g.deadline
+      ? `<span class="deadline-badge deadline-ok">${tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
+      : '';
+    const sid = 'inv-' + g.gameId;
+    const invExisting = getExistingQty(g.gameId, 'invite');
+    return `<div class="game-card-row" data-game="${esc(g.gameId)}">
+      <div class="game-card-top">
+        <div class="game-card-info">
+          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
+          <div class="game-name">vs ${esc(g.opponent)}</div>
+        </div>
+        ${dl}
+      </div>
+      <div class="game-card-controls">
+        ${stepperHtml(sid, 10)}
+        <label class="inv-day-label">
+          <input type="checkbox" class="inv-day" data-game="${esc(g.gameId)}">${esc(t('invitePickup'))}
+        </label>
+      </div>
+      <div class="receiver-field">
+        <label>${esc(t('receiverRequired'))}</label>
+        <input type="text" class="rec-input" id="rec-inv-${esc(g.gameId)}" placeholder="${esc(t('paidReceiverNamePlaceholder'))}">
+      </div>
+      <div class="receiver-field">
+        <label>${esc(t('inviteSpecialNote'))}</label>
+        <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('inviteSpecialNotePlaceholder'))}"></textarea>
+      </div>
+      <div class="qty-summary" data-existing="${invExisting}">
+        <span class="qty-current">${esc(tf('inviteTicketsApplied', { count: invExisting }))}</span>
+        <span class="qty-new">
+          <span class="qty-arrow">→</span>
+          <span class="qty-total"></span>
+        </span>
+      </div>
+    </div>`;
+  });
 
   list.innerHTML = html.join('');
 }
 
 function buildFamilyGrid() {
   const list = document.getElementById('family-list');
-  const active = games.filter(g => !g.isDeadlinePassed);
-  const closed = games.filter(g => g.isDeadlinePassed);
+  // 日付順のまま維持（分割・並び替えしない）
+  const visible = games; // gamesShouldHideは loadGames 側でフィルタ済み
 
-  if (!active.length && !closed.length) {
+  if (!visible.length) {
     list.innerHTML = `<p class="empty-state">${esc(t('emptyStateInvite'))}</p>`;
     return;
   }
 
-  const html = [
-    ...active.map(g => {
-      const past = false;
-      const dl = g.deadline
-        ? `<span class="deadline-badge ${past ? 'deadline-ng' : 'deadline-ok'}">${past ? t('paidDeadlinePassed') : tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
-        : '';
-      const famSid = 'fam-' + g.gameId;
-      const famExisting = getExistingQty(g.gameId, 'family');
-      return `<div class="game-card-row ${past ? 'row-disabled' : ''}" data-game="${esc(g.gameId)}">
-        <div class="game-card-top">
-          <div class="game-card-info">
-            <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
-            <div class="game-name">vs ${esc(g.opponent)}</div>
-          </div>
-          ${dl}
-        </div>
-        <div class="game-card-controls">
-          ${stepperHtml(famSid, 10)}
-          <div class="sel-wrap">
-            <span class="sel-label">${esc(t('familyPickupMethod'))}</span>
-            <select class="game-card-sel fam-pickup" data-game="${esc(g.gameId)}">
-              <option value="pre">${esc(t('familyPickupPre'))}</option>
-              <option value="day" selected>${esc(t('familyPickupDay'))}</option>
-            </select>
-          </div>
-          <div class="sel-wrap sel-wrap-narrow">
-            <span class="sel-label">${esc(t('familyParking'))}</span>
-            <select class="game-card-sel fam-parking" data-game="${esc(g.gameId)}">
-              <option value="0">${esc(t('familyParkingCountZero'))}</option>
-              <option value="1">${esc(t('familyParkingCountOne'))}</option>
-              <option value="2">${esc(t('familyParkingCountTwo'))}</option>
-            </select>
-          </div>
-        </div>
-        <div class="receiver-field">
-          <label>${esc(t('receiverRequired'))}</label>
-          <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="${esc(t('familyReceiverSelectPlaceholder'))}">
-        </div>
-        <div class="receiver-field">
-          <label>${esc(t('familySpecialNote'))}</label>
-          <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('familySpecialNotePlaceholder'))}"></textarea>
-        </div>
-        <div class="qty-summary" data-existing="${famExisting}">
-          <span class="qty-current">${esc(tf('familyTicketsApplied', { count: famExisting }))}</span>
-          <span class="qty-new">
-            <span class="qty-arrow">→</span>
-            <span class="qty-total"></span>
-          </span>
-        </div>
-      </div>`;
-    }),
-    ...closed.map(g => {
+  const html = visible.map(g => {
+    if (g.isDeadlinePassed) {
+      // 締切後: 申し込み終了表示（位置は日付順で固定）
       return `<div class="game-card-row row-closed" data-game="${esc(g.gameId)}" style="opacity: 0.6; pointer-events: none;">
         <div class="game-card-top">
           <div class="game-card-info">
@@ -2512,8 +2496,56 @@ function buildFamilyGrid() {
           <span class="deadline-badge deadline-ng">${lang === 'ja' ? '申し込み終了' : 'Closed'}</span>
         </div>
       </div>`;
-    })
-  ];
+    }
+    // 締切前: 通常申込可
+    const dl = g.deadline
+      ? `<span class="deadline-badge deadline-ok">${tf('paidDeadlineInfo', { deadline: formatGameDate(g.deadline) })}</span>`
+      : '';
+    const famSid = 'fam-' + g.gameId;
+    const famExisting = getExistingQty(g.gameId, 'family');
+    return `<div class="game-card-row" data-game="${esc(g.gameId)}">
+      <div class="game-card-top">
+        <div class="game-card-info">
+          <div class="game-date">${esc(formatGameDate(g.date))}（${esc(formatDayOfWeek(g.dayOfWeek))}）</div>
+          <div class="game-name">vs ${esc(g.opponent)}</div>
+        </div>
+        ${dl}
+      </div>
+      <div class="game-card-controls">
+        ${stepperHtml(famSid, 10)}
+        <div class="sel-wrap">
+          <span class="sel-label">${esc(t('familyPickupMethod'))}</span>
+          <select class="game-card-sel fam-pickup" data-game="${esc(g.gameId)}">
+            <option value="pre">${esc(t('familyPickupPre'))}</option>
+            <option value="day" selected>${esc(t('familyPickupDay'))}</option>
+          </select>
+        </div>
+        <div class="sel-wrap sel-wrap-narrow">
+          <span class="sel-label">${esc(t('familyParking'))}</span>
+          <select class="game-card-sel fam-parking" data-game="${esc(g.gameId)}">
+            <option value="0">${esc(t('familyParkingCountZero'))}</option>
+            <option value="1">${esc(t('familyParkingCountOne'))}</option>
+            <option value="2">${esc(t('familyParkingCountTwo'))}</option>
+          </select>
+        </div>
+      </div>
+      <div class="receiver-field">
+        <label>${esc(t('receiverRequired'))}</label>
+        <input type="text" class="rec-input" id="rec-fam-${esc(g.gameId)}" list="fam-receivers-datalist" placeholder="${esc(t('familyReceiverSelectPlaceholder'))}">
+      </div>
+      <div class="receiver-field">
+        <label>${esc(t('familySpecialNote'))}</label>
+        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="${esc(t('familySpecialNotePlaceholder'))}"></textarea>
+      </div>
+      <div class="qty-summary" data-existing="${famExisting}">
+        <span class="qty-current">${esc(tf('familyTicketsApplied', { count: famExisting }))}</span>
+        <span class="qty-new">
+          <span class="qty-arrow">→</span>
+          <span class="qty-total"></span>
+        </span>
+      </div>
+    </div>`;
+  });
 
   list.innerHTML = html.join('');
 }
@@ -2759,11 +2791,17 @@ function demoCallGAS(method, params) {
   ];
   const today = new Date();
   if (params.action === 'getGames') {
-    return { ok: true, data: raw.map(g => ({
-      gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
-      deadline: new Date(new Date(g[1]).getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
-      isDeadlinePassed: new Date(g[1]) < today
-    }))};
+    return { ok: true, data: raw.map(g => {
+      const deadlineDate = new Date(new Date(g[1]).getTime() - 3*24*60*60*1000);
+      const deadlineStr = deadlineDate.toISOString().split('T')[0];
+      // isDeadlinePassed: 申込締切日（試合3日前）を過ぎたか
+      const isDeadlinePassed = deadlineDate < today;
+      return {
+        gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
+        deadline: deadlineStr,
+        isDeadlinePassed
+      };
+    })};
   }
   if (params.action === 'getApplications') {
     const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
@@ -2791,7 +2829,7 @@ function clearAlert() { document.getElementById('alert-area').innerHTML = ''; }
 <script>
 // Version hash from build time
 const BUILD_DATE = new Date().toISOString().slice(0, 13).replace(/[:-]/g, '');
-const VERSION = 'v0.3.1-' + BUILD_DATE;
+const VERSION = 'v0.3.2-' + BUILD_DATE;
 const verEl = document.getElementById('app-version');
 if (verEl) {
   verEl.textContent = VERSION;

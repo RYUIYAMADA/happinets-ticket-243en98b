@@ -1394,7 +1394,17 @@ async function loadData() {
     }
     if (!gamesRes.ok) throw new Error(gamesRes.error?.message || gamesRes.error);
     if (!appsRes.ok) throw new Error(appsRes.error?.message || appsRes.error);
-    games = gamesRes.data;
+    // 試合の3段階表示ロジック（③: 試合日翌日12:00JST以降は除外）
+    const nowJst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    games = (gamesRes.data || []).filter(g => {
+      if (!g.date) return true;
+      const gameDate = new Date(g.date);
+      const hideAfter = new Date(gameDate);
+      hideAfter.setDate(hideAfter.getDate() + 1);
+      hideAfter.setHours(12, 0, 0, 0);
+      const hideAfterJst = new Date(new Date(hideAfter).toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+      return nowJst < hideAfterJst;
+    });
     applications = appsRes.data.filter(a => a.status !== 'cancelled');
     updateSummary();
     renderList();
@@ -1681,11 +1691,17 @@ function demoCallGAS(method, params) {
   ];
   const today = new Date();
   if (params.action === 'getGames') {
-    return { ok: true, data: raw.map(g => ({
-      gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
-      deadline: new Date(new Date(g[1]).getTime() - 3*24*60*60*1000).toISOString().split('T')[0],
-      isDeadlinePassed: new Date(g[1]) < today
-    }))};
+    return { ok: true, data: raw.map(g => {
+      const deadlineDate = new Date(new Date(g[1]).getTime() - 3*24*60*60*1000);
+      const deadlineStr = deadlineDate.toISOString().split('T')[0];
+      // isDeadlinePassed: 申込締切日（試合3日前）を過ぎたか
+      const isDeadlinePassed = deadlineDate < today;
+      return {
+        gameId: g[0], date: g[1], dayOfWeek: g[2], opponent: g[3],
+        deadline: deadlineStr,
+        isDeadlinePassed
+      };
+    })};
   }
   if (params.action === 'getApplications') {
     const apps = JSON.parse(localStorage.getItem('demo_apps') || '[]');
@@ -1705,7 +1721,7 @@ function demoCallGAS(method, params) {
 <div id="app-version"></div>
 <script>
 const BUILD_DATE = new Date().toISOString().slice(0, 13).replace(/[:-]/g, '');
-const VERSION = 'v0.3.1-' + BUILD_DATE;
+const VERSION = 'v0.3.2-' + BUILD_DATE;
 const verEl = document.getElementById('app-version');
 if (verEl) verEl.textContent = VERSION;
 </script>
