@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { mapApplicationRow, mapGameRow, normalizePlayerNo } from "../src/domain.js";
@@ -38,6 +38,12 @@ function createDbMock(config = {}) {
     },
   };
 }
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 
 async function deriveAdminHash(password, salt) {
   const encoder = new TextEncoder();
@@ -404,6 +410,9 @@ test("POST /api/applications returns 201 and writes in batch", async () => {
   assert.deepEqual(json, { ok: true, data: { applicationId: "APP-NEW" } });
   assert.equal(mock.batchCalls.length, 1);
 });
+
+// POST /api/applications の push 呼び出しはfireなので本テストでは検証困難。
+// line.test.js の sendApplicationConfirmPush テストで機能を検証済み。
 
 test("PUT /api/applications/:app_id/cancel returns 404 for missing app", async () => {
   const app = createApp({ now: () => "2026-06-13T00:00:00.000Z" });
