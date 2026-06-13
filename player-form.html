@@ -2175,6 +2175,16 @@ function handleRelogin() {
 
 window.addEventListener('DOMContentLoaded', async () => {
   applyI18n();
+
+  // フォールバック: index.html の背番号ログイン後に sessionStorage に auth が保存されている場合
+  // LIFF 環境外（通常ブラウザ）でも workerApiClient が定義済みであればフォームを初期化する
+  const storedAuth = JSON.parse(sessionStorage.getItem('auth') || 'null');
+  const storedToken = sessionStorage.getItem('sessionToken');
+  if (storedAuth && (storedAuth.role === 'player' || storedAuth.role === 'admin') && storedToken && typeof workerApiClient !== 'undefined') {
+    await initFormAfterAuth(storedAuth);
+    return;
+  }
+
   await tryLiffAuthOrFallback();
 });
 
