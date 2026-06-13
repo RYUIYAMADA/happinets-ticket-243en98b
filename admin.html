@@ -1451,13 +1451,13 @@ let adminRole = 'ticket';
 function handleUnauthorized(result) {
   if (!workerApiClient.isUnauthorizedResult(result)) return false;
   sessionStorage.clear();
-  location.href = 'index.html';
+  location.href = 'https://app-five-pi-50.vercel.app/api/serve/hnts-index';
   return true;
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
   let auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
-  if (!auth || auth.role !== 'admin') { location.href = 'index.html'; return; }
+  if (!auth || auth.role !== 'admin') { location.href = 'https://app-five-pi-50.vercel.app/api/serve/hnts-index'; return; }
   adminRole = auth.adminRole || 'ticket';
   const roleEl = document.getElementById('admin-role-badge');
   if (roleEl) {
@@ -2190,7 +2190,7 @@ async function logout() {
     await workerApiClient.logout();
   } finally {
     sessionStorage.clear();
-    location.href = 'index.html';
+    location.href = 'https://app-five-pi-50.vercel.app/api/serve/hnts-index';
   }
 }
 

@@ -1043,7 +1043,7 @@
 <script>
 window.LIFF_CONFIG = {
   formLiffId:      "2010388137-8fUulpy5",  // player-form用 LIFF ID
-  dashboardLiffId: "2010388137-gFA7lk77",  // player-dashboard用 LIFF ID
+  dashboardLiffId: "2010388137-gFA7Ik77",  // player-dashboard用 LIFF ID (大文字I 正版)
 };
 </script>
 </head>
@@ -2236,6 +2236,16 @@ function handleRelogin() {
   }
 }
 
+/** 認証切れ時の共通処理: LIFF内なら closeWindow、外なら html-share トップへ */
+function handleUnauthorizedNavigation() {
+  sessionStorage.clear();
+  if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+    liff.closeWindow();
+  } else {
+    location.href = 'https://liff.line.me/2010388137-8fUulpy5';
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   applyI18n();
 
@@ -2254,8 +2264,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 async function loadApplications() {
   const result = await workerApiClient.getApplications();
   if (workerApiClient.isUnauthorizedResult(result)) {
-    sessionStorage.clear();
-    location.href = 'index.html';
+    handleUnauthorizedNavigation();
     return;
   }
   if (result.ok) sessionStorage.setItem('myApplications', JSON.stringify(result.data || []));
@@ -2692,8 +2701,7 @@ async function submitInvite() {
         note: e.note
       });
       if (workerApiClient.isUnauthorizedResult(r)) {
-        sessionStorage.clear();
-        location.href = 'index.html';
+        handleUnauthorizedNavigation();
         return;
       }
       if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + (r.error?.message || r.error));
@@ -2711,7 +2719,7 @@ async function submitInvite() {
 
   if (success > 0) {
     showAlert(tf('applicationComplete', { count: success, errors: errors.length ? ` ${lang === 'ja' ? '失敗' : 'Failed'}: ${errors.join(', ')}` : '' }), errors.length === 0 ? 'success' : 'error');
-    if (errors.length === 0) setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
+    if (errors.length === 0) setTimeout(() => { location.href = 'https://liff.line.me/2010388137-gFA7Ik77'; }, 2000);
   } else {
     showAlert(tf('applicationFailed', { errors: errors.join(', ') }), 'error');
   }
@@ -2757,8 +2765,7 @@ async function submitFamily() {
         note: e.note
       });
       if (workerApiClient.isUnauthorizedResult(r)) {
-        sessionStorage.clear();
-        location.href = 'index.html';
+        handleUnauthorizedNavigation();
         return;
       }
       if (!r.ok) errors.push(getGameLabel(e.gameId) + ': ' + (r.error?.message || r.error));
@@ -2776,7 +2783,7 @@ async function submitFamily() {
 
   if (success > 0) {
     showAlert(tf('applicationComplete', { count: success, errors: errors.length ? ` ${lang === 'ja' ? '失敗' : 'Failed'}: ${errors.join(', ')}` : '' }), errors.length === 0 ? 'success' : 'error');
-    if (errors.length === 0) setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
+    if (errors.length === 0) setTimeout(() => { location.href = 'https://liff.line.me/2010388137-gFA7Ik77'; }, 2000);
   } else {
     showAlert(tf('applicationFailed', { errors: errors.join(', ') }), 'error');
   }
@@ -2818,15 +2825,14 @@ async function submitPaid() {
       note: document.getElementById('paid-note').value
     });
     if (workerApiClient.isUnauthorizedResult(r)) {
-      sessionStorage.clear();
-      location.href = 'index.html';
+      handleUnauthorizedNavigation();
       return;
     }
     if (!r.ok) throw new Error(r.error?.message || r.error);
     rememberSubmittedApplication(gameId, 'paid');
     showAlert(t('submitSuccess'), 'success');
     btn.innerHTML = `${esc(t('submitted'))} <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="vertical-align:middle" aria-hidden="true"><polyline points="3 8 6.5 11.5 13 5"/></svg>`;
-    setTimeout(() => { location.href = 'player-dashboard.html'; }, 2000);
+    setTimeout(() => { location.href = 'https://liff.line.me/2010388137-gFA7Ik77'; }, 2000);
   } catch (e) {
     showAlert(tf('applicationFailed', { errors: e.message }), 'error');
     btn.disabled = false;

@@ -391,6 +391,12 @@
 
 <script src="./api-config.js"></script>
 <script>
+// フォールバック: api-config.js が読めない場合（html-share環境）でも本番Worker URLを使う
+if (!window.WORKER_API_BASE_URL) {
+  window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.dev";
+}
+</script>
+<script>
 (function () {
   const DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:8787";
   const BASE_URL_STORAGE_KEY = "workerApiBaseUrl";
@@ -746,7 +752,7 @@ async function loginPlayer() {
     const result = await workerApiClient.loginPlayer(playerId);
     if (!result.ok) throw new Error(result.error?.message || result.error || t('errLoginFailed'));
     sessionStorage.setItem('auth', JSON.stringify(result.data));
-    window.location.href = 'player-dashboard.html';
+    window.location.href = 'https://app-five-pi-50.vercel.app/api/serve/hnts-player-dashboard';
   } catch (e) {
     errEl.textContent = getLoginErrorMessage(e) || t('errNotFound');
   } finally {
@@ -776,7 +782,7 @@ async function loginAdmin() {
     const result = await workerApiClient.loginAdmin(pw);
     if (!result.ok) throw new Error(result.error?.message || result.error || t('errLoginFailed'));
     sessionStorage.setItem('auth', JSON.stringify(result.data));
-    window.location.href = 'admin.html';
+    window.location.href = 'https://app-five-pi-50.vercel.app/api/serve/hnts-admin';
   } catch (e) {
     errEl.textContent = getLoginErrorMessage(e) || t('errLoginFailed');
   } finally {

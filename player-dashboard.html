@@ -807,7 +807,7 @@ window.LIFF_CONFIG = {
   </section>
 </div>
 
-<button class="fab" onclick="location.href='player-form.html'" data-i18n="newApp">＋ 新規申込</button>
+<button class="fab" onclick="location.href='https://liff.line.me/2010388137-8fUulpy5'" data-i18n="newApp">＋ 新規申込</button>
 
 <script src="./api-config.js"></script>
 <script>
@@ -1387,6 +1387,16 @@ function handleRelogin() {
   }
 }
 
+/** 認証切れ時の共通処理: LIFF内なら closeWindow、外なら フォーム LIFFへ */
+function handleUnauthorizedNavigation() {
+  sessionStorage.clear();
+  if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+    liff.closeWindow();
+  } else {
+    location.href = 'https://liff.line.me/2010388137-gFA7Ik77';
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   applyI18n();
   const loadingEl = document.getElementById('liff-loading-overlay');
@@ -1431,8 +1441,7 @@ async function loadData() {
       getApplications()
     ]);
     if (workerApiClient.isUnauthorizedResult(appsRes)) {
-      sessionStorage.clear();
-      window.location.href = 'index.html';
+      handleUnauthorizedNavigation();
       return;
     }
     if (!gamesRes.ok) throw new Error(gamesRes.error?.message || gamesRes.error);
@@ -1655,7 +1664,7 @@ function buildGameCard(g) {
   if (!g.isDeadlinePassed) {
     detailHtml += `
       <div class="detail-actions${hasAny ? '' : ' is-standalone'}">
-        <button class="btn-apply" onclick="location.href='player-form.html?gameId=${g.gameId}'">
+        <button class="btn-apply" onclick="location.href='https://liff.line.me/2010388137-8fUulpy5?gameId=${g.gameId}'">
           ${hasAny ? t('addRequest') : t('applyGame')}
         </button>
       </div>`;
@@ -1687,7 +1696,7 @@ function toggleCard(gameId) {
 }
 
 function editApp(gameId, type) {
-  location.href = `player-form.html?gameId=${gameId}&type=${type}&edit=1`;
+  location.href = `https://liff.line.me/2010388137-8fUulpy5?gameId=${gameId}&type=${type}&edit=1`;
 }
 
 async function cancelApp(applicationId, gameId) {
@@ -1695,8 +1704,7 @@ async function cancelApp(applicationId, gameId) {
   try {
     const result = await workerApiClient.cancelApplication(applicationId);
     if (workerApiClient.isUnauthorizedResult(result)) {
-      sessionStorage.clear();
-      location.href = 'index.html';
+      handleUnauthorizedNavigation();
       return;
     }
     if (!result.ok) throw new Error(result.error?.message || result.error);
@@ -1711,7 +1719,11 @@ async function logout() {
     await workerApiClient.logout();
   } finally {
     sessionStorage.clear();
-    location.href = 'index.html';
+    if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+      liff.closeWindow();
+    } else {
+      location.href = 'https://liff.line.me/2010388137-gFA7Ik77';
+    }
   }
 }
 
