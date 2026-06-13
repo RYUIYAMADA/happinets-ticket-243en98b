@@ -70,8 +70,8 @@ progress_pct: 0
 - ✅ セキュリティ修正（HIGH-1 admin比較timing-safe / MED-1 LINE番号連携レート制限 / MED-2 esc）— 66092d1・npm test 19/19
 
 ### フェーズ3: データ移行・検証
-- 🔄 移行ツール一式（GASエクスポート / scripts/migrate-to-d1.js / verify / サンプル投入）— ft-migrate（ローカルD1まで）
-- ⬜ 本番D1作成・実データ移行 — ★龍偉の `wrangler login`（ブラウザ Allow 1クリック）が必要
+- ✅ 移行ツール一式（gas/exportMigrationData / scripts/migrate-to-d1.js / verify-migration.sql / sample・unit3/3）— 36dc938・ローカル検証OK
+- ⬜ 本番D1作成・実データ移行 — ★龍偉の `wrangler login`（ブラウザ Allow 1クリック）が必要。手順=scripts/README-migration.md
 - ⬜ 並行稼働テスト（GAS/D1 結果突合）— ★本番D1 + 現行データ必要
 - ⬜ E2E（LINE実機・全画面）— ★本番デプロイ必要
 
@@ -93,10 +93,15 @@ progress_pct: 0
 | 境界値 | 0 | 0 | - |
 
 ## 総合進捗
-- 実装タスク完了率: 0%（0/15）
-- 受入条件達成率: 0%（0/7）
+- 実装タスク完了率: 約73%（11/15。設計4✅ + 実装5✅ + セキュリティ修正 + 移行ツール。残=本番D1/並行稼働/E2E/シート出力/切替）
+- 受入条件達成率: コード面ほぼ充足。残=本番データ移行・並行稼働の結果一致・E2E（いずれも本番環境=龍偉のwrangler login必要）
+
+## ★龍偉アクション待ち（フェーズ3着手の唯一のブロッカー）
+本番D1作成とデータ移行は `wrangler login`（ブラウザで Allow 1クリック）が必要。以降は scripts/README-migration.md の9手順。
+ターミナルで: `cd ~/Desktop/ryui-workspace/projects/happinets/family-tickets/cloudflare-worker-api && npx wrangler login`
 
 ## 作業ログ
+- **2026-06-13 15:** — フェーズ1(設計)Gate2 approve確定→フェーズ2(実装)完走: 垂直スライス1(a760cc1)→API16ルート(57377c8)→LINE bot(4ab4381)→FE切替(1832905)→実装後検証(E2E approve/security concern)→セキュリティ修正HIGH1+MED3(66092d1)→移行ツール(36dc938)。全てローカルD1+npm test 19/19で検証。次=★龍偉 wrangler login→本番移行。
 - **2026-06-13 14:40** — Gate2 サインオフ実施（engineer/security 並列, Sonnet）。両者 concern・Block/Critical設計欠陥なし。設計書修正6件（①管理者認証の二重ハッシュ廃止=FE平文送信+サーバPBKDF2のみ ②LINE署名の時定数比較MUST ③admin/players の LINE UID 露出抑制 ④replace-season DELETE+INSERT 単一batch ⑤朝通知 quota ガード ⑥game_no UNIQUE複合）を Codex(ft-gate2-fix)へ委託。反映完了→Gate2 approve→垂直スライス着手。
 - **2026-06-13 05:52** — SPEC-v1 完成（スケルトン+技術詳細+PM裁定6件）。0001_init.sql / api-contract.md 作成。Gate1（engineer/security）起動。次: Gate1 指摘の裁定 → Gate2
 - **2026-06-13 05:41** — 進捗管理表作成。龍偉が案1（D1+Workers）を承認。次: SPEC-v1 スケルトン作成 → Gate1
