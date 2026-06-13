@@ -608,6 +608,20 @@
     .container { padding: var(--space-4) var(--space-4) var(--space-8); }
     .summary-grid { grid-template-columns: 1fr; }
   }
+  /* VERSION DISPLAY */
+  #app-version {
+    position: fixed;
+    bottom: 4px;
+    right: 4px;
+    font-size: 9px;
+    color: var(--text-faint);
+    font-family: monospace;
+    background: rgba(255,255,255,0.8);
+    padding: 2px 4px;
+    border-radius: 3px;
+    z-index: 100;
+    pointer-events: none;
+  }
 </style>
 <!-- LIFF SDK -->
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -1019,23 +1033,35 @@ window.LIFF_CONFIG = {
       throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
     }
     await liff.init({ liffId, withLoginOnExternalBrowser: true });
+
+    // 【重要】ログイン状態を確認・ログイン処理
+    const isLoggedIn = liff.isLoggedIn();
+    if (!isLoggedIn) {
+      try {
+        await liff.login();
+      } catch (e) {
+        throw e;
+      }
+    }
+
     liffInitialized = true;
     cachedLiffId = liffId;
   }
 
   async function initAndAuthWithLiff(liffId) {
+    // 【重要】init + login 完了待ち
     await ensureLiffInitialized(liffId);
-    if (!liff.isLoggedIn()) {
-      liff.login();
-      return null;
-    }
+
+    // この時点で確実にログイン済み
     const idToken = liff.getIDToken();
-    if (!idToken) throw new Error("IDトークンの取得に失敗しました。");
+    if (!idToken) throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
+
     const storedToken = sessionStorage.getItem("sessionToken");
     if (storedToken) {
       const storedAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
       if (storedAuth && storedAuth.role === "player") return storedAuth;
     }
+
     const result = await workerApiClient.loginWithLiff(idToken);
     if (result.ok) {
       const authData = { ...result.data, role: "player" };
@@ -1049,11 +1075,14 @@ window.LIFF_CONFIG = {
 
   async function linkWithPlayerNo(playerId) {
     if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
-    // liff.init が呼ばれていない場合は、LIFF IDから初期化
+    // 【重要】init + login 完了待ち
     const liffId = (window.LIFF_CONFIG || {}).dashboardLiffId || '';
     await ensureLiffInitialized(liffId);
+
+    // この時点で確実にログイン済み
     const idToken = liff.getIDToken();
-    if (!idToken) throw new Error("IDトークンの取得に失敗しました。再度LINEからアクセスしてください。");
+    if (!idToken) throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
+
     const result = await workerApiClient.linkLiff(idToken, playerId);
     if (result.ok) {
       const authData = { ...result.data, role: "player" };
@@ -1584,6 +1613,15 @@ function demoCallGAS(method, params) {
   }
   return { ok: false, error: 'デモ未対応' };
 }
+</script>
+
+<!-- VERSION DISPLAY & CACHE BUSTING -->
+<div id="app-version"></div>
+<script>
+const BUILD_DATE = new Date().toISOString().slice(0, 13).replace(/[:-]/g, '');
+const VERSION = 'v0.3.1-' + BUILD_DATE;
+const verEl = document.getElementById('app-version');
+if (verEl) verEl.textContent = VERSION;
 </script>
 </body>
 </html>

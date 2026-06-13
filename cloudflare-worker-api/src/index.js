@@ -174,8 +174,9 @@ async function handlePlayerLogin(request, env, origin, nowIso, randomToken) {
  * 未連携の場合は 409 UNLINKED を返す。
  */
 async function handleLiffLogin(request, env, origin, nowIso, randomToken) {
+  let body;
   try {
-    const body = await readJson(request);
+    body = await readJson(request);
     const idToken = body?.idToken;
     if (!idToken || typeof idToken !== "string" || idToken.split(".").length !== 3) {
       throw new HttpError(400, "BAD_REQUEST", "idToken is required or invalid format");
@@ -223,8 +224,9 @@ async function handleLiffLogin(request, env, origin, nowIso, randomToken) {
  * body: { idToken, playerId }  playerId は背番号 (例: "006")
  */
 async function handleLinkLiff(request, env, origin, nowIso, randomToken) {
+  let body;
   try {
-    const body = await readJson(request);
+    body = await readJson(request);
     const idToken = body?.idToken;
     const rawPlayerId = body?.playerId;
     if (!idToken || typeof idToken !== "string" || idToken.split(".").length !== 3) {
