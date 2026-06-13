@@ -919,28 +919,6 @@
     font-size: 14px;
     font-weight: 500;
   }
-  /* DEBUG PANEL */
-  #liff-debug-panel {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    right: 0;
-    background: var(--error-bg);
-    border-bottom: 1px solid var(--error);
-    padding: var(--space-3);
-    font-size: 11px;
-    font-family: 'Courier New', monospace;
-    color: var(--error);
-    z-index: 999;
-    max-height: 200px;
-    overflow-y: auto;
-    line-height: 1.4;
-  }
-  #liff-debug-panel.hidden { display: none; }
-  .debug-row { margin: var(--space-1) 0; }
-  .debug-row strong { font-weight: 700; }
-  .debug-row .success { color: var(--success); }
-  .debug-row .error { color: var(--error); }
   /* VERSION DISPLAY */
   #app-version {
     position: fixed;
@@ -967,9 +945,6 @@ window.LIFF_CONFIG = {
 </script>
 </head>
 <body>
-<!-- DEBUG PANEL -->
-<div id="liff-debug-panel" class="hidden"></div>
-
 <!-- 初回連携モーダル（LIFF未連携時に表示） -->
 <div id="liff-link-overlay" class="liff-overlay-backdrop">
   <div class="liff-modal-box">
@@ -1565,41 +1540,6 @@ window.LIFF_CONFIG = {
 })();
 
 </script>
-<!-- Debug Utilities -->
-<script>
-window.liffDebug = (function() {
-  const panel = document.getElementById('liff-debug-panel');
-  return {
-    show: function() {
-      if (panel) panel.classList.remove('hidden');
-    },
-    hide: function() {
-      if (panel) panel.classList.add('hidden');
-    },
-    log: function(label, value) {
-      if (!panel) return;
-      const status = value === null ? '❌' : value === false ? '⚠️' : '✅';
-      const displayVal = typeof value === 'string' && value.length > 20
-        ? `${value.substring(0, 10)}...（長さ: ${value.length}）`
-        : value;
-      const row = document.createElement('div');
-      row.className = 'debug-row';
-      row.innerHTML = `<strong>${label}:</strong> ${status} ${displayVal}`;
-      panel.appendChild(row);
-    },
-    clear: function() {
-      if (panel) panel.innerHTML = '';
-    },
-    error: function(label, errorMsg) {
-      if (!panel) return;
-      const row = document.createElement('div');
-      row.className = 'debug-row';
-      row.innerHTML = `<strong>${label}:</strong> <span class="error">❌ ${errorMsg}</span>`;
-      panel.appendChild(row);
-    },
-  };
-})();
-</script>
 <!-- liff-auth: LIFF認証共通処理 -->
 <script>
 (function () {
@@ -1608,7 +1548,6 @@ window.liffDebug = (function() {
 
   async function ensureLiffInitialized(liffId) {
     if (liffInitialized && cachedLiffId === liffId) {
-      window.liffDebug.log('LIFF状態', 'キャッシュ済み（再初期化スキップ）');
       return;
     }
     if (!liffId || liffId.includes("XXXXXXXXXXXX")) {
@@ -1617,39 +1556,28 @@ window.liffDebug = (function() {
     if (typeof liff === "undefined") {
       throw new Error("LIFF SDKが読み込まれていません。LINEアプリ内で開いてください。");
     }
-    window.liffDebug.log('liff.isInClient', liff.isInClient ? liff.isInClient() : 'false');
     try {
       await liff.init({ liffId, withLoginOnExternalBrowser: true });
-      window.liffDebug.log('liff.init状態', '✅ 完了');
     } catch (e) {
-      window.liffDebug.error('liff.init失敗', e.message);
       throw e;
     }
 
     // 【重要】ログイン状態を確認・ログイン処理
     const isLoggedIn = liff.isLoggedIn();
-    window.liffDebug.log('liff.isLoggedIn（init後）', isLoggedIn ? 'true' : 'false');
     if (!isLoggedIn) {
-      window.liffDebug.log('ログイン状態', '未ログイン→ liff.login() 呼び出し');
       try {
         await liff.login();
-        window.liffDebug.log('liff.login完了', '✅');
       } catch (e) {
-        window.liffDebug.error('liff.login失敗', e.message);
         throw e;
       }
     } else {
-      window.liffDebug.log('ログイン状態', 'ログイン済み');
     }
 
     liffInitialized = true;
     cachedLiffId = liffId;
-    window.liffDebug.log('使用LIFF ID', liffId.substring(0, 15) + '...');
   }
 
   async function initAndAuthWithLiff(liffId) {
-    window.liffDebug.show();
-    window.liffDebug.clear();
     try {
       // 【重要】init + login 完了待ち
       await ensureLiffInitialized(liffId);
@@ -1659,7 +1587,6 @@ window.liffDebug = (function() {
       const tokenDisplay = idToken
         ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
         : 'null ⚠️';
-      window.liffDebug.log('liff.getIDToken結果', tokenDisplay);
       if (!idToken) {
         // openid scope 未同意 or scope 未設定の可能性
         throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
@@ -1670,48 +1597,37 @@ window.liffDebug = (function() {
       if (storedToken) {
         const storedAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
         if (storedAuth && storedAuth.role === "player") {
-          window.liffDebug.log('セッション', 'sessionStorage から取得（再認証スキップ）');
           return storedAuth;
         }
       }
 
       // Worker API で IDToken を検証 → セッション発行
-      window.liffDebug.log('API呼び出し', 'loginWithLiff 実行中...');
       const result = await workerApiClient.loginWithLiff(idToken);
-      window.liffDebug.log('API レスポンス', result.ok ? '✅ OK' : `❌ ${result.error?.message || 'status=' + result.error?.status}`);
 
       if (result.ok) {
         const authData = { ...result.data, role: "player" };
         sessionStorage.setItem("auth", JSON.stringify(authData));
         sessionStorage.setItem("sessionToken", result.data.token);
-        window.liffDebug.log('認証結果', '✅ ダッシュボードへ');
         return authData;
       }
 
       if (result.error && result.error.code === "UNLINKED") {
-        window.liffDebug.log('状態', 'UNLINKED（初回連携へ）');
         return { unlinked: true };
       }
 
       const errMsg = result.error?.message || 'LIFF認証に失敗しました。';
-      window.liffDebug.error('API エラー', errMsg);
       throw new Error(errMsg);
     } catch (e) {
-      window.liffDebug.error('❌ initAndAuthWithLiff', e.message);
       throw e;
     }
   }
 
   async function linkWithPlayerNo(playerId) {
-    window.liffDebug.show();
-    window.liffDebug.clear();
     try {
       if (typeof liff === "undefined") throw new Error("LIFF SDKが読み込まれていません。");
 
       // 【重要】init + login 完了待ち
       const liffId = (window.LIFF_CONFIG || {}).formLiffId || '';
-      window.liffDebug.log('実行: linkWithPlayerNo', playerId);
-      window.liffDebug.log('LIFF ID', liffId.substring(0, 15) + '...');
       await ensureLiffInitialized(liffId);
 
       // この時点で確実にログイン済み
@@ -1719,35 +1635,28 @@ window.liffDebug = (function() {
       const tokenDisplay = idToken
         ? idToken.substring(0, 10) + '...' + idToken.substring(Math.max(0, idToken.length - 10)) + ' (長さ:' + idToken.length + ')'
         : 'null ⚠️';
-      window.liffDebug.log('liff.getIDToken結果', tokenDisplay);
       if (!idToken) {
         throw new Error("IDトークンが取得できません。LINE ログインアプリの設定を確認してください。");
       }
 
       // Worker API で IDToken + 背番号を送信 → 初回連携
-      window.liffDebug.log('API呼び出し', 'linkLiff 実行中...');
       const result = await workerApiClient.linkLiff(idToken, playerId);
-      window.liffDebug.log('API レスポンス', result.ok ? '✅ OK' : `❌ ${result.error?.message || 'status=' + result.error?.status}`);
 
       if (result.ok) {
         const authData = { ...result.data, role: "player" };
         sessionStorage.setItem("auth", JSON.stringify(authData));
         sessionStorage.setItem("sessionToken", result.data.token);
-        window.liffDebug.log('連携結果', '✅ 初回連携完了');
         return authData;
       }
 
       if (result.error && result.error.code === "UNAUTHORIZED") {
         const msg = "背番号が見つかりません。正しい背番号を入力してください。";
-        window.liffDebug.error('背番号エラー', msg);
         throw new Error(msg);
       }
 
       const errMsg = result.error?.message || '連携に失敗しました。';
-      window.liffDebug.error('API エラー', errMsg);
       throw new Error(errMsg);
     } catch (e) {
-      window.liffDebug.error('❌ linkWithPlayerNo', e.message);
       throw e;
     }
   }
@@ -1854,7 +1763,7 @@ async function initFormAfterAuth(authData) {
   if (auth.token && !sessionStorage.getItem('sessionToken')) {
     sessionStorage.setItem('sessionToken', auth.token);
   }
-  document.getElementById('header-name').textContent = auth.name + '（' + auth.playerId + '）';
+  document.getElementById('header-name').textContent = auth.name + '（' + auth.playerNo + '）';
 
   // 「接続し直す」ボタン表示（フォールバック番号ログイン時のみ）
   const reloginBtn = document.getElementById('relogin-btn');

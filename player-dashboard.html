@@ -1203,7 +1203,7 @@ async function initDashboardAfterAuth(authData) {
   if (auth.token && !sessionStorage.getItem('sessionToken')) {
     sessionStorage.setItem('sessionToken', auth.token);
   }
-  document.getElementById('player-name-display').textContent = auth.name + '（' + auth.playerId + '）';
+  document.getElementById('player-name-display').textContent = auth.name + '（' + auth.playerNo + '）';
 
   // 「接続し直す」ボタン表示
   const reloginBtn = document.getElementById('relogin-btn');
