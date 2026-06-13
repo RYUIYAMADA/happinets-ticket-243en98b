@@ -7,162 +7,333 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --primary: #000000;
-    --primary-hover: #1a1a1a;
-    --accent: #EC008C;
-    --accent-hover: #c4006e;
-    --gold: #E6B422;
-    --gold-hover: #c9971b;
     --bg: #ffffff;
-    --card: #fff;
-    --border: #e5e7eb;
-    --text: #1a202c;
-    --text-sub: #4a5568;
+    --bg-subtle: #f5f6f8;
+    --card: var(--bg);
+    --primary: #2456e6;
+    --primary-strong: #1d4fd7;
+    --primary-weak: #eaf0ff;
+    --accent-line: #2563eb;
+    --text: #0f172a;
+    --text-sub: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --disabled: #cbd5e1;
+    --required: #e5384d;
     --success: #16a34a;
     --success-bg: #dcfce7;
     --error: #dc2626;
     --error-bg: #fee2e2;
-    --warning-bg: #FEF3C7;
-    --radius: 6px;
-    --bg-highlight: #fff5ec;
-    --bg-soft: #fff8f3;
-    --bg-muted: #f1f5f9;
-    --bg-surface: #f8fafc;
-    --warn: #fff8e1;
-    --warn-border: #f59e0b;
+    --warning-bg: #fef3c7;
+    --warning-text: var(--text);
+    --bg-muted: var(--bg-subtle);
+    --bg-surface: var(--bg-subtle);
     --icon-muted: var(--text-sub);
+    --radius-card: 14px;
+    --radius-control: 10px;
+    --radius-pill: 999px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.16);
   }
-  .en-sub { font-size: 11px; color: var(--text-sub); display: block; font-weight: 400; margin-top: 1px; }
+  .en-sub {
+    font-size: 12px;
+    color: var(--text-sub);
+    display: block;
+    font-weight: 500;
+    margin-top: var(--space-1);
+    overflow-wrap: anywhere;
+  }
   body {
     font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
-    background: var(--bg);
-    font-size: 14px;
+    background: var(--bg-subtle);
+    color: var(--text);
+    font-size: 16px;
     min-height: 100vh;
-    padding-bottom: 80px;
+    padding-bottom: calc(var(--space-8) * 2 + env(safe-area-inset-bottom));
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
     line-break: strict;
+    overflow-wrap: break-word;
+    word-break: keep-all;
   }
   button, label, input, select, textarea { touch-action: manipulation; }
   header {
-    background: var(--primary);
-    color: #fff;
-    padding: 14px 20px;
+    background: var(--bg);
+    color: var(--text);
+    padding: var(--space-4) var(--space-4) var(--space-3);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
     position: sticky;
     top: 0;
     z-index: 10;
+    border-bottom: 1px solid var(--border);
   }
   header .back {
-    background: rgba(255,255,255,0.15);
-    border: none;
-    color: #fff;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    color: var(--text);
     font-size: 14px;
-    padding: 8px 12px;
-    border-radius: 6px;
+    font-weight: 600;
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-pill);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
   }
-  header h1 { font-size: 16px; font-weight: 700; }
-  .container { max-width: 680px; margin: 0 auto; padding: 20px 16px; }
+  header h1 { font-size: 18px; font-weight: 700; line-height: 1.4; }
+  .header-title { flex: 1; min-width: 0; text-align: center; }
+  .header-player {
+    font-size: 13px;
+    color: var(--text-sub);
+    font-weight: 500;
+    margin-top: var(--space-1);
+    overflow-wrap: anywhere;
+  }
+  .lang-btn {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--accent-line);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-8);
+  }
+  .top-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+  .step-tabs {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+    scrollbar-width: none;
+  }
+  .step-tabs::-webkit-scrollbar { display: none; }
   .card {
     background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    padding: 16px 14px;
-    margin-bottom: 14px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-5);
+    margin-bottom: var(--space-4);
   }
-  .section-title {
-    font-size: 13px;
+  .section-eyebrow {
+    font-size: 12px;
     font-weight: 700;
     color: var(--text-sub);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin-bottom: 14px;
+    margin-bottom: var(--space-2);
   }
-  .form-group { margin-bottom: 18px; }
+  .section-title {
+    font-size: 26px;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: var(--space-3);
+  }
+  .section-description {
+    font-size: 15px;
+    line-height: 1.7;
+    font-weight: 500;
+    color: var(--text-sub);
+  }
+  .section-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .form-group { margin-bottom: var(--space-5); }
+  .form-group:last-child { margin-bottom: 0; }
   label.field-label {
     display: block;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 6px;
+    margin-bottom: var(--space-2);
+    line-height: 1.6;
   }
-  .req { color: var(--error); margin-left: 3px; }
+  .req { color: var(--required); margin-left: var(--space-1); }
   select, input[type="text"], input[type="number"], input[type="email"], textarea {
     width: 100%;
-    padding: 11px 13px;
+    padding: var(--space-3) var(--space-4);
     font-size: 16px;
-    min-height: 44px;
+    min-height: 48px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     color: var(--text);
-    background: #fff;
+    background: var(--bg);
     -webkit-appearance: none;
     font-family: inherit;
-    transition: border-color 0.15s;
+    font-weight: 500;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  select::placeholder, input::placeholder, textarea::placeholder { color: var(--text-muted); }
+  select:focus, input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--shadow-focus);
+  }
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
-  select { min-height: 48px; }
-  textarea { resize: vertical; min-height: 72px; }
-  .game-card-controls { gap: 6px; }
+  textarea { resize: vertical; min-height: 96px; line-height: 1.7; }
+  .helper-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-sub);
+    margin-top: var(--space-2);
+  }
+  .game-card-controls { gap: var(--space-3); }
 
-  /* ラジオカード */
-  .radio-group { display: flex; flex-direction: column; gap: 8px; }
+  .radio-group { display: flex; flex-direction: column; gap: var(--space-3); }
   .radio-card {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-card);
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-    min-height: 44px;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    min-height: 56px;
+    background: var(--bg);
+    position: relative;
   }
-  .radio-card:has(input:checked) { border-color: var(--accent); background: var(--bg-highlight); }
-  .radio-card input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
-  .radio-card .rc-text { font-size: 14px; font-weight: 600; color: var(--text); }
-  .radio-card .rc-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .radio-card:has(input:checked) {
+    border-width: 2px;
+    border-color: var(--primary);
+    background: var(--primary-weak);
+    box-shadow: var(--shadow-card);
+  }
+  .radio-card input[type="radio"] {
+    accent-color: var(--primary);
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 0;
+  }
+  .radio-card .rc-main { flex: 1; min-width: 0; }
+  .radio-card .rc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .radio-card .rc-text { font-size: 15px; font-weight: 700; color: var(--text); }
+  .radio-card .rc-sub { font-size: 13px; line-height: 1.6; color: var(--text-sub); margin-top: var(--space-1); }
+  .radio-card .rc-check {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--disabled);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: var(--bg);
+  }
+  .radio-card:has(input:checked) .rc-check {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: var(--bg);
+  }
+  .ticket-tabs { display: flex; gap: var(--space-2); }
+  .ticket-tabs .radio-group {
+    flex-direction: row;
+    gap: var(--space-2);
+    min-width: max-content;
+  }
+  .ticket-tabs .radio-card {
+    min-width: 220px;
+    border-radius: var(--radius-pill);
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+  }
+  .ticket-tabs .radio-card .rc-sub,
+  .ticket-tabs .radio-card .rc-avail { display: none; }
+  .ticket-tabs .radio-card .rc-text { font-size: 14px; }
+  .ticket-tabs .radio-card:has(input:checked) {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+  .ticket-tabs .radio-card:has(input:checked) .rc-text,
+  .ticket-tabs .radio-card:has(input:checked) .en-sub,
+  .ticket-tabs .radio-card:has(input:checked) .step-pill-label,
+  .ticket-tabs .radio-card:has(input:checked) .step-pill-number { color: var(--bg); }
+  .ticket-tabs .radio-card:has(input:checked) .rc-check {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .step-pill-copy { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+  .step-pill-number {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--text-sub);
+  }
+  .step-pill-label { min-width: 0; }
 
-  /* ゲームカードリスト */
-  .game-card-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+  .game-card-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-1); }
   .game-card-row {
-    background: #fff;
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px 14px;
-    transition: border-color 0.15s;
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   }
-  .game-card-row.row-disabled { opacity: 0.4; pointer-events: none; }
-  .game-card-row.has-entry { border-color: var(--accent); background: var(--bg-soft); }
-  /* 受取人登録 */
+  .game-card-row.row-disabled { opacity: 0.48; pointer-events: none; }
+  .game-card-row.has-entry {
+    border-width: 2px;
+    border-color: var(--primary);
+    background: var(--primary-weak);
+    box-shadow: var(--shadow-card);
+  }
   .receiver-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
     min-height: 0;
   }
   .receiver-chips:empty { margin-bottom: 0; }
   .receiver-chip {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: var(--bg-muted);
+    gap: var(--space-2);
+    background: var(--primary-weak);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 12px 5px 14px;
+    border-radius: var(--radius-pill);
+    padding: var(--space-2) var(--space-4);
     font-size: 13px;
     font-weight: 600;
     color: var(--text);
+    max-width: 100%;
   }
   .receiver-chip .chip-del {
     background: none;
@@ -179,75 +350,52 @@
   .receiver-chip .chip-del:hover { color: var(--error); }
   .add-receiver-row {
     display: flex;
-    gap: 8px;
+    gap: var(--space-2);
     align-items: center;
   }
   .add-receiver-row input {
     flex: 1;
-    min-height: 44px;
-    padding: 0 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    color: var(--text);
-  }
-  .add-receiver-row input:focus {
-    outline: none;
-    border-color: var(--accent);
+    min-height: 48px;
   }
   .add-receiver-btn {
-    min-height: 44px;
-    padding: 0 18px;
+    min-height: 48px;
+    padding: 0 var(--space-5);
     background: var(--primary);
-    color: #fff;
+    color: var(--bg);
     border: none;
-    border-radius: 8px;
-    font-size: 13px;
+    border-radius: var(--radius-control);
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .add-receiver-btn:hover { background: var(--primary-hover); }
+  .add-receiver-btn:hover { background: var(--primary-strong); }
   .receiver-field {
-    margin-top: 10px;
+    margin-top: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-2);
   }
   .receiver-field label {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 600;
     color: var(--text-sub);
-    letter-spacing: 0.04em;
-  }
-  .receiver-field input {
-    height: 40px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    color: var(--text);
-    background: #fff;
-    width: 100%;
-  }
-  .receiver-field input:focus {
-    outline: none;
-    border-color: var(--accent);
+    line-height: 1.6;
   }
   .qty-summary {
     display: flex;
-    margin-top: 8px;
+    margin-top: var(--space-3);
     font-size: 12px;
     color: var(--text-sub);
-    gap: 6px;
+    gap: var(--space-2);
     align-items: center;
     flex-wrap: wrap;
   }
   .qty-summary .qty-current {
     background: var(--bg-muted);
-    border-radius: 6px;
-    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) var(--space-3);
     font-weight: 600;
     color: var(--text-sub);
   }
@@ -259,52 +407,55 @@
   .qty-summary.has-new .qty-new { display: flex; }
   .qty-summary .qty-arrow { color: var(--icon-muted); font-size: 11px; }
   .qty-summary .qty-total {
-    background: #fce7f3;
-    color: var(--accent);
-    border-radius: 6px;
-    padding: 3px 8px;
+    background: var(--primary-weak);
+    color: var(--primary);
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) var(--space-3);
     font-weight: 700;
   }
   .game-card-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
-    gap: 8px;
+    margin-bottom: var(--space-3);
+    gap: var(--space-3);
   }
-  .game-card-info .game-date { font-size: 12px; color: var(--text-sub); }
-  .game-card-info .game-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .game-card-info { min-width: 0; }
+  .game-card-info .game-date { font-size: 13px; color: var(--text-sub); font-weight: 500; line-height: 1.6; }
+  .game-card-info .game-name { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.5; overflow-wrap: anywhere; }
   .deadline-badge {
     font-size: 12px;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 8px;
-    white-space: nowrap;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    white-space: normal;
     flex-shrink: 0;
+    border: 1px solid currentColor;
+    text-align: center;
   }
-  .deadline-ok { background: #dcfce7; color: var(--success); }
+  .deadline-ok { background: var(--success-bg); color: var(--success); }
   .deadline-ng { background: var(--error-bg); color: var(--error); }
   .game-card-controls {
     display: flex;
-    gap: 8px;
+    gap: var(--space-3);
     align-items: center;
     flex-wrap: wrap;
   }
-  /* ステッパー */
   .stepper {
     display: flex;
     align-items: center;
     gap: 0;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     overflow: hidden;
-    height: 44px;
+    height: 48px;
     min-width: 132px;
     flex: 0 0 auto;
+    background: var(--bg);
   }
   .stepper-btn {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     font-size: 20px;
     font-weight: 700;
     background: var(--bg-surface);
@@ -320,7 +471,7 @@
   }
   .stepper-btn:active { background: var(--border); }
   .stepper-val {
-    min-width: 44px;
+    min-width: 48px;
     text-align: center;
     font-size: 16px;
     font-weight: 700;
@@ -331,27 +482,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fff;
+    background: var(--bg);
   }
   .stepper-field {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
-  .stepper-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-sub);
-  }
   .sel-wrap {
     position: relative;
     flex: 1;
     min-width: 100px;
   }
+  .sel-wrap-narrow { max-width: 110px; }
   .sel-wrap .sel-label {
     position: absolute;
-    top: 4px;
-    left: 10px;
+    top: var(--space-1);
+    left: var(--space-3);
     font-size: 10px;
     font-weight: 700;
     color: var(--text-sub);
@@ -362,7 +509,7 @@
   .sel-wrap::after {
     content: '▾';
     position: absolute;
-    right: 10px;
+    right: var(--space-3);
     top: 50%;
     transform: translateY(-50%);
     font-size: 13px;
@@ -371,48 +518,47 @@
   }
   .game-card-sel {
     width: 100%;
-    height: 52px;
-    padding: 18px 28px 4px 10px;
+    height: 56px;
+    padding: 20px 36px var(--space-1) var(--space-3);
     font-size: 14px;
     font-weight: 600;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     color: var(--text);
-    background: #fff;
+    background: var(--bg);
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
   }
-  .game-card-sel:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
   .inv-day-label {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-2);
     font-size: 14px;
     color: var(--text);
     cursor: pointer;
     min-height: 44px;
     min-width: 44px;
-    padding: 0 4px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    background: var(--bg);
   }
-  .inv-day-label input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .inv-day-label input { width: 18px; height: 18px; accent-color: var(--primary); }
 
-  /* 種別ごとセクション */
   .ticket-section { display: none; }
   .ticket-section.active { display: block; }
-
-  /* 注意書き */
-  /* 座席図 */
+  .ticket-section .section-head {
+    margin-bottom: var(--space-5);
+  }
   .seat-map-wrap {
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: var(--radius-card);
     overflow: hidden;
     border: 1px solid var(--border);
     position: relative;
-    background: #f8f9fa;
+    background: var(--bg-subtle);
   }
   .seat-map-img {
     width: 100%;
@@ -427,8 +573,8 @@
     text-align: center;
     font-size: 11px;
     color: var(--text-sub);
-    padding: 6px;
-    background: rgba(0,0,0,0.04);
+    padding: var(--space-2);
+    background: var(--bg-subtle);
   }
   .seat-map-overlay {
     position: fixed;
@@ -440,9 +586,10 @@
     justify-content: center;
     padding: 16px;
   }
+  .is-hidden { display: none; }
   .seat-map-modal {
-    background: #fff;
-    border-radius: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-card);
     overflow: hidden;
     max-width: 600px;
     width: 100%;
@@ -451,11 +598,11 @@
   }
   .seat-map-close {
     width: 100%;
-    padding: 12px;
+    padding: var(--space-3);
     font-size: 14px;
     font-weight: 700;
     background: var(--primary);
-    color: #fff;
+    color: var(--bg);
     border: none;
     cursor: pointer;
     min-height: 44px;
@@ -463,175 +610,282 @@
 
   .notice {
     background: var(--warning-bg);
-    border-radius: 8px;
-    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
     font-size: 14px;
-    color: #1a1a2e;
-    margin-bottom: 14px;
+    color: var(--warning-text);
+    margin-bottom: var(--space-4);
+    line-height: 1.7;
   }
-  .notice ul { padding-left: 16px; }
-  .notice li { margin-bottom: 4px; }
+  .notice strong { font-weight: 700; }
+  .notice ul { padding-left: var(--space-4); }
+  .notice li { margin-bottom: var(--space-1); }
+  .notice-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: var(--space-2);
+  }
+  .notice-success {
+    background: var(--success-bg);
+    border-color: rgba(22, 163, 74, 0.24);
+  }
+  .notice-warning {
+    background: var(--bg-subtle);
+    border-color: var(--border);
+  }
 
   .btn-primary {
     width: 100%;
-    padding: 15px;
+    padding: 0 var(--space-5);
     font-size: 16px;
     font-weight: 700;
-    color: #fff;
-    background: var(--accent);
+    color: var(--bg);
+    background: var(--primary);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     cursor: pointer;
-    min-height: 48px;
+    min-height: 52px;
     min-width: 44px;
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.15s;
+    box-shadow: var(--shadow-card);
   }
-  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:hover { background: var(--primary-strong); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .alert { padding: 13px 15px; border-radius: 6px; font-size: 14px; margin-bottom: 14px; }
+  .alert {
+    padding: var(--space-4);
+    border-radius: var(--radius-card);
+    font-size: 14px;
+    margin-bottom: var(--space-4);
+    line-height: 1.7;
+    border: 1px solid var(--border);
+    white-space: pre-line;
+  }
   .alert-error { background: var(--error-bg); color: var(--error); }
   .alert-success { background: var(--success-bg); color: var(--success); }
 
   .rc-avail-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-1);
     font-size: 12px;
     font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 10px;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
   }
   @media (min-width: 481px) {
-    .card { padding: 22px 20px; }
-    .game-card-controls { gap: 8px; }
+    .card { padding: var(--space-6); }
+    .game-card-controls { gap: var(--space-4); }
   }
   @media (max-width: 480px) {
-    body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
     header {
-      padding: 12px 16px;
-      gap: 10px;
+      padding: var(--space-3) var(--space-4);
+      gap: var(--space-2);
     }
-    header h1 { font-size: 15px; line-height: 1.35; }
-    .container { padding: 16px; }
+    header h1 { font-size: 16px; line-height: 1.4; }
+    .header-player { font-size: 12px; }
+    .container { padding: var(--space-4); }
     .card {
-      padding: 14px 12px;
-      margin-bottom: 12px;
-      border-radius: 10px;
+      padding: var(--space-4);
+      margin-bottom: var(--space-3);
     }
-    .section-title { margin-bottom: 12px; }
-    .form-group { margin-bottom: 16px; }
+    .section-title { font-size: 24px; margin-bottom: var(--space-2); }
+    .form-group { margin-bottom: var(--space-4); }
     .radio-card {
-      padding: 12px;
-      gap: 8px;
+      padding: var(--space-3);
+      gap: var(--space-2);
     }
+    .ticket-tabs .radio-card { min-width: 196px; }
     .game-card-row {
-      padding: 12px;
-      border-radius: 9px;
+      padding: var(--space-3);
     }
     .game-card-top {
       align-items: flex-start;
-      margin-bottom: 12px;
+      margin-bottom: var(--space-3);
     }
-    .game-card-info { min-width: 0; }
     .game-card-info .game-name {
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.45;
     }
     .deadline-badge {
       max-width: 112px;
       line-height: 1.35;
-      text-align: center;
-      white-space: normal;
     }
     .game-card-controls {
       flex-direction: column;
       align-items: stretch;
-      gap: 10px;
+      gap: var(--space-3);
     }
     .stepper-field {
       width: 100%;
-      gap: 6px;
     }
     .stepper {
       width: 100%;
-      height: 46px;
     }
     .stepper-btn {
-      width: 46px;
-      height: 46px;
-      min-width: 46px;
-      min-height: 46px;
+      min-width: 48px;
+      min-height: 48px;
     }
     .stepper-val {
-      min-width: 46px;
       font-size: 17px;
       flex: 1;
     }
     .sel-wrap { min-width: 0; }
-    .game-card-sel { height: 52px; }
+    .game-card-sel { height: 56px; }
     .sel-wrap[style*="max-width"] { max-width: none !important; }
     .inv-day-label {
-      padding: 0 2px;
       align-self: stretch;
+      justify-content: center;
     }
     .notice {
-      padding: 12px;
+      padding: var(--space-4);
       font-size: 13px;
       line-height: 1.65;
     }
     .seat-map-modal { max-height: 86vh; }
-    .alert { padding: 12px; line-height: 1.6; }
-    .btn-primary { min-height: 50px; }
+    .alert { padding: var(--space-4); line-height: 1.6; }
+    .add-receiver-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .add-receiver-btn,
+    .btn-primary { width: 100%; }
   }
   @media (min-width: 769px) {
-    .container { padding: 24px 16px; }
+    .container { padding: var(--space-6) var(--space-4) var(--space-8); }
   }
-  .rc-avail-badge.open { background: #dcfce7; color: #16a34a; }
-  .rc-avail-badge.none { background: #f3f4f6; color: #6b7280; }
+  .rc-avail-badge.open { background: var(--success-bg); color: var(--success); }
+  .rc-avail-badge.none { background: var(--bg-muted); color: var(--text-sub); }
 
-  .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  .empty-state {
+    color: var(--text-sub);
+    padding: var(--space-5) 0;
+    text-align: center;
+    line-height: 1.7;
+    font-weight: 500;
+  }
+  .plain-textarea {
+    resize: vertical;
+    font-size: 14px;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    width: 100%;
+    font-family: inherit;
+    line-height: 1.7;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: var(--bg);
+    border-radius: var(--radius-pill);
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: var(--space-2);
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
 <header>
   <button class="back" onclick="history.back()" data-i18n="backBtn">← 戻る</button>
-  <div style="flex:1">
+  <div class="header-title">
     <h1 data-i18n="title">チケット申込フォーム</h1>
-    <div id="header-name" style="font-size:12px; opacity:0.8; margin-top:2px;"></div>
+    <div id="header-name" class="header-player"></div>
   </div>
-  <button id="lang-toggle" onclick="toggleLang()" style="border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;color:#fff;min-height:44px;white-space:nowrap;">JA / en</button>
+  <button id="lang-toggle" class="lang-btn" onclick="toggleLang()">JA / en</button>
 </header>
 
 <div class="container">
   <div id="alert-area" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- チケット種別選択 -->
-  <div class="card">
-    <div class="section-title">チケット種別</div>
-    <div class="radio-group">
+  <div class="top-shell">
+    <div>
+      <div class="section-eyebrow">STEP 1</div>
+      <h2 class="section-title">申込種別を選択</h2>
+      <p class="section-description">現在の申込フローはそのままに、種別ごとに必要な入力だけを下に表示します。</p>
+    </div>
+    <div class="step-tabs ticket-tabs">
+      <div class="radio-group">
       <label class="radio-card">
         <input type="radio" name="ticketType" value="invite" onchange="onTypeChange()">
-        <div style="flex:1">
-          <div class="rc-text">招待チケット<span class="en-sub" aria-hidden="true">Complimentary Tickets</span></div>
-          <div class="rc-sub">無料・2F自由席・1試合最大10枚<span class="en-sub" aria-hidden="true">Free, 2F unreserved, up to 10 per game</span></div>
-          <div class="rc-avail" id="avail-invite" style="margin-top:5px"></div>
+        <div class="rc-main">
+          <div class="step-pill-copy">
+            <span class="step-pill-number">01</span>
+            <div class="step-pill-label">
+              <div class="rc-text">招待チケット<span class="en-sub" aria-hidden="true">Complimentary Tickets</span></div>
+            </div>
+          </div>
         </div>
+        <span class="rc-check" aria-hidden="true">✓</span>
       </label>
       <label class="radio-card">
         <input type="radio" name="ticketType" value="family" onchange="onTypeChange()">
-        <div style="flex:1">
-          <div class="rc-text">家族席チケット<span class="en-sub" aria-hidden="true">Family Seats</span></div>
-          <div class="rc-sub">二親等内の親族限定・駐車場申請可<span class="en-sub" aria-hidden="true">Relatives within second degree, parking available</span></div>
-          <div class="rc-avail" id="avail-family" style="margin-top:5px"></div>
+        <div class="rc-main">
+          <div class="step-pill-copy">
+            <span class="step-pill-number">02</span>
+            <div class="step-pill-label">
+              <div class="rc-text">家族席チケット<span class="en-sub" aria-hidden="true">Family Seats</span></div>
+            </div>
+          </div>
         </div>
+        <span class="rc-check" aria-hidden="true">✓</span>
       </label>
       <label class="radio-card">
         <input type="radio" name="ticketType" value="paid" onchange="onTypeChange()">
-        <div style="flex:1">
-          <div class="rc-text">有料チケット<span class="en-sub" aria-hidden="true">Paid Tickets</span></div>
+        <div class="rc-main">
+          <div class="step-pill-copy">
+            <span class="step-pill-number">03</span>
+            <div class="step-pill-label">
+              <div class="rc-text">有料チケット<span class="en-sub" aria-hidden="true">Paid Tickets</span></div>
+            </div>
+          </div>
+        </div>
+        <span class="rc-check" aria-hidden="true">✓</span>
+      </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-eyebrow">STEP 2</div>
+    <h2 class="section-title">受付状況を確認</h2>
+    <div class="radio-group">
+      <label class="radio-card">
+        <input type="radio" name="ticketTypeMirror" value="invite" disabled>
+        <div class="rc-main">
+          <div class="rc-head">
+            <div class="rc-text">招待チケット</div>
+            <div class="rc-avail" id="avail-invite"></div>
+          </div>
+          <div class="rc-sub">無料・2F自由席・1試合最大10枚<span class="en-sub" aria-hidden="true">Free, 2F unreserved, up to 10 per game</span></div>
+        </div>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="ticketTypeMirror" value="family" disabled>
+        <div class="rc-main">
+          <div class="rc-head">
+            <div class="rc-text">家族席チケット</div>
+            <div class="rc-avail" id="avail-family"></div>
+          </div>
+          <div class="rc-sub">二親等内の親族限定・駐車場申請可<span class="en-sub" aria-hidden="true">Relatives within second degree, parking available</span></div>
+        </div>
+      </label>
+      <label class="radio-card">
+        <input type="radio" name="ticketTypeMirror" value="paid" disabled>
+        <div class="rc-main">
+          <div class="rc-head">
+            <div class="rc-text">有料チケット</div>
+            <div class="rc-avail" id="avail-paid"></div>
+          </div>
           <div class="rc-sub">各座席カテゴリー・7日前までに申込<span class="en-sub" aria-hidden="true">Seat categories, request 7 days before</span></div>
-          <div class="rc-avail" id="avail-paid" style="margin-top:5px"></div>
         </div>
       </label>
     </div>
@@ -639,8 +893,12 @@
 
   <!-- ===== 招待チケット ===== -->
   <div class="ticket-section" id="section-invite">
-    <div class="notice" style="background:var(--success-bg);border-left:4px solid var(--success);">
-      <div style="font-weight:700;font-size:14px;margin-bottom:6px;">2F自由席チケット（無償提供）</div>
+    <div class="section-head">
+      <div class="section-eyebrow">STEP 3</div>
+      <h2 class="section-title">招待チケットを申し込む</h2>
+    </div>
+    <div class="notice notice-success">
+      <div class="notice-title">2F自由席チケット（無償提供）</div>
       <ul>
         <li>毎ホームゲーム最大<strong>10枚</strong>まで無料申込可能</li>
         <li>家族以外のゲストも招待可能</li>
@@ -648,11 +906,12 @@
         <li>申告内容と異なる場合はチケットをお渡しできません</li>
       </ul>
     </div>
-    <div class="notice" style="background:var(--warn);border-left:4px solid var(--warn-border);margin-top:-6px;">
-      <div style="font-weight:700;font-size:13px;margin-bottom:4px;">2F自由席 ご注意</div>
-      <p style="font-size:13px;line-height:1.7;margin:0;">自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
+    <div class="notice notice-warning">
+      <div class="notice-title">2F自由席 ご注意</div>
+      <p>自由席のため、ご来場時間によって並びで座れない場合や立ち見となる場合がございます。当日はお早めにご来場ください。</p>
     </div>
     <div class="card">
+      <div class="section-eyebrow">Reservation</div>
       <div class="section-title">試合ごとの枚数・受取方法</div>
       <div class="game-card-list" id="invite-list"></div>
     </div>
@@ -661,6 +920,10 @@
 
   <!-- ===== 家族席チケット ===== -->
   <div class="ticket-section" id="section-family">
+    <div class="section-head">
+      <div class="section-eyebrow">STEP 3</div>
+      <h2 class="section-title">家族席チケットを申し込む</h2>
+    </div>
     <div class="notice">
       <ul>
         <li>「家族」= 二親等内の親族限定</li>
@@ -670,7 +933,9 @@
       </ul>
     </div>
     <div class="card">
-      <div class="section-title">受取人登録 <span style="font-size:11px;font-weight:400;color:var(--text-sub);">試合ごとに選択できます</span></div>
+      <div class="section-eyebrow">Receiver</div>
+      <div class="section-title">受取人登録</div>
+      <p class="section-description">登録した氏名は各試合の受取者欄から選択できます。</p>
       <div id="fam-receiver-chips" class="receiver-chips"></div>
       <div class="add-receiver-row">
         <input type="text" id="fam-new-receiver-input" placeholder="氏名を入力（例：山田 花子）" maxlength="30">
@@ -678,6 +943,7 @@
       </div>
     </div>
     <div class="card">
+      <div class="section-eyebrow">Reservation</div>
       <div class="section-title">試合ごとの枚数・受取方法</div>
       <div class="game-card-list" id="family-list"></div>
     </div>
@@ -687,6 +953,10 @@
 
   <!-- ===== 有料チケット ===== -->
   <div class="ticket-section" id="section-paid">
+    <div class="section-head">
+      <div class="section-eyebrow">STEP 3</div>
+      <h2 class="section-title">有料チケットを申し込む</h2>
+    </div>
     <div class="notice">
       <ul>
         <li>試合開催の<strong>7日前まで</strong>に申込</li>
@@ -695,13 +965,14 @@
       </ul>
     </div>
     <div class="card">
+      <div class="section-eyebrow">Reservation</div>
       <div class="section-title">申込内容</div>
       <div class="form-group">
         <label class="field-label">試合選択 <span class="req">*</span><span class="en-sub" aria-hidden="true">Select Game</span></label>
         <select id="paid-game">
           <option value="">--- 試合を選んでください ---</option>
         </select>
-        <div id="paid-deadline-info" style="font-size:12px; color:var(--text-sub); margin-top:6px;"></div>
+        <div id="paid-deadline-info" class="helper-text"></div>
       </div>
       <!-- 座席図 -->
       <div class="form-group">
@@ -713,11 +984,11 @@
                loading="lazy">
           <div class="seat-map-hint">タップで拡大 / Tap to enlarge</div>
         </div>
-        <div class="seat-map-overlay" id="seat-map-overlay" onclick="closeSeatMap()" style="display:none;">
+        <div class="seat-map-overlay is-hidden" id="seat-map-overlay" onclick="closeSeatMap()">
           <div class="seat-map-modal">
             <button class="seat-map-close" onclick="closeSeatMap(event)">✕ 閉じる</button>
             <img src="https://northern-happinets.bl.kuroco-img.app/v=1662023116/files/user/202209011805_4-800x859.png"
-                 alt="座席図 Seat Map" style="width:100%;height:auto;display:block;">
+                 alt="座席図 Seat Map" class="seat-map-img">
           </div>
         </div>
       </div>
@@ -758,11 +1029,17 @@
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="paid-payment" value="salary">
-            <div class="rc-text">給料天引き<span class="en-sub" aria-hidden="true">Salary Deduction</span></div>
+            <div class="rc-main">
+              <div class="rc-text">給料天引き<span class="en-sub" aria-hidden="true">Salary Deduction</span></div>
+            </div>
+            <span class="rc-check" aria-hidden="true">✓</span>
           </label>
           <label class="radio-card">
             <input type="radio" name="paid-payment" value="receiver">
-            <div class="rc-text">受取者支払い（試合当日）<span class="en-sub" aria-hidden="true">Receiver Pays on Game Day</span></div>
+            <div class="rc-main">
+              <div class="rc-text">受取者支払い（試合当日）<span class="en-sub" aria-hidden="true">Receiver Pays on Game Day</span></div>
+            </div>
+            <span class="rc-check" aria-hidden="true">✓</span>
           </label>
         </div>
       </div>
@@ -771,11 +1048,17 @@
         <div class="radio-group">
           <label class="radio-card">
             <input type="radio" name="paid-pickup" value="pre">
-            <div class="rc-text">事前受取<span class="en-sub" aria-hidden="true">Pick Up Before Game Day</span></div>
+            <div class="rc-main">
+              <div class="rc-text">事前受取<span class="en-sub" aria-hidden="true">Pick Up Before Game Day</span></div>
+            </div>
+            <span class="rc-check" aria-hidden="true">✓</span>
           </label>
           <label class="radio-card">
             <input type="radio" name="paid-pickup" value="day">
-            <div class="rc-text">当日受取<span class="en-sub" aria-hidden="true">Pick Up on Game Day</span></div>
+            <div class="rc-main">
+              <div class="rc-text">当日受取<span class="en-sub" aria-hidden="true">Pick Up on Game Day</span></div>
+            </div>
+            <span class="rc-check" aria-hidden="true">✓</span>
           </label>
         </div>
       </div>
@@ -1075,7 +1358,7 @@ function getExistingQty(gameId, ticketType) {
 function buildInviteGrid() {
   const list = document.getElementById('invite-list');
   const active = games.filter(g => !g.isDeadlinePassed);
-  if (!active.length) { list.innerHTML = '<p style="color:var(--text-sub);padding:16px 0;text-align:center;">現在申込受付中の試合はありません</p>'; return; }
+  if (!active.length) { list.innerHTML = '<p class="empty-state">現在申込受付中の試合はありません</p>'; return; }
   list.innerHTML = active.map(g => {
     const past = false;
     const dl = g.deadline
@@ -1103,7 +1386,7 @@ function buildInviteGrid() {
       </div>
       <div class="receiver-field">
         <label>特記事項</label>
-        <textarea id="note-inv-${esc(g.gameId)}" rows="2" placeholder="例）座席アップグレード希望など" style="resize:vertical;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-family:inherit;line-height:1.5;"></textarea>
+        <textarea id="note-inv-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="例）座席アップグレード希望など"></textarea>
       </div>
       <div class="qty-summary" data-existing="${invExisting}">
         <span class="qty-current">現在 ${invExisting} 枚申込済み</span>
@@ -1119,7 +1402,7 @@ function buildInviteGrid() {
 function buildFamilyGrid() {
   const list = document.getElementById('family-list');
   const active = games.filter(g => !g.isDeadlinePassed);
-  if (!active.length) { list.innerHTML = '<p style="color:var(--text-sub);padding:16px 0;text-align:center;">現在申込受付中の試合はありません</p>'; return; }
+  if (!active.length) { list.innerHTML = '<p class="empty-state">現在申込受付中の試合はありません</p>'; return; }
   list.innerHTML = active.map(g => {
     const past = false;
     const dl = g.deadline
@@ -1144,7 +1427,7 @@ function buildFamilyGrid() {
             <option value="day">当日受取</option>
           </select>
         </div>
-        <div class="sel-wrap" style="max-width:110px">
+        <div class="sel-wrap sel-wrap-narrow">
           <span class="sel-label">駐車場</span>
           <select class="game-card-sel fam-parking" data-game="${esc(g.gameId)}">
             <option value="0">0台</option>
@@ -1159,7 +1442,7 @@ function buildFamilyGrid() {
       </div>
       <div class="receiver-field">
         <label>特記事項</label>
-        <textarea id="note-fam-${esc(g.gameId)}" rows="2" placeholder="その他ご要望があれば記入" style="resize:vertical;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;width:100%;font-family:inherit;line-height:1.5;"></textarea>
+        <textarea id="note-fam-${esc(g.gameId)}" class="plain-textarea" rows="2" placeholder="その他ご要望があれば記入"></textarea>
       </div>
       <div class="qty-summary" data-existing="${famExisting}">
         <span class="qty-current">現在 ${famExisting} 枚申込済み</span>
@@ -1185,6 +1468,7 @@ function closeSeatMap(e) {
 function onTypeChange() {
   const type = document.querySelector('input[name="ticketType"]:checked')?.value;
   document.querySelectorAll('.ticket-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('input[name="ticketTypeMirror"]').forEach(input => { input.checked = input.value === type; });
   if (type) document.getElementById(`section-${type === 'paid' ? 'paid' : type === 'family' ? 'family' : 'invite'}`).classList.add('active');
 }
 
