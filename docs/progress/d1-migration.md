@@ -59,10 +59,10 @@ progress_pct: 0
 - ✅ API 契約書 docs/api-contract.md（GAS 全 action 対照表つき・620行）
 - ✅ PM 裁定6件を SPEC §12 に記録（朝通知=Cron Triggers 等）
 - ✅ Gate1 レビュー（engineer/security）→ 指摘11件を 87150a1 で反映
-- 🔄 Gate2 サインオフ（engineer/security 並列）→ 両者 concern・Block無し。設計書修正6件を Codex 反映中（ft-gate2-fix）。反映完了で Gate2 approve → 実装着手
+- ✅ Gate2 サインオフ（engineer/security 並列）→ 両者 concern・Block無し。承認条件6件を c65abe9 で反映 → **Gate2 approve 確定**
 
 ### フェーズ2: 実装（垂直スライス先行 → 並列）
-- ⬜ スライス1本目: 「選手ログイン→試合一覧表示」を D1+Worker+FE で貫通（手戻り検出）
+- 🔄 スライス1本目: 「選手ログイン→試合一覧表示」を D1+Worker+FE で貫通（手戻り検出）— Codex ft-slice1 でローカルD1着手
 - ⬜ Worker API 残り（申込・キャンセル・管理CRUD・一括入替）
 - ⬜ FE 4画面の API 層切替
 - ⬜ LINE bot を Worker 内に移植（署名検証は実装済み流用）
