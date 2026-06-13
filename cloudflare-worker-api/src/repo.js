@@ -1,4 +1,5 @@
 import {
+  deadlineAt,
   deriveDayOfWeek,
   deriveDeadline,
   formatPlayerNo,
@@ -133,7 +134,9 @@ export async function ensureNoDuplicateApplication(db, playerId, gameId, categor
 export async function createApplication(db, playerSession, payload, appId, nowIso) {
   const game = await findGameByIdentifier(db, payload.gameId);
   if (!game) throw new HttpError(404, "NOT_FOUND", "Game not found");
-  if (game.deadline && game.deadline < nowIso.slice(0, 10)) {
+  // 締切判定: 締切日の 12:00 JST (UTC 03:00) を過ぎていれば拒否
+  const dl = game.deadline ? deadlineAt(game.deadline) : null;
+  if (dl && dl < nowIso) {
     throw new HttpError(410, "DEADLINE_PASSED", "Deadline passed");
   }
   await ensureNoDuplicateApplication(db, playerSession.player_id, game.id, payload.category);
@@ -243,6 +246,54 @@ export async function findApplicationForNotification(db, appId) {
   return {
     ...row,
     game_label: buildGameLabel({ date: row.date, day_of_week: row.day_of_week, opponent: row.opponent }),
+  };
+}
+
+/**
+ * 申込完了push通知用: appIdから選手・試合・今回の枚数・累計枚数を一括取得。
+ * 累計 = 同選手×同試合のcancelled以外の申込枚数合計(今回のapp含む)。
+ */
+export async function findApplicationForConfirmPush(db, appId) {
+  const row = await db.prepare(
+    `SELECT
+       a.app_id,
+       a.category,
+       a.quantity_adult,
+       a.lang,
+       p.line_user_id,
+       p.id AS player_id,
+       g.id AS game_id,
+       g.game_no,
+       g.date,
+       g.day_of_week,
+       g.opponent
+     FROM applications a
+     INNER JOIN players p ON p.id = a.player_id
+     INNER JOIN games g ON g.id = a.game_id
+     WHERE a.app_id = ?1`
+  ).bind(appId).first();
+  if (!row) return null;
+
+  // 累計枚数: 同選手 × 同試合 の cancelled 以外の quantity_adult 合計
+  const totalRow = await db.prepare(
+    `SELECT COALESCE(SUM(quantity_adult), 0) AS total
+     FROM applications
+     WHERE player_id = ?1
+       AND game_id = ?2
+       AND status != 'cancelled'`
+  ).bind(row.player_id, row.game_id).first();
+
+  return {
+    appId: row.app_id,
+    lineUserId: row.line_user_id,
+    category: row.category,
+    quantityAdult: row.quantity_adult,
+    totalQuantity: Number(totalRow?.total || 0),
+    lang: row.lang || "ja",
+    gameNo: row.game_no,
+    date: row.date,
+    dayOfWeek: row.day_of_week,
+    opponent: row.opponent,
   };
 }
 
@@ -516,6 +567,27 @@ export async function listConfirmedApplicationsForDate(db, date) {
     });
   }
   return [...grouped.values()];
+}
+
+/**
+ * 翌日12:00 JSTが締切の試合一覧を返す（締切前日18:00アナウンス用）。
+ * nowIso: 現在時刻 ISO 8601 (UTC)
+ * 「締切日 == 明日(JST)」= nowIso の JST 翌日の日付
+ */
+export async function listGamesWithDeadlineTomorrow(db, nowIso) {
+  // nowIso (UTC) → JST (+9h) → 翌日日付
+  const nowUtcMs = new Date(nowIso).getTime();
+  const jstNow = new Date(nowUtcMs + 9 * 60 * 60 * 1000);
+  const jstTomorrow = new Date(jstNow.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowDate = jstTomorrow.toISOString().slice(0, 10);
+
+  const result = await db.prepare(
+    `SELECT game_no, date, day_of_week, opponent
+     FROM games
+     WHERE deadline = ?1 AND is_active = 1
+     ORDER BY date ASC, game_no ASC`
+  ).bind(tomorrowDate).all();
+  return result.results || [];
 }
 
 export async function deleteExpiredSessions(db, nowIso) {

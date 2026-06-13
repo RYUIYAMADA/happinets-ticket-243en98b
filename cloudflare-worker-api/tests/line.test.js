@@ -2,6 +2,7 @@ import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
 
 import { createApp } from "../src/index.js";
+import { broadcastDeadlineAnnouncement, buildDeadlineAnnouncementMessages, sendApplicationConfirmPush } from "../src/line.js";
 
 function createDbMock(config = {}) {
   const batchCalls = [];
@@ -276,6 +277,390 @@ test("POST /line/webhook menu:apply saves state and returns type quick reply", a
   assert.equal(replyPayload.messages[0].text, "チケット種別を選んでください。");
   assert.equal(replyPayload.messages[0].quickReply.items.length, 3);
 });
+
+// ─── 締切前日アナウンス テスト ───────────────────────────────────────────────
+
+test("buildDeadlineAnnouncementMessages: 日本語・英語両方の文面が1メッセージに含まれる", () => {
+  const games = [
+    { date: "2026-07-05", opponent: "横浜ビー・コルセアーズ" },
+    { date: "2026-07-06", opponent: "信州ブレイブウォリアーズ" },
+  ];
+  const messages = buildDeadlineAnnouncementMessages(games);
+  assert.equal(messages.length, 1);
+  const text = messages[0].text;
+  // 日本語部分
+  assert.match(text, /締切のアナウンス/);
+  assert.match(text, /明日の12時/);
+  assert.match(text, /2026\/07\/05 vs 横浜ビー・コルセアーズ/);
+  assert.match(text, /2026\/07\/06 vs 信州ブレイブウォリアーズ/);
+  // 英語部分
+  assert.match(text, /Application Deadline/);
+  assert.match(text, /close tomorrow at 12:00/);
+});
+
+test("broadcastDeadlineAnnouncement: 対象ゲームなし → broadcast を呼ばない", async () => {
+  const broadcastCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    broadcastCalls.push({ url, options });
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare(sql) {
+      return {
+        bind() {
+          return {
+            async all() { return { results: [] }; },
+            async first() { return null; },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  // UTC 09:00 = JST 18:00, tomorrow = 翌日（ゲームなし）
+  const nowIso = "2026-07-04T09:00:00.000Z";
+  const result = await broadcastDeadlineAnnouncement(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    nowIso
+  );
+
+  assert.equal(result.sent, false);
+  assert.equal(result.reason, "no_target_games");
+  // LINE broadcast は呼ばれていない
+  assert.equal(broadcastCalls.filter((c) => c.url.includes("broadcast")).length, 0);
+});
+
+test("broadcastDeadlineAnnouncement: 対象ゲームあり → broadcast 1回 LINE API 呼び出し", async () => {
+  const broadcastCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    broadcastCalls.push({ url, options });
+    // quota: 1000残あり
+    if (url.includes("quota/consumption")) {
+      return new Response(JSON.stringify({ totalUsage: 0 }), { status: 200 });
+    }
+    if (url.includes("quota") && !url.includes("consumption")) {
+      return new Response(JSON.stringify({ value: 1000 }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare(sql) {
+      return {
+        bind(tomorrowDate) {
+          return {
+            async all() {
+              // "2026-07-05" が締切の試合を返す
+              return {
+                results: [
+                  { game_no: "G01", date: "2026-07-10", day_of_week: "金", opponent: "横浜ビー・コルセアーズ" },
+                ],
+              };
+            },
+            async first() { return null; },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  // UTC 09:00 実行 = JST 18:00。明日(JST)は 2026-07-05
+  const nowIso = "2026-07-04T09:00:00.000Z";
+  const result = await broadcastDeadlineAnnouncement(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    nowIso
+  );
+
+  assert.equal(result.sent, true);
+  assert.equal(result.gameCount, 1);
+  const broadcastCall = broadcastCalls.find((c) => c.url.includes("broadcast"));
+  assert.ok(broadcastCall, "broadcast エンドポイントが呼ばれていない");
+  const body = JSON.parse(broadcastCall.options.body);
+  assert.equal(body.messages[0].type, "text");
+  assert.match(body.messages[0].text, /横浜ビー・コルセアーズ/);
+});
+
+test("broadcastDeadlineAnnouncement: quota不足 → broadcast しない", async () => {
+  const broadcastCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    broadcastCalls.push({ url, options });
+    if (url.includes("quota/consumption")) {
+      return new Response(JSON.stringify({ totalUsage: 1000 }), { status: 200 });
+    }
+    if (url.includes("quota") && !url.includes("consumption")) {
+      return new Response(JSON.stringify({ value: 1000 }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare() {
+      return {
+        bind() {
+          return {
+            async all() {
+              return {
+                results: [
+                  { game_no: "G01", date: "2026-07-10", day_of_week: "金", opponent: "横浜ビー・コルセアーズ" },
+                ],
+              };
+            },
+            async first() { return null; },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  const nowIso = "2026-07-04T09:00:00.000Z";
+  const result = await broadcastDeadlineAnnouncement(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    nowIso
+  );
+
+  assert.equal(result.sent, false);
+  assert.equal(result.reason, "quota_insufficient");
+  assert.equal(broadcastCalls.filter((c) => c.url.includes("broadcast")).length, 0);
+});
+
+// ─── 申込完了push通知 テスト ─────────────────────────────────────────────────
+
+test("sendApplicationConfirmPush: line_user_id 未連携はスキップ", async () => {
+  const pushCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    pushCalls.push({ url, options });
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async first() {
+              if (sql.includes("FROM applications a")) {
+                // line_user_id がない選手
+                return {
+                  app_id: "APP-1",
+                  category: "invite",
+                  quantity_adult: 2,
+                  lang: "ja",
+                  line_user_id: null,
+                  player_id: 1,
+                  game_id: 1,
+                  game_no: "G01",
+                  date: "2026-10-10",
+                  day_of_week: "土",
+                  opponent: "琉球",
+                };
+              }
+              return null;
+            },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  const result = await sendApplicationConfirmPush(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    "APP-1"
+  );
+
+  assert.equal(result.pushed, false);
+  assert.equal(result.reason, "line_unlinked");
+  assert.equal(pushCalls.filter((c) => c.url.includes("/v2/bot/message/push")).length, 0);
+});
+
+test("sendApplicationConfirmPush: ja言語で正しい文面・枚数をpush", async () => {
+  const pushCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    pushCalls.push({ url, options });
+    if (url.includes("quota/consumption")) {
+      return new Response(JSON.stringify({ totalUsage: 0 }), { status: 200 });
+    }
+    if (url.includes("quota") && !url.includes("consumption")) {
+      return new Response(JSON.stringify({ value: 1000 }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async first() {
+              if (sql.includes("COALESCE(SUM")) {
+                // 今回2枚含む累計 = 5枚
+                return { total: 5 };
+              }
+              if (sql.includes("FROM applications a")) {
+                return {
+                  app_id: "APP-2",
+                  category: "family",
+                  quantity_adult: 2,
+                  lang: "ja",
+                  line_user_id: "U456",
+                  player_id: 2,
+                  game_id: 3,
+                  game_no: "G03",
+                  date: "2026-10-17",
+                  day_of_week: "土",
+                  opponent: "島根",
+                };
+              }
+              return null;
+            },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  const result = await sendApplicationConfirmPush(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    "APP-2"
+  );
+
+  assert.equal(result.pushed, true);
+  const pushCall = pushCalls.find((c) => c.url.includes("/v2/bot/message/push"));
+  assert.ok(pushCall, "push API が呼ばれていない");
+  const body = JSON.parse(pushCall.options.body);
+  assert.equal(body.to, "U456");
+  const text = body.messages[0].text;
+  assert.match(text, /申込を受け付けました/);
+  assert.match(text, /2026\/10\/17 vs 島根/);
+  assert.match(text, /家族席/);
+  assert.match(text, /今回の申込: 2枚/);
+  assert.match(text, /これまでの合計: 5枚/);
+});
+
+test("sendApplicationConfirmPush: en言語で英語文面をpush", async () => {
+  const pushCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    pushCalls.push({ url, options });
+    if (url.includes("quota/consumption")) {
+      return new Response(JSON.stringify({ totalUsage: 0 }), { status: 200 });
+    }
+    if (url.includes("quota") && !url.includes("consumption")) {
+      return new Response(JSON.stringify({ value: 1000 }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async first() {
+              if (sql.includes("COALESCE(SUM")) {
+                return { total: 3 };
+              }
+              if (sql.includes("FROM applications a")) {
+                return {
+                  app_id: "APP-3",
+                  category: "invite",
+                  quantity_adult: 3,
+                  lang: "en",
+                  line_user_id: "U789",
+                  player_id: 3,
+                  game_id: 5,
+                  game_no: "G05",
+                  date: "2026-10-24",
+                  day_of_week: "土",
+                  opponent: "千葉J",
+                };
+              }
+              return null;
+            },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  const result = await sendApplicationConfirmPush(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    "APP-3"
+  );
+
+  assert.equal(result.pushed, true);
+  const pushCall = pushCalls.find((c) => c.url.includes("/v2/bot/message/push"));
+  const body = JSON.parse(pushCall.options.body);
+  const text = body.messages[0].text;
+  assert.match(text, /Application Received/);
+  assert.match(text, /2026\/10\/24 vs 千葉J/);
+  assert.match(text, /Invitation/);
+  assert.match(text, /This application: 3 tickets/);
+  assert.match(text, /Total for this game: 3 tickets/);
+});
+
+test("sendApplicationConfirmPush: quota不足はpushをスキップ", async () => {
+  const pushCalls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    pushCalls.push({ url, options });
+    if (url.includes("quota/consumption")) {
+      return new Response(JSON.stringify({ totalUsage: 1000 }), { status: 200 });
+    }
+    if (url.includes("quota") && !url.includes("consumption")) {
+      return new Response(JSON.stringify({ value: 1000 }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+
+  const mockDB = {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async first() {
+              if (sql.includes("COALESCE(SUM")) {
+                return { total: 1 };
+              }
+              if (sql.includes("FROM applications a")) {
+                return {
+                  app_id: "APP-4",
+                  category: "paid",
+                  quantity_adult: 1,
+                  lang: "ja",
+                  line_user_id: "U999",
+                  player_id: 4,
+                  game_id: 7,
+                  game_no: "G07",
+                  date: "2026-11-07",
+                  day_of_week: "土",
+                  opponent: "群馬",
+                };
+              }
+              return null;
+            },
+          };
+        },
+      };
+    },
+    async batch() { return []; },
+  };
+
+  const result = await sendApplicationConfirmPush(
+    { DB: mockDB, LINE_CHANNEL_ACCESS_TOKEN: "line-token" },
+    "APP-4"
+  );
+
+  assert.equal(result.pushed, false);
+  assert.equal(result.reason, "quota_insufficient");
+  assert.equal(pushCalls.filter((c) => c.url.includes("/v2/bot/message/push")).length, 0);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 async function signBody(body, secret) {
   const encoder = new TextEncoder();

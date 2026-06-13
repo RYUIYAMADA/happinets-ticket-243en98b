@@ -2,6 +2,7 @@ import { error, HttpError, ok } from "./http.js";
 import {
   createApplication,
   deleteExpiredSessions,
+  findApplicationForConfirmPush,
   findApplicationForNotification,
   findPlayerByLineUserId,
   getConversationState,
@@ -143,6 +144,82 @@ export async function sendStatusUpdatePush(env, applicationId, status) {
   if (!record?.line_user_id) return { pushed: false, reason: "line_unlinked" };
   await pushToLine(env, record.line_user_id, [buildStatusMessage(record, status)]);
   return { pushed: true };
+}
+
+/**
+ * 申込完了後に選手のLINEへ確認メッセージをpushする。
+ * - line_user_id 未連携はスキップ（ログのみ）
+ * - LINE quota の push 残量を確認し不足ならログのみ
+ * @param {object} env - Cloudflare Workers env
+ * @param {string} appId - 作成した applicationId
+ * @returns {Promise<{pushed: boolean, reason?: string}>}
+ */
+export async function sendApplicationConfirmPush(env, appId) {
+  try {
+    const record = await findApplicationForConfirmPush(env.DB, appId);
+    if (!record) {
+      console.log("confirm_push_skip", { appId, reason: "record_not_found" });
+      return { pushed: false, reason: "record_not_found" };
+    }
+    if (!record.lineUserId) {
+      console.log("confirm_push_skip", { appId, reason: "line_unlinked" });
+      return { pushed: false, reason: "line_unlinked" };
+    }
+
+    // quota確認（push は友だち1人に1通 = 1消費）
+    const stats = await getLineStats(env);
+    if (typeof stats.remaining === "number" && stats.remaining < 1) {
+      console.log("confirm_push_skip", { appId, reason: "quota_insufficient", remaining: stats.remaining });
+      return { pushed: false, reason: "quota_insufficient", remaining: stats.remaining };
+    }
+
+    const message = buildApplicationConfirmMessage(record);
+    await pushToLine(env, record.lineUserId, [message]);
+    console.log("confirm_push_sent", { appId, gameNo: record.gameNo, lang: record.lang });
+    return { pushed: true };
+  } catch (err) {
+    // push失敗は申込成功を妨げない（ログのみ）
+    console.error("confirm_push_error", { appId, error: err?.message });
+    return { pushed: false, reason: "error" };
+  }
+}
+
+/**
+ * 申込確認メッセージを言語に応じて組み立てる。
+ * @param {object} record - findApplicationForConfirmPush の返却値
+ */
+function buildApplicationConfirmMessage(record) {
+  const dateStr = formatGameDate(record.date);
+  const gameTitle = `${dateStr} vs ${record.opponent}`;
+  const thisQty = record.quantityAdult;
+  const totalQty = record.totalQuantity;
+
+  let text;
+  if (record.lang === "en") {
+    const categoryEn = ticketTypeEn(record.category);
+    text = [
+      "[Application Received]",
+      `${gameTitle}`,
+      `Category: ${categoryEn}`,
+      `This application: ${thisQty} ticket${thisQty !== 1 ? "s" : ""}`,
+      `Total for this game: ${totalQty} ticket${totalQty !== 1 ? "s" : ""}`,
+    ].join("\n");
+  } else {
+    const categoryJa = ticketTypeJa(record.category);
+    text = [
+      "【申込を受け付けました】",
+      `${gameTitle}`,
+      `種別: ${categoryJa}`,
+      `今回の申込: ${thisQty}枚`,
+      `これまでの合計: ${totalQty}枚`,
+    ].join("\n");
+  }
+
+  return { type: "text", text };
+}
+
+function ticketTypeEn(value) {
+  return { invite: "Invitation", family: "Family Seat", paid: "Paid Ticket" }[value] || value;
 }
 
 async function processLineEvent(event, env, nowIso, randomToken) {

@@ -2698,7 +2698,8 @@ async function submitInvite() {
         quantityAdult: e.quantityAdult,
         receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
-        note: e.note
+        note: e.note,
+        lang
       });
       if (workerApiClient.isUnauthorizedResult(r)) {
         handleUnauthorizedNavigation();
@@ -2762,7 +2763,8 @@ async function submitFamily() {
         receiverName: e.receiverName,
         pickupMethod: e.pickupMethod,
         parkingCount: e.parkingCount,
-        note: e.note
+        note: e.note,
+        lang
       });
       if (workerApiClient.isUnauthorizedResult(r)) {
         handleUnauthorizedNavigation();
@@ -2822,7 +2824,8 @@ async function submitPaid() {
       paymentMethod: payment,
       pickupMethod: pickup,
       receiverName: document.getElementById('paid-receiver').value.trim(),
-      note: document.getElementById('paid-note').value
+      note: document.getElementById('paid-note').value,
+      lang
     });
     if (workerApiClient.isUnauthorizedResult(r)) {
       handleUnauthorizedNavigation();

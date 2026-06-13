@@ -6,7 +6,8 @@ import {
 } from "./domain.js";
 import { requireAdminSession, requirePlayerSession, requireTicketAdmin, verifyAdminPassword } from "./auth.js";
 import { error, HttpError, ok } from "./http.js";
-import { handleLineWebhook, handleScheduledLineJobs, sendStatusUpdatePush } from "./line.js";
+import { broadcastDeadlineAnnouncement, buildDeadlineAnnouncementMessages, handleLineWebhook, handleScheduledLineJobs, sendApplicationConfirmPush, sendStatusUpdatePush } from "./line.js";
+import { listGamesWithDeadlineTomorrow } from "./repo.js";
 import {
   cancelApplication,
   createAdminSession,
@@ -127,6 +128,9 @@ export function createApp(options = {}) {
         }
         if (request.method === "GET" && url.pathname === "/api/admin/line-stats") {
           return await handleLineStats(request, env, origin, nowIso);
+        }
+        if (request.method === "POST" && url.pathname === "/api/admin/announce-deadline") {
+          return await handleAnnounceDeadline(request, url, env, origin, nowIso);
         }
         {
           const gameMatch = url.pathname.match(/^\/api\/admin\/games\/([^/]+)$/);
@@ -355,6 +359,10 @@ async function handleCreateApplication(request, env, origin, nowIso, randomToken
   const payload = parseApplicationInput(body, nowIso);
   const appId = randomToken();
   await createApplication(env.DB, auth.session, payload, appId, nowIso);
+  // 申込完了後、非同期でLINE push（失敗しても申込成功を妨げない）
+  sendApplicationConfirmPush(env, appId).catch((err) => {
+    console.error("confirm_push_unhandled", { appId, error: err?.message });
+  });
   return ok({ applicationId: appId }, origin, 201);
 }
 
@@ -457,6 +465,33 @@ async function handleLineStats(request, env, origin, nowIso) {
   const auth = await requireAdminSession(request, env, origin, nowIso);
   if (!auth.ok) return auth.response;
   return ok(await getLineStats(env), origin);
+}
+
+/**
+ * POST /api/admin/announce-deadline?dryRun=true
+ * 締切前日アナウンスをプレビューまたは実送信する。
+ * dryRun=true: 文面のみ返却（実 broadcast しない）。
+ * dryRun=false or 省略: 実際に broadcast を実行。
+ */
+async function handleAnnounceDeadline(request, url, env, origin, nowIso) {
+  const auth = await requireAdminSession(request, env, origin, nowIso);
+  if (!auth.ok) return auth.response;
+  requireTicketAdmin(auth.session);
+
+  const dryRun = url.searchParams.get("dryRun") === "true";
+  const games = await listGamesWithDeadlineTomorrow(env.DB, nowIso);
+
+  if (dryRun) {
+    const messages = games.length ? buildDeadlineAnnouncementMessages(games) : [];
+    return ok({
+      dryRun: true,
+      gameCount: games.length,
+      preview: messages.map((m) => m.text).join("\n---\n"),
+    }, origin);
+  }
+
+  const result = await broadcastDeadlineAnnouncement(env, nowIso);
+  return ok({ dryRun: false, ...result }, origin);
 }
 
 async function readJson(request) {
