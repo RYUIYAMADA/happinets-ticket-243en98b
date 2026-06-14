@@ -251,6 +251,7 @@ async function processLineEvent(event, env, nowIso, randomToken) {
 
 async function handleTextMessage(env, replyToken, userId, linkedPlayer, text, nowIso) {
   if (!linkedPlayer) {
+    // 先頭ゼロ付き4桁以内の番号（例: 006 / 0005）を受け付ける。DB照合は repo の normalizePlayerNo で正規化済み
     if (/^\d{1,4}$/.test(text)) {
       const linkState = await getConversationState(env.DB, userId, nowIso) || {};
       if (isLineLinkLocked(linkState, nowIso)) {
@@ -447,8 +448,9 @@ async function handlePostback(env, replyToken, userId, linkedPlayer, data, nowIs
       await replyToLine(env, replyToken, [buildMainMenuMessage("セッションが切れました。もう一度「チケット申込」から始めてください。")]);
       return;
     }
-    await submitLineApplication(env, linkedPlayer, state, nowIso, randomToken);
+    // 二重加算防止: clearConversationState を先に実行し、2回目の確定タップは state=null で弾く
     await clearConversationState(env.DB, userId);
+    await submitLineApplication(env, linkedPlayer, state, nowIso, randomToken);
     await replyToLine(env, replyToken, [buildMainMenuMessage("申込が完了しました！担当から確定の連絡が届きます。")]);
     return;
   }

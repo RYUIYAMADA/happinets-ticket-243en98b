@@ -44,17 +44,15 @@ export function createApp(options = {}) {
 
   return {
     async fetch(request, env) {
-      const origin = env.ALLOWED_ORIGIN || "http://127.0.0.1:8787";
+      const origin = env.ALLOWED_ORIGIN || "";
       try {
         if (request.method === "OPTIONS") {
-          return new Response(null, {
-            status: 204,
-            headers: {
-              "Access-Control-Allow-Origin": origin,
-              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-              "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            },
-          });
+          const corsOpts = {
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          };
+          if (origin) corsOpts["Access-Control-Allow-Origin"] = origin;
+          return new Response(null, { status: 204, headers: corsOpts });
         }
 
         const url = new URL(request.url);
