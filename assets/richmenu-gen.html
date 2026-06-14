@@ -63,7 +63,7 @@
 
   /* ── メインラベル（日本語） ── */
   .label {
-    font-size: 130px;
+    font-size: 180px;
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1.0;
@@ -71,36 +71,6 @@
   }
   .label-reserve { color: #ffffff; }
   .label-status  { color: #2456e6; }
-
-  /* ── サブラベル（英語） ── */
-  .sublabel {
-    font-size: 68px;
-    font-weight: 500;
-    margin-top: 32px;
-    text-align: center;
-    letter-spacing: 0.06em;
-  }
-  .sublabel-reserve { color: rgba(255,255,255,0.80); }
-  .sublabel-status  { color: #5a78bf; }
-
-  /* ── タップヒント（底部） ── */
-  .tap-hint {
-    position: absolute;
-    bottom: 100px;
-    font-size: 48px;
-    font-weight: 500;
-    padding: 20px 60px;
-    border-radius: 999px;
-    letter-spacing: 0.08em;
-  }
-  .tap-hint-reserve {
-    background: rgba(255,255,255,0.18);
-    color: rgba(255,255,255,0.90);
-  }
-  .tap-hint-status {
-    background: #eaf0ff;
-    color: #2456e6;
-  }
 </style>
 </head>
 <body>
@@ -124,8 +94,6 @@
       </svg>
     </div>
     <div class="label label-reserve">予約する</div>
-    <div class="sublabel sublabel-reserve">Reserve</div>
-    <div class="tap-hint tap-hint-reserve">タップして申込 →</div>
   </div>
 
   <!-- ボタン2: マイ申込状況 / My Requests -->
@@ -146,8 +114,6 @@
       </svg>
     </div>
     <div class="label label-status">マイ申込状況</div>
-    <div class="sublabel sublabel-status">My Requests</div>
-    <div class="tap-hint tap-hint-status">タップして確認 →</div>
   </div>
 
 </div>
