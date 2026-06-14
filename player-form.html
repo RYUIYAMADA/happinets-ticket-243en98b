@@ -2682,8 +2682,7 @@ async function submitInvite() {
   if (entries.length === 0) { showAlert(t('selectOneGame'), 'error'); return; }
   const missingReceiver = entries.find(e => !e.receiverName);
   if (missingReceiver) { showAlert(tf('missingReceiverLabel', { game: getGameLabel(missingReceiver.gameId) }), 'error'); return; }
-  const duplicate = findDuplicateEntry(entries, 'invite');
-  if (duplicate) { showAlert(tf('alreadyAppliedInvite', { game: getGameLabel(duplicate.gameId) }), 'error'); return; }
+  // 追加申込を許可: 既存申込があっても送信可（Workerが枚数を加算して更新する）
 
   const btn = document.getElementById('inv-submit');
   btn.disabled = true;
@@ -2746,8 +2745,7 @@ async function submitFamily() {
   if (entries.length === 0) { showAlert(t('noGamesAccepting'), 'error'); return; }
   const missingReceiver = entries.find(e => !e.receiverName);
   if (missingReceiver) { showAlert(tf('missingReceiverLabel', { game: getGameLabel(missingReceiver.gameId) }), 'error'); return; }
-  const duplicate = findDuplicateEntry(entries, 'family');
-  if (duplicate) { showAlert(tf('alreadyAppliedFamily', { game: getGameLabel(duplicate.gameId) }), 'error'); return; }
+  // 追加申込を許可: 既存申込があっても送信可（Workerが枚数を加算して更新する）
 
   const btn = document.getElementById('fam-submit');
   btn.disabled = true;
@@ -2808,7 +2806,7 @@ async function submitPaid() {
 
   const g = games.find(g => g.gameId === gameId);
   if (g?.isDeadlinePassed) { showAlert(t('deadlinePassedMessage'), 'error'); return; }
-  if (hasExistingApplication(gameId, 'paid')) { showAlert(tf('alreadyAppliedPaid', { game: getGameLabel(gameId) }), 'error'); return; }
+  // 追加申込を許可: 既存申込があっても送信可（Workerが枚数を加算して更新する）
 
   const btn = document.getElementById('paid-submit');
   btn.disabled = true;
