@@ -1612,6 +1612,12 @@ function getPlayerName(playerId) {
 function getPlayerKey(player) {
   return String(player.playerNo || player.playerId);
 }
+function getReceiverNames(app) {
+  const rs = Array.isArray(app.receivers) ? app.receivers : [];
+  if (rs.length === 0) return app.receiverName || '—';
+  return rs.map(r => r.name || '').filter(Boolean).join('・') || app.receiverName || '—';
+}
+
 function getQtyText(app) {
   if (app.ticketType === 'family') {
     const parts = [];
@@ -1674,7 +1680,8 @@ function renderApplications() {
   if (currentTypeFilter) list = list.filter(a => a.ticketType === currentTypeFilter);
   if (q) list = list.filter(a =>
     getPlayerName(a.playerId).toLowerCase().includes(q) ||
-    getGameLabel(a.gameId).toLowerCase().includes(q)
+    getGameLabel(a.gameId).toLowerCase().includes(q) ||
+    getReceiverNames(a).toLowerCase().includes(q)
   );
   if (fs) list = list.filter(a => a.status === fs);
   const tbody = document.getElementById('app-tbody');
@@ -1703,7 +1710,7 @@ function buildAppRow(a, compact) {
       <dl class="mobile-details">
         <div><dt>申込ID</dt><dd>${a.applicationId}</dd></div>
         <div><dt>種別</dt><dd>${TICKET_LABELS[a.ticketType] || a.ticketType}</dd></div>
-        <div><dt>受取者</dt><dd>${esc(a.receiverName) || '—'}</dd></div>
+        <div><dt>受取者</dt><dd>${esc(getReceiverNames(a))}</dd></div>
         <div><dt>受取方法</dt><dd>${pickup || '—'}</dd></div>
         ${compact ? '' : `<div><dt>備考</dt><dd>${esc(a.note) || '—'}</dd></div>`}
         <div><dt>申込日時</dt><dd>${a.createdAt || '—'}</dd></div>
@@ -1725,7 +1732,7 @@ function buildAppRow(a, compact) {
       <td>${esc(getGameLabel(a.gameId))}</td>
       <td>${typeBadge}</td>
       <td class="qty-cell">${qtyCell}</td>
-      <td>${esc(a.receiverName) || '—'}</td>
+      <td>${esc(getReceiverNames(a))}</td>
       <td>${esc(pickup)}</td>
       <td style="font-size:12px">${esc(a.createdAt) || '—'}</td>
       <td>${statusSel}${mobileToggle}</td>
@@ -1737,7 +1744,7 @@ function buildAppRow(a, compact) {
     <td>${esc(getGameLabel(a.gameId))}</td>
     <td>${typeBadge}</td>
     <td class="qty-cell">${qtyCell}</td>
-    <td>${esc(a.receiverName) || '—'}</td>
+    <td>${esc(getReceiverNames(a))}</td>
     <td>${esc(pickup)}</td>
     <td style="font-size:12px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
     <td style="font-size:12px">${esc(a.createdAt) || '—'}</td>
