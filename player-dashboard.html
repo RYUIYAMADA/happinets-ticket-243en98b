@@ -979,6 +979,13 @@ window.LIFF_CONFIG = {
     }, true);
   }
 
+  function patchApplicationQuantity(applicationId, qty) {
+    return request(`/api/applications/${encodeURIComponent(applicationId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(qty),
+    }, true);
+  }
+
   function getAllApplications(params) {
     return request(withQuery("/api/admin/applications", params), { method: "GET" }, true);
   }
@@ -1065,6 +1072,7 @@ window.LIFF_CONFIG = {
     getApplications,
     submitApplication,
     cancelApplication,
+    patchApplicationQuantity,
     getAllApplications,
     updateApplicationStatus,
     getPlayers,
@@ -1231,6 +1239,17 @@ STRINGS.ja = {
   addRequest: '追加で申込む',
   applyGame: 'この試合に申込む',
   deadlineExpired: '申込期限が終了しています',
+  cancelBtn: 'キャンセル',
+  changeQtyBtn: '枚数を変更',
+  cancelConfirm: 'この申込をキャンセルしますか？',
+  changeQtyTitle: '枚数を変更',
+  changeQtyAdult: '大人',
+  changeQtyChild: '子供',
+  changeQtyInfant: '未就学児',
+  changeQtyZeroWarn: '枚数を0にするとキャンセルになります。よろしいですか？',
+  changeQtySave: '保存',
+  changeQtyCancel: '閉じる',
+  deadlinePassed: '受付終了',
 };
 STRINGS.en = {
   title: 'Request Status Dashboard',
@@ -1271,6 +1290,17 @@ STRINGS.en = {
   addRequest: 'Add Another Request',
   applyGame: 'Apply for This Game',
   deadlineExpired: 'The request deadline has passed.',
+  cancelBtn: 'Cancel',
+  changeQtyBtn: 'Change Quantity',
+  cancelConfirm: 'Cancel this request?',
+  changeQtyTitle: 'Change Quantity',
+  changeQtyAdult: 'Adult',
+  changeQtyChild: 'Child',
+  changeQtyInfant: 'Infant',
+  changeQtyZeroWarn: 'Setting all quantities to 0 will cancel this request. Continue?',
+  changeQtySave: 'Save',
+  changeQtyCancel: 'Close',
+  deadlinePassed: 'Closed',
 };
 // ────────────────────────────────────────────────────
 
@@ -1623,6 +1653,19 @@ function buildTicketSection(app, type, gameId, isPassed) {
   const seatText = app.seatType ? tf('seatTypeFmt', { seat: app.seatType }) : '';
   const cfg = STATUS_CONFIG[app.status] || { label: { ja: app.status, en: app.status }, cls: 'badge-none' };
 
+  const actionBtns = isPassed
+    ? `<div class="detail-row"><span class="detail-value detail-value-muted">${t('deadlinePassed')}</span></div>`
+    : `<div class="ticket-section-actions">
+        <button class="btn-qty-change" onclick="openQtyModal('${esc(app.applicationId)}','${esc(type)}',${app.quantityAdult||0},${app.quantityChild||0},${app.quantityInfant||0})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          ${t('changeQtyBtn')}
+        </button>
+        <button class="btn-cancel-app" onclick="cancelApp('${esc(app.applicationId)}','${esc(gameId)}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          ${t('cancelBtn')}
+        </button>
+      </div>`;
+
   return `
     <div class="ticket-section">
       <div class="ticket-section-header">
@@ -1634,6 +1677,7 @@ function buildTicketSection(app, type, gameId, isPassed) {
       <div class="detail-row"><span class="detail-label">${t('detailPickup')}</span><span class="detail-value">${pickupLabel}</span></div>
       ${app.note ? `<div class="detail-row"><span class="detail-label">${t('detailNote')}</span><span class="detail-value">${esc(app.note)}</span></div>` : ''}
       <div class="detail-row"><span class="detail-label">${t('detailDate')}</span><span class="detail-value detail-value-muted">${app.createdAt}</span></div>
+      ${actionBtns}
     </div>`;
 }
 
@@ -1770,6 +1814,111 @@ function demoCallGAS(method, params) {
     return { ok: true, data: { cancelled: true } };
   }
   return { ok: false, error: 'デモ未対応' };
+}
+</script>
+
+<!-- 枚数変更モーダル -->
+<div id="qty-modal" role="dialog" aria-modal="true" aria-labelledby="qty-modal-title" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-card,12px);padding:24px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 id="qty-modal-title" style="margin:0 0 16px;font-size:16px;font-weight:700;color:var(--text);" data-i18n-live="changeQtyTitle">枚数を変更</h3>
+    <input type="hidden" id="qty-modal-app-id">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:14px;color:var(--text);" id="qty-adult-label">大人</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="qty-stepper" onclick="stepQty('adult',-1)" aria-label="-">−</button>
+          <input type="number" id="qty-adult" min="0" max="10" value="0" style="width:48px;text-align:center;font-size:16px;border:1px solid var(--border);border-radius:6px;padding:4px;">
+          <button type="button" class="qty-stepper" onclick="stepQty('adult',1)" aria-label="+">＋</button>
+        </div>
+      </div>
+      <div id="qty-child-row" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:14px;color:var(--text);" id="qty-child-label">子供</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="qty-stepper" onclick="stepQty('child',-1)" aria-label="-">−</button>
+          <input type="number" id="qty-child" min="0" max="10" value="0" style="width:48px;text-align:center;font-size:16px;border:1px solid var(--border);border-radius:6px;padding:4px;">
+          <button type="button" class="qty-stepper" onclick="stepQty('child',1)" aria-label="+">＋</button>
+        </div>
+      </div>
+      <div id="qty-infant-row" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:14px;color:var(--text);" id="qty-infant-label">未就学児</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="qty-stepper" onclick="stepQty('infant',-1)" aria-label="-">−</button>
+          <input type="number" id="qty-infant" min="0" max="10" value="0" style="width:48px;text-align:center;font-size:16px;border:1px solid var(--border);border-radius:6px;padding:4px;">
+          <button type="button" class="qty-stepper" onclick="stepQty('infant',1)" aria-label="+">＋</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button type="button" onclick="saveQtyModal()" style="flex:1;padding:12px;background:var(--accent-cta,#f5a623);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;" data-i18n-live="changeQtySave">保存</button>
+      <button type="button" onclick="closeQtyModal()" style="flex:1;padding:12px;background:var(--bg-subtle);color:var(--text);border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;" data-i18n-live="changeQtyCancel">閉じる</button>
+    </div>
+  </div>
+</div>
+<style>
+.btn-cancel-app,.btn-qty-change{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;min-height:36px;}
+.btn-cancel-app{background:var(--bg-subtle);color:var(--text-muted,#666);}
+.btn-cancel-app:hover{background:#fee2e2;color:#b91c1c;}
+.btn-qty-change{background:var(--bg-subtle);color:var(--text);}
+.btn-qty-change:hover{background:var(--bg-hover,#f0f0f0);}
+.ticket-section-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.qty-stepper{width:32px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+</style>
+<script>
+let _qtyModalType = 'invite';
+function openQtyModal(appId, type, adult, child, infant) {
+  _qtyModalType = type;
+  document.getElementById('qty-modal-app-id').value = appId;
+  document.getElementById('qty-adult').value = adult;
+  document.getElementById('qty-child').value = child;
+  document.getElementById('qty-infant').value = infant;
+  // family以外は子供・乳幼児欄を非表示
+  const showAll = type === 'family';
+  document.getElementById('qty-child-row').style.display = showAll ? '' : 'none';
+  document.getElementById('qty-infant-row').style.display = showAll ? '' : 'none';
+  // i18n更新
+  document.querySelectorAll('[data-i18n-live]').forEach(el => {
+    const k = el.getAttribute('data-i18n-live');
+    if (k) el.textContent = t(k);
+  });
+  document.getElementById('qty-adult-label').textContent = t('changeQtyAdult');
+  document.getElementById('qty-child-label').textContent = t('changeQtyChild');
+  document.getElementById('qty-infant-label').textContent = t('changeQtyInfant');
+  const modal = document.getElementById('qty-modal');
+  modal.style.display = 'flex';
+  modal.addEventListener('click', _qtyModalBackdropClose);
+}
+function _qtyModalBackdropClose(e) {
+  if (e.target === document.getElementById('qty-modal')) closeQtyModal();
+}
+function closeQtyModal() {
+  const modal = document.getElementById('qty-modal');
+  modal.style.display = 'none';
+  modal.removeEventListener('click', _qtyModalBackdropClose);
+}
+function stepQty(field, delta) {
+  const input = document.getElementById('qty-' + field);
+  const next = Math.min(10, Math.max(0, (parseInt(input.value, 10) || 0) + delta));
+  input.value = next;
+}
+async function saveQtyModal() {
+  const appId = document.getElementById('qty-modal-app-id').value;
+  const qA = parseInt(document.getElementById('qty-adult').value, 10) || 0;
+  const qC = parseInt(document.getElementById('qty-child').value, 10) || 0;
+  const qI = parseInt(document.getElementById('qty-infant').value, 10) || 0;
+  if (qA + qC + qI === 0) {
+    if (!confirm(t('changeQtyZeroWarn'))) return;
+  }
+  try {
+    const result = await workerApiClient.patchApplicationQuantity(appId, {
+      quantityAdult: qA, quantityChild: qC, quantityInfant: qI
+    });
+    if (workerApiClient.isUnauthorizedResult(result)) { handleUnauthorizedNavigation(); return; }
+    if (!result.ok) throw new Error(result.error?.message || result.error);
+    closeQtyModal();
+    await loadData();
+  } catch (e) {
+    alert('変更失敗: ' + e.message);
+  }
 }
 </script>
 

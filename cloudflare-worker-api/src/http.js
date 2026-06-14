@@ -24,7 +24,7 @@ export function error(status, code, message, origin) {
 export function corsHeaders(origin) {
   const headers = {
     "Content-Type": "application/json; charset=UTF-8",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
   // origin が空文字の場合は CORS ヘッダーを付与しない（env.ALLOWED_ORIGIN 未設定時のフォールバック防止）

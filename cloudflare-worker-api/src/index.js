@@ -2,6 +2,7 @@ import {
   parseApplicationInput,
   parseGameInput,
   parsePlayerInput,
+  parseQuantityInput,
   parseStatusInput,
 } from "./domain.js";
 import { requireAdminSession, requirePlayerSession, requireTicketAdmin, verifyAdminPassword } from "./auth.js";
@@ -17,6 +18,7 @@ import {
   createPlayerSession,
   deleteGame,
   findAdminByRole,
+  findGameByIdentifier,
   findPlayerByLineUserId,
   findPlayerByPlayerNo,
   getLineStats,
@@ -28,6 +30,7 @@ import {
   logoutSession,
   recordAdminLoginFailure,
   replaceSeason,
+  setApplicationQuantity,
   updateApplicationStatus,
   updateGame,
   updateGameDeadline,
@@ -48,7 +51,7 @@ export function createApp(options = {}) {
       try {
         if (request.method === "OPTIONS") {
           const corsOpts = {
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
           };
           if (origin) corsOpts["Access-Control-Allow-Origin"] = origin;
@@ -91,6 +94,13 @@ export function createApp(options = {}) {
             return await handleCancelApplication(request, env, origin, nowIso, decodeURIComponent(matched[1]));
           }
         }
+        {
+          // PATCH /api/applications/:id — 利用者が枚数を絶対値で変更（締切後403・他人申込403）
+          const matched = url.pathname.match(/^\/api\/applications\/([^/]+)$/);
+          if (request.method === "PATCH" && matched) {
+            return await handlePatchApplication(request, env, origin, nowIso, decodeURIComponent(matched[1]));
+          }
+        }
         if (request.method === "GET" && url.pathname === "/api/admin/applications") {
           return await handleAdminApplications(request, url, env, origin, nowIso);
         }
@@ -98,6 +108,13 @@ export function createApp(options = {}) {
           const matched = url.pathname.match(/^\/api\/admin\/applications\/([^/]+)\/status$/);
           if (request.method === "PUT" && matched) {
             return await handleAdminUpdateStatus(request, env, origin, nowIso, decodeURIComponent(matched[1]));
+          }
+        }
+        {
+          // PUT /api/admin/applications/:id — 管理者が枚数を絶対値で変更（締切無視）
+          const matched = url.pathname.match(/^\/api\/admin\/applications\/([^/]+)$/);
+          if (request.method === "PUT" && matched) {
+            return await handleAdminUpdateApplicationQuantity(request, env, origin, nowIso, decodeURIComponent(matched[1]));
           }
         }
         if (request.method === "GET" && url.pathname === "/api/admin/players") {
@@ -371,6 +388,68 @@ async function handleCancelApplication(request, env, origin, nowIso, appId) {
   const auth = await requirePlayerSession(request, env, origin, nowIso);
   if (!auth.ok) return auth.response;
   return ok(await cancelApplication(env.DB, appId, auth.session.player_id, nowIso), origin);
+}
+
+/**
+ * PATCH /api/applications/:id
+ * 利用者が枚数を絶対値で変更する。
+ * - 締切後は 403
+ * - 他人の申込は 403（setApplicationQuantity内でplayerIdチェック）
+ * - 合計0枚でキャンセル扱い
+ */
+async function handlePatchApplication(request, env, origin, nowIso, appId) {
+  const auth = await requirePlayerSession(request, env, origin, nowIso);
+  if (!auth.ok) return auth.response;
+
+  // 申込の game を取得して締切確認
+  const appRow = await env.DB.prepare(
+    `SELECT a.player_id, g.deadline FROM applications a INNER JOIN games g ON g.id = a.game_id WHERE a.app_id = ?1`
+  ).bind(appId).first();
+  if (!appRow) throw new HttpError(404, "NOT_FOUND", "Application not found");
+
+  // 所有権を先にチェック（締切より先にチェックすることで情報漏洩を防ぐ）
+  if (appRow.player_id !== auth.session.player_id) {
+    throw new HttpError(403, "FORBIDDEN", "Forbidden");
+  }
+
+  // 締切チェック
+  const dl = appRow.deadline ? `${appRow.deadline}T03:00:00.000Z` : null;
+  if (dl && dl < nowIso) {
+    throw new HttpError(403, "DEADLINE_PASSED", "Deadline has passed");
+  }
+
+  const body = await readJson(request);
+  const qty = parseQuantityInput(body);
+  return ok(
+    await setApplicationQuantity(
+      env.DB, appId, qty,
+      `player:${auth.session.player_id}`,
+      auth.session.player_id,
+      nowIso
+    ),
+    origin
+  );
+}
+
+/**
+ * PUT /api/admin/applications/:id
+ * 管理者が枚数を絶対値で変更する（締切を無視、admin_sessions 必須）。
+ */
+async function handleAdminUpdateApplicationQuantity(request, env, origin, nowIso, appId) {
+  const auth = await requireAdminSession(request, env, origin, nowIso);
+  if (!auth.ok) return auth.response;
+  requireTicketAdmin(auth.session);
+  const body = await readJson(request);
+  const qty = parseQuantityInput(body);
+  return ok(
+    await setApplicationQuantity(
+      env.DB, appId, qty,
+      `admin:${auth.session.admin_role}`,
+      null,  // playerId=null → 所有権チェックなし（管理者は全申込を操作可）
+      nowIso
+    ),
+    origin
+  );
 }
 
 async function handleListOwnApplications(request, url, env, origin, nowIso) {

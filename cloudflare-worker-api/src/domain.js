@@ -144,6 +144,30 @@ export function parsePlayerInput(body, playerNoFromPath) {
   };
 }
 
+/**
+ * 枚数絶対値パース（利用者 PATCH / 管理者 PUT 共通）。
+ * 各値は 0〜10 の整数のみ許可。
+ */
+export function parseQuantityInput(body) {
+  const quantityAdult = toInt(body?.quantityAdult, null);
+  const quantityChild = toInt(body?.quantityChild, null);
+  const quantityInfant = toInt(body?.quantityInfant, null);
+
+  if (quantityAdult === null && quantityChild === null && quantityInfant === null) {
+    throw new HttpError(400, "BAD_REQUEST", "at least one of quantityAdult/quantityChild/quantityInfant is required");
+  }
+
+  const qA = quantityAdult ?? 0;
+  const qC = quantityChild ?? 0;
+  const qI = quantityInfant ?? 0;
+
+  if ([qA, qC, qI].some((v) => v < 0 || v > 10 || !Number.isInteger(v))) {
+    throw new HttpError(400, "BAD_REQUEST", "quantity values must be integers between 0 and 10");
+  }
+
+  return { quantityAdult: qA, quantityChild: qC, quantityInfant: qI };
+}
+
 export function parseGameInput(body, gameNoFromPath) {
   const gameNo = gameNoFromPath || body?.gameNo;
   const parsed = {

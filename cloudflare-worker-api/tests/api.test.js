@@ -549,3 +549,159 @@ test("GET /api/admin/players omits lineUserId and exposes lineLinked", async () 
     isActive: true,
   });
 });
+
+// ──────────────────────────────────────────────────────────────
+// PATCH /api/applications/:id — 利用者の枚数変更テスト群
+// ──────────────────────────────────────────────────────────────
+
+function makePlayerSession(playerId = 6) {
+  return {
+    first(sql) {
+      // セッション検証
+      if (sql.includes("INNER JOIN players")) {
+        return { token: "player-token", player_id: playerId, expires_at: "2099-06-13T06:00:00.000Z", player_no: String(playerId), name: `#${playerId}` };
+      }
+      // 申込の game / player 取得
+      if (sql.includes("INNER JOIN games")) {
+        return { player_id: playerId, deadline: "2099-10-01" };
+      }
+      // setApplicationQuantity の SELECT app_id
+      if (sql.includes("FROM applications WHERE app_id")) {
+        return { app_id: "APP-1", player_id: playerId };
+      }
+      return null;
+    },
+  };
+}
+
+test("PATCH /api/applications/:id reduces quantity for own application", async () => {
+  const app = createApp({ now: () => "2026-06-13T00:00:00.000Z" });
+  const request = new Request("https://example.com/api/applications/APP-1", {
+    method: "PATCH",
+    headers: { Authorization: "Bearer player-token", "Content-Type": "application/json" },
+    body: JSON.stringify({ quantityAdult: 1, quantityChild: 0, quantityInfant: 0 }),
+  });
+  const mock = createDbMock(makePlayerSession(6));
+  const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+
+  const response = await app.fetch(request, env, {});
+  const json = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(json.ok, true);
+  assert.equal(json.data.quantityAdult, 1);
+  assert.equal(json.data.status, "pending");
+});
+
+test("PATCH /api/applications/:id sets status=cancelled when all quantities are 0", async () => {
+  const app = createApp({ now: () => "2026-06-13T00:00:00.000Z" });
+  const request = new Request("https://example.com/api/applications/APP-1", {
+    method: "PATCH",
+    headers: { Authorization: "Bearer player-token", "Content-Type": "application/json" },
+    body: JSON.stringify({ quantityAdult: 0, quantityChild: 0, quantityInfant: 0 }),
+  });
+  const mock = createDbMock(makePlayerSession(6));
+  const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+
+  const response = await app.fetch(request, env, {});
+  const json = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(json.data.status, "cancelled");
+});
+
+test("PATCH /api/applications/:id returns 403 when player_id does not match (IDOR prevention)", async () => {
+  const app = createApp({ now: () => "2026-06-13T00:00:00.000Z" });
+  const request = new Request("https://example.com/api/applications/APP-999", {
+    method: "PATCH",
+    headers: { Authorization: "Bearer player-token", "Content-Type": "application/json" },
+    body: JSON.stringify({ quantityAdult: 1 }),
+  });
+  // セッションは player_id=6 だが、申込の player_id は 99（他人）
+  const mock = createDbMock({
+    first(sql) {
+      if (sql.includes("INNER JOIN players")) {
+        return { token: "player-token", player_id: 6, expires_at: "2099-06-13T06:00:00.000Z", player_no: "6", name: "#6" };
+      }
+      if (sql.includes("INNER JOIN games")) {
+        return { player_id: 99, deadline: "2099-10-01" };  // 他人の申込
+      }
+      return null;
+    },
+  });
+  const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+
+  const response = await app.fetch(request, env, {});
+  assert.equal(response.status, 403);
+});
+
+test("PATCH /api/applications/:id returns 403 after deadline (player cannot change)", async () => {
+  const app = createApp({ now: () => "2026-06-13T10:00:00.000Z" });  // UTC 10:00
+  const request = new Request("https://example.com/api/applications/APP-1", {
+    method: "PATCH",
+    headers: { Authorization: "Bearer player-token", "Content-Type": "application/json" },
+    body: JSON.stringify({ quantityAdult: 1 }),
+  });
+  const mock = createDbMock({
+    first(sql) {
+      if (sql.includes("INNER JOIN players")) {
+        return { token: "player-token", player_id: 6, expires_at: "2099-06-13T06:00:00.000Z", player_no: "6", name: "#6" };
+      }
+      if (sql.includes("INNER JOIN games")) {
+        // deadline=2026-06-13 → 締切 = 2026-06-13T03:00:00Z、now=10:00Z なので過ぎている
+        return { player_id: 6, deadline: "2026-06-13" };
+      }
+      return null;
+    },
+  });
+  const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+
+  const response = await app.fetch(request, env, {});
+  assert.equal(response.status, 403);
+  const json = await response.json();
+  assert.equal(json.error.code, "DEADLINE_PASSED");
+});
+
+test("PUT /api/admin/applications/:id admin can update quantity after deadline", async () => {
+  const app = createApp({ now: () => "2026-06-13T10:00:00.000Z" });
+  const request = new Request("https://example.com/api/admin/applications/APP-1", {
+    method: "PUT",
+    headers: { Authorization: "Bearer admin-token", "Content-Type": "application/json" },
+    body: JSON.stringify({ quantityAdult: 3, quantityChild: 1, quantityInfant: 0 }),
+  });
+  const mock = createDbMock({
+    first(sql) {
+      if (sql.includes("FROM admin_sessions")) {
+        return { token: "admin-token", admin_role: "ticket", expires_at: "2099-06-13T06:00:00.000Z" };
+      }
+      if (sql.includes("FROM applications WHERE app_id")) {
+        return { app_id: "APP-1", player_id: 6 };
+      }
+      return null;
+    },
+  });
+  const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+
+  const response = await app.fetch(request, env, {});
+  const json = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(json.ok, true);
+  assert.equal(json.data.quantityAdult, 3);
+  assert.equal(json.data.quantityChild, 1);
+  assert.equal(json.data.status, "pending");
+});
+
+test("PUT /api/admin/applications/:id requires admin session", async () => {
+  const app = createApp({ now: () => "2026-06-13T00:00:00.000Z" });
+  const request = new Request("https://example.com/api/admin/applications/APP-1", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ quantityAdult: 1 }),
+  });
+  const { DB } = createDbMock();
+  const env = { DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+
+  const response = await app.fetch(request, env, {});
+  assert.equal(response.status, 401);
+});

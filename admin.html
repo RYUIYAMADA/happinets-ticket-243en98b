@@ -1364,6 +1364,13 @@ window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.
     }, true);
   }
 
+  function adminUpdateApplicationQuantity(applicationId, qty) {
+    return request(`/api/admin/applications/${encodeURIComponent(applicationId)}`, {
+      method: "PUT",
+      body: JSON.stringify(qty),
+    }, true);
+  }
+
   function getPlayers() {
     return request("/api/admin/players", { method: "GET" }, true);
   }
@@ -1442,6 +1449,7 @@ window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.
     cancelApplication,
     getAllApplications,
     updateApplicationStatus,
+    adminUpdateApplicationQuantity,
     getPlayers,
     addPlayer,
     updatePlayer,
@@ -1702,13 +1710,21 @@ function buildAppRow(a, compact) {
       </dl>
     </td>
   </tr>`;
+  const qtyCell = adminRole === 'manager'
+    ? esc(getQtyText(a))
+    : `<span id="qty-disp-${esc(a.applicationId)}">${esc(getQtyText(a))}</span>
+       <button type="button" class="btn-admin-qty-edit" title="枚数を変更"
+         onclick="openAdminQtyModal('${esc(a.applicationId)}','${esc(a.ticketType)}',${a.quantityAdult||0},${a.quantityChild||0},${a.quantityInfant||0})"
+         aria-label="枚数変更">
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+       </button>`;
   if (compact) {
     return `<tr>
       <td style="font-size:12px">${esc(a.applicationId)}</td>
       <td>${esc(getPlayerName(a.playerId))}</td>
       <td>${esc(getGameLabel(a.gameId))}</td>
       <td>${typeBadge}</td>
-      <td>${esc(getQtyText(a))}</td>
+      <td class="qty-cell">${qtyCell}</td>
       <td>${esc(a.receiverName) || '—'}</td>
       <td>${esc(pickup)}</td>
       <td style="font-size:12px">${esc(a.createdAt) || '—'}</td>
@@ -1720,7 +1736,7 @@ function buildAppRow(a, compact) {
     <td>${esc(getPlayerName(a.playerId))}</td>
     <td>${esc(getGameLabel(a.gameId))}</td>
     <td>${typeBadge}</td>
-    <td>${esc(getQtyText(a))}</td>
+    <td class="qty-cell">${qtyCell}</td>
     <td>${esc(a.receiverName) || '—'}</td>
     <td>${esc(pickup)}</td>
     <td style="font-size:12px; max-width:100px; word-break:break-all">${esc(a.note) || '—'}</td>
@@ -2416,6 +2432,107 @@ function demoCallGAS(method, params) {
   }
 
   return { ok: false, error: 'デモ未対応: ' + params.action };
+}
+</script>
+
+<!-- 管理者用 枚数変更モーダル -->
+<div id="admin-qty-modal" role="dialog" aria-modal="true" aria-labelledby="admin-qty-modal-title" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:12px;padding:24px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <h3 id="admin-qty-modal-title" style="margin:0 0 16px;font-size:16px;font-weight:700;color:var(--text);">枚数を変更</h3>
+    <input type="hidden" id="admin-qty-modal-app-id">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:14px;color:var(--text);">大人</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="qty-stepper" onclick="adminStepQty('adult',-1)" aria-label="-">−</button>
+          <input type="number" id="admin-qty-adult" min="0" max="10" value="0" style="width:48px;text-align:center;font-size:16px;border:1px solid var(--border);border-radius:6px;padding:4px;">
+          <button type="button" class="qty-stepper" onclick="adminStepQty('adult',1)" aria-label="+">＋</button>
+        </div>
+      </div>
+      <div id="admin-qty-child-row" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:14px;color:var(--text);">子供</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="qty-stepper" onclick="adminStepQty('child',-1)" aria-label="-">−</button>
+          <input type="number" id="admin-qty-child" min="0" max="10" value="0" style="width:48px;text-align:center;font-size:16px;border:1px solid var(--border);border-radius:6px;padding:4px;">
+          <button type="button" class="qty-stepper" onclick="adminStepQty('child',1)" aria-label="+">＋</button>
+        </div>
+      </div>
+      <div id="admin-qty-infant-row" style="display:flex;align-items:center;justify-content:space-between;">
+        <label style="font-size:14px;color:var(--text);">未就学児</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="qty-stepper" onclick="adminStepQty('infant',-1)" aria-label="-">−</button>
+          <input type="number" id="admin-qty-infant" min="0" max="10" value="0" style="width:48px;text-align:center;font-size:16px;border:1px solid var(--border);border-radius:6px;padding:4px;">
+          <button type="button" class="qty-stepper" onclick="adminStepQty('infant',1)" aria-label="+">＋</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <button type="button" onclick="saveAdminQtyModal()" style="flex:1;padding:12px;background:var(--accent-cta,#f5a623);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;">保存</button>
+      <button type="button" onclick="closeAdminQtyModal()" style="flex:1;padding:12px;background:var(--bg-subtle);color:var(--text);border:none;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;">閉じる</button>
+    </div>
+  </div>
+</div>
+<style>
+.btn-admin-qty-edit{display:inline-flex;align-items:center;padding:3px 5px;margin-left:4px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-muted,#666);cursor:pointer;vertical-align:middle;}
+.btn-admin-qty-edit:hover{background:var(--bg-hover,#f0f0f0);color:var(--accent,#2456E6);}
+.qty-cell{white-space:nowrap;}
+.qty-stepper{width:32px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--bg-subtle);font-size:18px;cursor:pointer;}
+</style>
+<script>
+let _adminQtyType = 'invite';
+function openAdminQtyModal(appId, type, adult, child, infant) {
+  _adminQtyType = type;
+  document.getElementById('admin-qty-modal-app-id').value = appId;
+  document.getElementById('admin-qty-adult').value = adult;
+  document.getElementById('admin-qty-child').value = child;
+  document.getElementById('admin-qty-infant').value = infant;
+  const showAll = type === 'family';
+  document.getElementById('admin-qty-child-row').style.display = showAll ? '' : 'none';
+  document.getElementById('admin-qty-infant-row').style.display = showAll ? '' : 'none';
+  const modal = document.getElementById('admin-qty-modal');
+  modal.style.display = 'flex';
+  modal.addEventListener('click', _adminQtyBackdrop);
+}
+function _adminQtyBackdrop(e) {
+  if (e.target === document.getElementById('admin-qty-modal')) closeAdminQtyModal();
+}
+function closeAdminQtyModal() {
+  const modal = document.getElementById('admin-qty-modal');
+  modal.style.display = 'none';
+  modal.removeEventListener('click', _adminQtyBackdrop);
+}
+function adminStepQty(field, delta) {
+  const input = document.getElementById('admin-qty-' + field);
+  input.value = Math.min(10, Math.max(0, (parseInt(input.value, 10) || 0) + delta));
+}
+async function saveAdminQtyModal() {
+  const appId = document.getElementById('admin-qty-modal-app-id').value;
+  const qA = parseInt(document.getElementById('admin-qty-adult').value, 10) || 0;
+  const qC = parseInt(document.getElementById('admin-qty-child').value, 10) || 0;
+  const qI = parseInt(document.getElementById('admin-qty-infant').value, 10) || 0;
+  if (qA + qC + qI === 0 && !confirm('枚数を0にするとキャンセルになります。よろしいですか？')) return;
+  try {
+    const r = await workerApiClient.adminUpdateApplicationQuantity(appId, {
+      quantityAdult: qA, quantityChild: qC, quantityInfant: qI
+    });
+    if (handleUnauthorized(r)) return;
+    if (!r.ok) throw new Error(r.error?.message || r.error);
+    // ローカルデータ更新
+    const idx = applications.findIndex(a => a.applicationId === appId);
+    if (idx >= 0) {
+      applications[idx].quantityAdult = qA;
+      applications[idx].quantityChild = qC;
+      applications[idx].quantityInfant = qI;
+      if (r.data?.status) applications[idx].status = r.data.status;
+    }
+    closeAdminQtyModal();
+    updateKPI();
+    renderPending();
+    renderApplications();
+    showToast('枚数を更新しました');
+  } catch (e) {
+    showToast('更新失敗: ' + e.message);
+  }
 }
 </script>
 </body>

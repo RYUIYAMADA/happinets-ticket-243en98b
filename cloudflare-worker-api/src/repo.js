@@ -216,6 +216,40 @@ export async function createApplication(db, playerSession, payload, appId, nowIs
   await db.batch(statements);
 }
 
+/**
+ * 枚数を絶対値で設定する（利用者・管理者共通）。
+ * 合計0枚の場合は status='cancelled' に自動変更。
+ * playerId が渡された場合は所有権チェックも行う（利用者ルート）。
+ */
+export async function setApplicationQuantity(db, appId, { quantityAdult, quantityChild, quantityInfant }, actorAudit, playerId = null, nowIso) {
+  // 存在確認 + 所有権確認
+  const existing = await db.prepare(
+    `SELECT app_id, player_id FROM applications WHERE app_id = ?1`
+  ).bind(appId).first();
+  if (!existing) throw new HttpError(404, "NOT_FOUND", "Application not found");
+  if (playerId !== null && existing.player_id !== playerId) {
+    throw new HttpError(403, "FORBIDDEN", "Forbidden");
+  }
+
+  const qA = Math.max(0, quantityAdult);
+  const qC = Math.max(0, quantityChild);
+  const qI = Math.max(0, quantityInfant);
+  const newStatus = (qA + qC + qI === 0) ? "cancelled" : "pending";
+
+  await db.batch([
+    db.prepare(
+      `UPDATE applications
+       SET quantity_adult = ?1, quantity_child = ?2, quantity_infant = ?3,
+           status = ?4, updated_at = ?5
+       WHERE app_id = ?6`
+    ).bind(qA, qC, qI, newStatus, nowIso, appId),
+    audit(db, actorAudit, "quantity_update", `application:${appId}`, {
+      quantityAdult: qA, quantityChild: qC, quantityInfant: qI, status: newStatus
+    }),
+  ]);
+  return { applicationId: appId, quantityAdult: qA, quantityChild: qC, quantityInfant: qI, status: newStatus };
+}
+
 export async function cancelApplication(db, appId, playerId, nowIso) {
   const result = await db.batch([
     db.prepare(
