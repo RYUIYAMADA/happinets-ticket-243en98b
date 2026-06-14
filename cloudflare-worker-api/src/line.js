@@ -197,30 +197,67 @@ function buildApplicationConfirmMessage(record) {
   const dateStr = formatGameDate(record.date);
   const gameTitle = `${dateStr} vs ${record.opponent}`;
   const thisQty = record.quantityAdult;
-  const totalQty = record.totalQuantity;
+  const totals = record.categoryTotals || {};
 
   let text;
   if (record.lang === "en") {
     const categoryEn = ticketTypeEn(record.category);
+    const totalLines = buildCategoryTotalLinesEn(totals);
     text = [
       "[Application Received]",
       `${gameTitle}`,
       `Category: ${categoryEn}`,
       `This application: ${thisQty} ticket${thisQty !== 1 ? "s" : ""}`,
-      `Total for this game: ${totalQty} ticket${totalQty !== 1 ? "s" : ""}`,
+      "Total for this game (by type):",
+      ...totalLines,
     ].join("\n");
   } else {
     const categoryJa = ticketTypeJa(record.category);
+    const totalLines = buildCategoryTotalLinesJa(totals);
     text = [
       "【申込を受け付けました】",
       `${gameTitle}`,
       `種別: ${categoryJa}`,
       `今回の申込: ${thisQty}枚`,
-      `これまでの合計: ${totalQty}枚`,
+      "これまでの合計（種別ごと）:",
+      ...totalLines,
     ].join("\n");
   }
 
   return { type: "text", text };
+}
+
+/**
+ * 種別ごとの累計行（日本語）。申込のある種別のみ出力。
+ * @param {{invite?: number, family?: number, paid?: number}} totals
+ */
+function buildCategoryTotalLinesJa(totals) {
+  const map = [
+    ["invite", "招待"],
+    ["family", "家族席"],
+    ["paid", "2F自由(有料)"],
+  ];
+  return map
+    .filter(([key]) => Number(totals[key] || 0) > 0)
+    .map(([key, label]) => `  ${label}: ${totals[key]}枚`);
+}
+
+/**
+ * 種別ごとの累計行（英語）。申込のある種別のみ出力。
+ * @param {{invite?: number, family?: number, paid?: number}} totals
+ */
+function buildCategoryTotalLinesEn(totals) {
+  const map = [
+    ["invite", "Invite"],
+    ["family", "Family Seats"],
+    ["paid", "2F Free (Paid)"],
+  ];
+  return map
+    .filter(([key]) => Number(totals[key] || 0) > 0)
+    .map(([key, label]) => {
+      const n = Number(totals[key]);
+      return `  ${label}: ${n} ticket${n !== 1 ? "s" : ""}`;
+    });
 }
 
 function ticketTypeEn(value) {

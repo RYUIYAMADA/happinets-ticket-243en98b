@@ -460,6 +460,7 @@ test("sendApplicationConfirmPush: line_user_id 未連携はスキップ", async 
               }
               return null;
             },
+            async all() { return { results: [] }; },
           };
         },
       };
@@ -496,10 +497,6 @@ test("sendApplicationConfirmPush: ja言語で正しい文面・枚数をpush", a
         bind(...values) {
           return {
             async first() {
-              if (sql.includes("COALESCE(SUM")) {
-                // 今回2枚含む累計 = 5枚
-                return { total: 5 };
-              }
               if (sql.includes("FROM applications a")) {
                 return {
                   app_id: "APP-2",
@@ -516,6 +513,13 @@ test("sendApplicationConfirmPush: ja言語で正しい文面・枚数をpush", a
                 };
               }
               return null;
+            },
+            async all() {
+              if (sql.includes("GROUP BY category")) {
+                // 今回2枚含む家族席累計 = 5枚、招待 = 3枚
+                return { results: [{ category: "family", total: 5 }, { category: "invite", total: 3 }] };
+              }
+              return { results: [] };
             },
           };
         },
@@ -539,7 +543,9 @@ test("sendApplicationConfirmPush: ja言語で正しい文面・枚数をpush", a
   assert.match(text, /2026\/10\/17 vs 島根/);
   assert.match(text, /家族席/);
   assert.match(text, /今回の申込: 2枚/);
-  assert.match(text, /これまでの合計: 5枚/);
+  assert.match(text, /これまでの合計（種別ごと）/);
+  assert.match(text, /招待: 3枚/);
+  assert.match(text, /家族席: 5枚/);
 });
 
 test("sendApplicationConfirmPush: en言語で英語文面をpush", async () => {
@@ -561,9 +567,6 @@ test("sendApplicationConfirmPush: en言語で英語文面をpush", async () => {
         bind(...values) {
           return {
             async first() {
-              if (sql.includes("COALESCE(SUM")) {
-                return { total: 3 };
-              }
               if (sql.includes("FROM applications a")) {
                 return {
                   app_id: "APP-3",
@@ -580,6 +583,12 @@ test("sendApplicationConfirmPush: en言語で英語文面をpush", async () => {
                 };
               }
               return null;
+            },
+            async all() {
+              if (sql.includes("GROUP BY category")) {
+                return { results: [{ category: "invite", total: 3 }] };
+              }
+              return { results: [] };
             },
           };
         },
@@ -601,7 +610,8 @@ test("sendApplicationConfirmPush: en言語で英語文面をpush", async () => {
   assert.match(text, /2026\/10\/24 vs 千葉J/);
   assert.match(text, /Invitation/);
   assert.match(text, /This application: 3 tickets/);
-  assert.match(text, /Total for this game: 3 tickets/);
+  assert.match(text, /Total for this game \(by type\)/);
+  assert.match(text, /Invite: 3 tickets/);
 });
 
 test("sendApplicationConfirmPush: quota不足はpushをスキップ", async () => {
@@ -623,9 +633,6 @@ test("sendApplicationConfirmPush: quota不足はpushをスキップ", async () =
         bind(...values) {
           return {
             async first() {
-              if (sql.includes("COALESCE(SUM")) {
-                return { total: 1 };
-              }
               if (sql.includes("FROM applications a")) {
                 return {
                   app_id: "APP-4",
@@ -643,6 +650,7 @@ test("sendApplicationConfirmPush: quota不足はpushをスキップ", async () =
               }
               return null;
             },
+            async all() { return { results: [] }; },
           };
         },
       };

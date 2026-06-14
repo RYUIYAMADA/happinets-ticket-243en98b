@@ -319,21 +319,29 @@ export async function findApplicationForConfirmPush(db, appId) {
   ).bind(appId).first();
   if (!row) return null;
 
-  // 累計枚数: 同選手 × 同試合 の cancelled 以外の quantity_adult 合計
-  const totalRow = await db.prepare(
-    `SELECT COALESCE(SUM(quantity_adult), 0) AS total
+  // 種別ごとの累計枚数: 同選手 × 同試合 の cancelled 以外の quantity_adult を category 別に集計
+  const totalRows = await db.prepare(
+    `SELECT category, COALESCE(SUM(quantity_adult), 0) AS total
      FROM applications
      WHERE player_id = ?1
        AND game_id = ?2
-       AND status != 'cancelled'`
-  ).bind(row.player_id, row.game_id).first();
+       AND status != 'cancelled'
+     GROUP BY category`
+  ).bind(row.player_id, row.game_id).all();
+
+  const categoryTotals = { invite: 0, family: 0, paid: 0 };
+  for (const r of (totalRows?.results || [])) {
+    if (r.category in categoryTotals) {
+      categoryTotals[r.category] = Number(r.total || 0);
+    }
+  }
 
   return {
     appId: row.app_id,
     lineUserId: row.line_user_id,
     category: row.category,
     quantityAdult: row.quantity_adult,
-    totalQuantity: Number(totalRow?.total || 0),
+    categoryTotals,
     lang: row.lang || "ja",
     gameNo: row.game_no,
     date: row.date,
