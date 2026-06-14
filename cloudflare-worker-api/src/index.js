@@ -376,12 +376,13 @@ async function handleCreateApplication(request, env, origin, nowIso, randomToken
   const body = await readJson(request);
   const payload = parseApplicationInput(body, nowIso);
   const appId = randomToken();
-  await createApplication(env.DB, auth.session, payload, appId, nowIso);
+  const { appId: resolvedAppId } = await createApplication(env.DB, auth.session, payload, appId, nowIso);
   // 申込完了後、非同期でLINE push（失敗しても申込成功を妨げない）
-  sendApplicationConfirmPush(env, appId).catch((err) => {
-    console.error("confirm_push_unhandled", { appId, error: err?.message });
+  // resolvedAppId = DB実在ID（UPDATE時は既存行のapp_id）を渡す
+  sendApplicationConfirmPush(env, resolvedAppId).catch((err) => {
+    console.error("confirm_push_unhandled", { appId: resolvedAppId, error: err?.message });
   });
-  return ok({ applicationId: appId }, origin, 201);
+  return ok({ applicationId: resolvedAppId }, origin, 201);
 }
 
 async function handleCancelApplication(request, env, origin, nowIso, appId) {

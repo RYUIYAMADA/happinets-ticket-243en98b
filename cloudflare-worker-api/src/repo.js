@@ -214,6 +214,11 @@ export async function createApplication(db, playerSession, payload, appId, nowIs
   }
 
   await db.batch(statements);
+
+  // 呼び出し元が正しい appId（DB実在ID）を push 等に使えるよう返す。
+  // INSERT 分岐: 引数で渡した新規 UUID をそのまま返す。
+  // UPDATE 分岐: 既存行の app_id（DBに書いた値）を返す。
+  return { appId: existing ? existing.app_id : appId };
 }
 
 /**
