@@ -317,8 +317,12 @@ test("GET /api/games is public and returns mapped games", async () => {
   });
 });
 
-test("POST /api/applications returns 409 for duplicate active application", async () => {
-  const app = createApp({ now: () => "2026-06-13T00:00:00.000Z" });
+test("POST /api/applications adds quantities when duplicate active application exists", async () => {
+  // 仕様変更: 同試合・同種別への追加申込は 409 ではなく枚数加算(201)
+  const app = createApp({
+    now: () => "2026-06-13T00:00:00.000Z",
+    randomToken: () => "APP-NEW",
+  });
   const request = new Request("https://example.com/api/applications", {
     method: "POST",
     headers: {
@@ -349,7 +353,8 @@ test("POST /api/applications returns 409 for duplicate active application", asyn
         return { id: 1, game_no: "G01", deadline: "2026-10-01" };
       }
       if (sql.includes("FROM applications")) {
-        return { app_id: "APP-1" };
+        // 既存申込: adult=1, child=0, infant=0
+        return { app_id: "APP-1", quantity_adult: 1, quantity_child: 0, quantity_infant: 0 };
       }
       return null;
     },
@@ -359,8 +364,9 @@ test("POST /api/applications returns 409 for duplicate active application", asyn
   const response = await app.fetch(request, env, {});
   const json = await response.json();
 
-  assert.equal(response.status, 409);
-  assert.equal(json.error.code, "DUPLICATE");
+  // 加算成功: 201 + applicationId が返る
+  assert.equal(response.status, 201);
+  assert.ok(json.data?.applicationId, "applicationId が返ること");
 });
 
 test("POST /api/applications returns 201 and writes in batch", async () => {
