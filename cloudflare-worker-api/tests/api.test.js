@@ -317,56 +317,69 @@ test("GET /api/games is public and returns mapped games", async () => {
   });
 });
 
-test("POST /api/applications adds quantities when duplicate active application exists", async () => {
-  // 仕様変更: 同試合・同種別への追加申込は 409 ではなく枚数加算(201)
+test("POST /api/applications creates a new record even when an active application already exists (no merge)", async () => {
+  // 仕様: 同試合・同種別への追加申込は統合せず毎回別レコードを作る
+  let callCount = 0;
   const app = createApp({
     now: () => "2026-06-13T00:00:00.000Z",
-    randomToken: () => "APP-NEW",
+    randomToken: () => `APP-NEW-${++callCount}`,
   });
-  const request = new Request("https://example.com/api/applications", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer player-token",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      gameId: "G01",
-      category: "family",
-      quantityAdult: 2,
-      receiverName: "赤穂 由美",
-      pickupMethod: "pre",
-      parkingCount: 1,
-    }),
-  });
-  const mock = createDbMock({
-    first(sql) {
-      if (sql.includes("INNER JOIN players")) {
-        return {
-          token: "player-token",
-          player_id: 6,
-          expires_at: "2026-06-13T06:00:00.000Z",
-          player_no: "6",
-          name: "#6 赤穂雷太",
-        };
-      }
-      if (sql.includes("FROM games")) {
-        return { id: 1, game_no: "G01", deadline: "2026-10-01" };
-      }
-      if (sql.includes("FROM applications")) {
-        // 既存申込: adult=1, child=0, infant=0
-        return { app_id: "APP-1", quantity_adult: 1, quantity_child: 0, quantity_infant: 0 };
-      }
-      return null;
-    },
-  });
-  const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
 
-  const response = await app.fetch(request, env, {});
-  const json = await response.json();
+  async function submitOnce(receiverName) {
+    const request = new Request("https://example.com/api/applications", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer player-token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        gameId: "G01",
+        category: "family",
+        quantityAdult: 1,
+        receiverName,
+        pickupMethod: "pre",
+        parkingCount: 0,
+      }),
+    });
+    const mock = createDbMock({
+      first(sql) {
+        if (sql.includes("INNER JOIN players")) {
+          return {
+            token: "player-token",
+            player_id: 6,
+            expires_at: "2026-06-13T06:00:00.000Z",
+            player_no: "6",
+            name: "#6 赤穂雷太",
+          };
+        }
+        if (sql.includes("FROM games")) {
+          return { id: 1, game_no: "G01", deadline: "2026-10-01" };
+        }
+        // 既存申込があっても検索しない（統合廃止）
+        return null;
+      },
+    });
+    const env = { DB: mock.DB, ALLOWED_ORIGIN: "http://127.0.0.1:8787" };
+    const response = await app.fetch(request, env, {});
+    return { response, mock };
+  }
 
-  // 加算成功: 201 + applicationId が返る
-  assert.equal(response.status, 201);
-  assert.ok(json.data?.applicationId, "applicationId が返ること");
+  const first = await submitOnce("受取人A");
+  const jsonFirst = await first.response.json();
+  assert.equal(first.response.status, 201, "1件目: 201");
+  assert.ok(jsonFirst.data?.applicationId, "1件目: applicationId が返ること");
+
+  const second = await submitOnce("受取人B");
+  const jsonSecond = await second.response.json();
+  assert.equal(second.response.status, 201, "2件目: 201（別レコード）");
+  assert.ok(jsonSecond.data?.applicationId, "2件目: applicationId が返ること");
+
+  // 2回とも必ず INSERT（batch が呼ばれる）
+  assert.equal(first.mock.batchCalls.length, 1, "1件目: batchが呼ばれる");
+  assert.equal(second.mock.batchCalls.length, 1, "2件目: batchが呼ばれる");
+
+  // 各リクエストで異なる appId が発行されていること
+  assert.notEqual(jsonFirst.data.applicationId, jsonSecond.data.applicationId, "appIdが別々");
 });
 
 test("POST /api/applications returns 201 and writes in batch", async () => {

@@ -131,94 +131,46 @@ export async function createApplication(db, playerSession, payload, appId, nowIs
     throw new HttpError(410, "DEADLINE_PASSED", "Deadline passed");
   }
 
-  // 既存申込を確認: 同player × 同game × 同category × status != cancelled
-  const existing = await db.prepare(
-    `SELECT app_id, quantity_adult, quantity_child, quantity_infant
-     FROM applications
-     WHERE player_id = ?1 AND game_id = ?2 AND category = ?3 AND status != 'cancelled'`
-  ).bind(playerSession.player_id, game.id, payload.category).first();
-
-  const statements = [];
-
-  if (existing) {
-    // 既存行がある場合: 加算UPDATE（枚数・受取方法・受取者名・特記を更新、statusはpending）
-    const newQtyAdult = (existing.quantity_adult || 0) + payload.quantityAdult;
-    const newQtyChild = (existing.quantity_child || 0) + payload.quantityChild;
-    const newQtyInfant = (existing.quantity_infant || 0) + payload.quantityInfant;
-    statements.push(
-      db.prepare(
-        `UPDATE applications
-         SET quantity_adult = ?1, quantity_child = ?2, quantity_infant = ?3,
-             seat_type = ?4, seat_request = ?5, receivers = ?6,
-             pickup_method = ?7, payment_method = ?8, parking = ?9, note = ?10,
-             lang = ?11, status = 'pending', updated_at = ?12
-         WHERE app_id = ?13`
-      ).bind(
-        newQtyAdult,
-        newQtyChild,
-        newQtyInfant,
-        payload.seatType,
-        payload.seatRequest,
-        JSON.stringify(payload.receiverName ? [{ name: payload.receiverName }] : []),
-        payload.pickupMethod,
-        payload.paymentMethod,
-        payload.parkingCount,
-        payload.note,
-        payload.lang,
-        nowIso,
-        existing.app_id
-      ),
-      audit(db, `player:${playerSession.player_id}`, "submit", `application:${existing.app_id}`, {
-        gameNo: game.game_no,
-        category: payload.category,
-        action: 'add',
-        addedQuantity: payload.quantityAdult,
-        totalQuantity: newQtyAdult
-      })
-    );
-  } else {
-    // 既存行がない場合: 新規INSERT
-    statements.push(
-      db.prepare(
-        `INSERT INTO applications (
-          app_id, player_id, game_id, category, quantity_adult, quantity_child, quantity_infant,
-          seat_type, seat_request, receivers, pickup_method, payment_method, parking, note,
-          status, lang, source, created_at, updated_at
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 'pending', ?15, ?16, ?17, ?18)`
-      ).bind(
-        appId,
-        playerSession.player_id,
-        game.id,
-        payload.category,
-        payload.quantityAdult,
-        payload.quantityChild,
-        payload.quantityInfant,
-        payload.seatType,
-        payload.seatRequest,
-        JSON.stringify(payload.receiverName ? [{ name: payload.receiverName }] : []),
-        payload.pickupMethod,
-        payload.paymentMethod,
-        payload.parkingCount,
-        payload.note,
-        payload.lang,
-        payload.source,
-        nowIso,
-        nowIso
-      ),
-      audit(db, `player:${playerSession.player_id}`, "submit", `application:${appId}`, {
-        gameNo: game.game_no,
-        category: payload.category,
-        action: 'new'
-      })
-    );
-  }
+  // 申込は常に新規INSERT（統合・加算しない）。
+  // 毎回別レコードにすることで受取人上書きバグと確認push未達を根治する。
+  const statements = [
+    db.prepare(
+      `INSERT INTO applications (
+        app_id, player_id, game_id, category, quantity_adult, quantity_child, quantity_infant,
+        seat_type, seat_request, receivers, pickup_method, payment_method, parking, note,
+        status, lang, source, created_at, updated_at
+      ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, 'pending', ?15, ?16, ?17, ?18)`
+    ).bind(
+      appId,
+      playerSession.player_id,
+      game.id,
+      payload.category,
+      payload.quantityAdult,
+      payload.quantityChild,
+      payload.quantityInfant,
+      payload.seatType,
+      payload.seatRequest,
+      JSON.stringify(payload.receiverName ? [{ name: payload.receiverName }] : []),
+      payload.pickupMethod,
+      payload.paymentMethod,
+      payload.parkingCount,
+      payload.note,
+      payload.lang,
+      payload.source,
+      nowIso,
+      nowIso
+    ),
+    audit(db, `player:${playerSession.player_id}`, "submit", `application:${appId}`, {
+      gameNo: game.game_no,
+      category: payload.category,
+      action: 'new'
+    }),
+  ];
 
   await db.batch(statements);
 
-  // 呼び出し元が正しい appId（DB実在ID）を push 等に使えるよう返す。
-  // INSERT 分岐: 引数で渡した新規 UUID をそのまま返す。
-  // UPDATE 分岐: 既存行の app_id（DBに書いた値）を返す。
-  return { appId: existing ? existing.app_id : appId };
+  // 常に新規INSERTした appId を返す
+  return { appId };
 }
 
 /**
