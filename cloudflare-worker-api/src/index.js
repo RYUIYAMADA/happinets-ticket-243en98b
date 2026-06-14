@@ -139,6 +139,9 @@ export function createApp(options = {}) {
             return await handleAdminDeleteGame(request, env, origin, nowIso, decodeURIComponent(gameMatch[1]));
           }
         }
+        if (request.method === "GET" && url.pathname === "/api/admin/export") {
+          return await handleAdminExport(request, url, env, origin, nowIso);
+        }
         return error(404, "NOT_FOUND", "Not Found", origin);
       } catch (err) {
         if (err instanceof HttpError) {
@@ -490,6 +493,146 @@ async function handleAnnounceDeadline(request, url, env, origin, nowIso) {
 
   const result = await broadcastDeadlineAnnouncement(env, nowIso);
   return ok({ dryRun: false, ...result }, origin);
+}
+
+/**
+ * GET /api/admin/export?category=invite|family|paid
+ * 申込履歴を種別ごとにCSV（UTF-8 BOM付き）でダウンロード。
+ * admin セッション必須。全件出力（cancelled を含む）。
+ * 選手番号は先頭ゼロ保持のため ="006" 形式でエスケープ。
+ */
+async function handleAdminExport(request, url, env, origin, nowIso) {
+  const auth = await requireAdminSession(request, env, origin, nowIso);
+  if (!auth.ok) return auth.response;
+
+  const category = url.searchParams.get("category") || "";
+  const VALID_EXPORT_CATEGORIES = ["invite", "family", "paid"];
+  if (category && !VALID_EXPORT_CATEGORIES.includes(category)) {
+    throw new HttpError(400, "BAD_REQUEST", "category must be invite, family, or paid");
+  }
+
+  const CATEGORY_LABELS = { invite: "招待チケット", family: "家族席", paid: "2F自由有料" };
+  const STATUS_JP = { pending: "確認中", confirmed: "確保済み", rejected: "対応不可", cancelled: "キャンセル" };
+  const PICKUP_JP = { pre: "事前受取", day: "当日受取" };
+  const PAYMENT_JP = { salary: "給与天引き", cash: "当日現金", free: "無料（招待）" };
+
+  // 対象カテゴリ決定
+  const targetCategories = category ? [category] : VALID_EXPORT_CATEGORIES;
+
+  // 全カテゴリをまとめて1クエリ（ORDER BY category, created_at）
+  const catFilter = targetCategories.map((_, i) => `?${i + 1}`).join(",");
+  const result = await env.DB.prepare(`
+    SELECT
+      a.app_id,
+      p.player_no,
+      p.name  AS player_name,
+      g.game_no,
+      g.date  AS game_date,
+      g.day_of_week,
+      g.opponent,
+      a.category,
+      a.quantity_adult,
+      a.quantity_child,
+      a.quantity_infant,
+      a.seat_type,
+      a.seat_request,
+      a.receivers,
+      a.pickup_method,
+      a.payment_method,
+      a.parking,
+      a.note,
+      a.status,
+      a.created_at
+    FROM applications a
+    INNER JOIN players p ON p.id = a.player_id
+    INNER JOIN games   g ON g.id  = a.game_id
+    WHERE a.category IN (${catFilter})
+    ORDER BY a.category ASC, a.created_at ASC
+  `).bind(...targetCategories).all();
+
+  const rows = result.results || [];
+
+  // CSV ヘッダー行
+  const HEADERS = [
+    "申込ID", "種別", "選手番号", "選手名",
+    "試合ID", "試合日", "曜日", "対戦相手",
+    "大人枚数", "子ども枚数", "乳幼児枚数",
+    "受取者氏名", "受取方法", "支払方法",
+    "席種", "座席希望", "駐車場台数", "特記事項",
+    "ステータス", "申込日時",
+  ];
+
+  function csvEscape(v) {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  // 先頭ゼロ保持: Excelが文字列として扱うよう ="006" 形式
+  function zeroSafe(no) {
+    if (!no) return "";
+    const padded = String(no).padStart(3, "0");
+    return `="${padded}"`;
+  }
+
+  function parseReceiversName(receiversJson) {
+    try {
+      const arr = JSON.parse(receiversJson || "[]");
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr.map(r => r.name || "").filter(Boolean).join(" / ");
+      }
+    } catch {}
+    return "";
+  }
+
+  const csvRows = rows.map(r => [
+    csvEscape(r.app_id),
+    csvEscape(CATEGORY_LABELS[r.category] || r.category),
+    csvEscape(zeroSafe(r.player_no)),
+    csvEscape(r.player_name),
+    csvEscape(r.game_no),
+    csvEscape(r.game_date),
+    csvEscape(r.day_of_week),
+    csvEscape(r.opponent),
+    csvEscape(r.quantity_adult),
+    csvEscape(r.quantity_child),
+    csvEscape(r.quantity_infant),
+    csvEscape(parseReceiversName(r.receivers)),
+    csvEscape(PICKUP_JP[r.pickup_method] || r.pickup_method || ""),
+    csvEscape(PAYMENT_JP[r.payment_method] || r.payment_method || ""),
+    csvEscape(r.seat_type || ""),
+    csvEscape(r.seat_request || ""),
+    csvEscape(r.parking),
+    csvEscape(r.note || ""),
+    csvEscape(STATUS_JP[r.status] || r.status),
+    csvEscape(r.created_at),
+  ].join(","));
+
+  const headerLine = HEADERS.map(csvEscape).join(",");
+  const csvContent = [headerLine, ...csvRows].join("\r\n");
+
+  // UTF-8 BOM 付き（Excel/Sheets 文字化け防止）
+  const BOM = "﻿";
+  const fullCsv = BOM + csvContent;
+
+  const catLabel = category ? (CATEGORY_LABELS[category] || category) : "全種別";
+  const dateStr = nowIso.slice(0, 10).replace(/-/g, "");
+  const filename = `family-tickets-${category || "all"}-${dateStr}.csv`;
+
+  const corsHeaders = {};
+  if (origin) corsHeaders["Access-Control-Allow-Origin"] = origin;
+
+  return new Response(fullCsv, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/csv; charset=UTF-8",
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      ...corsHeaders,
+    },
+  });
 }
 
 async function readJson(request) {

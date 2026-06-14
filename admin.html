@@ -859,6 +859,7 @@
   <button class="tab" onclick="switchTab('deadlines')">申込期限設定</button>
   <button class="tab" onclick="switchTab('line')">LINE通知</button>
   <button class="tab" onclick="switchTab('data')">データ管理</button>
+  <button class="tab" onclick="switchTab('export')">エクスポート</button>
 </div>
 
 <div class="container">
@@ -1155,6 +1156,42 @@
 
   </div>
 
+  <!-- エクスポートタブ -->
+  <div id="tab-export" class="panel">
+    <p class="section-title">申込履歴エクスポート</p>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">CSV ダウンロード</span>
+        <span class="card-note">種別ごとに1ファイル。Google スプレッドシートで「ファイル → インポート」で取り込み可。</span>
+      </div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:var(--space-4);">
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-3);">
+          <button class="btn-success" onclick="downloadExportCsv('invite')" style="min-width:180px;display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            招待チケット
+          </button>
+          <button class="btn-success" onclick="downloadExportCsv('family')" style="min-width:180px;display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            家族席
+          </button>
+          <button class="btn-success" onclick="downloadExportCsv('paid')" style="min-width:180px;display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            2F自由有料
+          </button>
+          <button class="btn-outline" onclick="downloadExportCsv('')" style="min-width:180px;display:flex;align-items:center;gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            全種別まとめて
+          </button>
+        </div>
+        <p style="font-size:12px;color:var(--text-sub);margin:0;">
+          ※ キャンセル済みも含む全件を出力します（ステータス列で絞り込み可）。<br>
+          ※ 選手番号の先頭ゼロはそのまま保持されます（Excelで開いても崩れません）。<br>
+          ※ Google スプレッドシートへの取り込み: ファイル → インポート → アップロード → 区切り文字「カンマ」を選択。
+        </p>
+      </div>
+    </div>
+  </div>
+
 </div>
 <div class="toast" id="toast" aria-live="assertive"></div>
 
@@ -1397,6 +1434,7 @@ window.WORKER_API_BASE_URL = "https://family-tickets-api.row2014-2015-k.workers.
       else localStorage.removeItem(BASE_URL_STORAGE_KEY);
       return resolveBaseUrl();
     },
+    getToken: getStoredToken,
     clearStoredTokens,
     getGames,
     getApplications,
@@ -1841,12 +1879,49 @@ async function saveDeadline(gameId) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    const names = ['overview','applications','matrix','deadlines','line','data'];
+    const names = ['overview','applications','matrix','deadlines','line','data','export'];
     t.classList.toggle('active', names[i] === tab);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   if (tab === 'data') renderDataTab();
+}
+
+/* ═══════════════════════════════
+   エクスポートタブ
+   ═══════════════════════════════ */
+
+async function downloadExportCsv(category) {
+  const token = workerApiClient.getToken ? workerApiClient.getToken() : (sessionStorage.getItem('adminToken') || sessionStorage.getItem('sessionToken') || '');
+  if (!token) { showToast('ログインが必要です'); return; }
+
+  const params = new URLSearchParams();
+  if (category) params.set('category', category);
+  const url = `${workerApiClient.baseUrl}/api/admin/export${params.toString() ? '?' + params.toString() : ''}`;
+
+  showToast('ダウンロード準備中...');
+  try {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson?.error?.message || `HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    let filename = `family-tickets-${category || 'all'}.csv`;
+    const fnMatch = disposition.match(/filename\*?=(?:UTF-8'')?([^;]+)/i);
+    if (fnMatch) filename = decodeURIComponent(fnMatch[1].replace(/"/g, '').trim());
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    showToast('ダウンロード完了');
+  } catch (e) {
+    showToast('エクスポート失敗: ' + e.message);
+  }
 }
 
 

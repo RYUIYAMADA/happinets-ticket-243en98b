@@ -13,8 +13,18 @@ export function formatPlayerNo(playerNo) {
   return String(playerNo).padStart(3, "0");
 }
 
+/**
+ * 締切判定基準: 締切日の 12:00 JST (= UTC 03:00)
+ * deadline カラムは 'YYYY-MM-DD' 形式。締切時刻は一律 12:00 JST 固定。
+ */
+export function deadlineAt(deadlineDate) {
+  // 締切日の 12:00 JST = UTC 03:00 = deadlineDate T03:00:00Z
+  if (!deadlineDate) return null;
+  return `${deadlineDate}T03:00:00.000Z`;
+}
+
 export function mapGameRow(row, nowIso) {
-  const nowDate = nowIso.slice(0, 10);
+  const dl = row.deadline ? deadlineAt(row.deadline) : null;
   return {
     gameId: row.game_no,
     gameNo: row.game_no,
@@ -23,7 +33,7 @@ export function mapGameRow(row, nowIso) {
     tipoff: row.tipoff ?? null,
     opponent: row.opponent,
     deadline: row.deadline ?? null,
-    isDeadlinePassed: Boolean(row.deadline && row.deadline < nowDate),
+    isDeadlinePassed: Boolean(dl && dl < nowIso),
     season: row.season,
     isActive: row.is_active === 1,
   };
